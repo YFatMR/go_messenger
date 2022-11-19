@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  front_service:
+    image: golang:1.19
+    volumes:
+      - ./_bin:/usr/bin
+    command: bash -c "/usr/bin/front_service"
+
+    container_name: front_service
+    environment:
+      - FRONT_SERVICE_ADDRESS=front_service
+      - FRONT_SERVICE_PORT=${FRONT_SERVER_PORT}
+
+      - USER_SERVICE_ADDRESS=user_service
+      - USER_SERVICE_PORT=${USER_SERVER_PORT}
+    ports:
+      - "8000:${FRONT_SERVER_PORT}"
+    depends_on:
+      - user_service
+    networks:
+      - default
+
+  user_service:
+    image: golang:1.19
+    volumes:
+      - ./_bin:/usr/bin
+    command: bash -c "/usr/bin/user_service"
+
+    container_name: user_service
+    environment:
+      - USER_SERVICE_ADDRESS=user_service
+      - USER_SERVICE_PORT=${USER_SERVER_PORT}
+    ports:
+      - "8020:${USER_SERVER_PORT}"
+    networks:
+      - default
+
+
+networks:
+  default:
+    driver: bridge

@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package pb;
-option go_package = "./pb";
+package go_proto;
+option go_package = "./go_proto";
 
 message CreateUserRequest {
   string name = 1;
@@ -14,6 +14,6 @@ message UserDataResponse {
   string surname = 3;
 }
 
-service UserService {
+service User {
   rpc CreateUser (CreateUserRequest) returns (UserDataResponse) {}
 }
