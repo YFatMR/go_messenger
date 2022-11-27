@@ -1,6 +1,7 @@
 package servers
 
 import (
+	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	proto "protocol/pkg/proto"
 )
@@ -19,6 +20,7 @@ type userController interface {
 type GRPCUserServer struct {
 	proto.UnimplementedUserServer
 	controller userController
+	logger     *zap.Logger
 }
 
 func NewGRPCUserServer(controller userController) *GRPCUserServer {

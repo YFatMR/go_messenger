@@ -4,6 +4,7 @@ import (
 	"context"
 	. "core/pkg/utils"
 	"fmt"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"net"
 	proto "protocol/pkg/proto"
@@ -14,18 +15,15 @@ import (
 	"user_server/internal/services"
 )
 
-//folders:
-//   enities
-//   repositories -> Database, requests
-//   services     -> buisness logick    (2 times call CreateUser ...)
-//   controllers  -> validation, generate response (перекладывание во внутренние структкры и т д)
-
 // GOMAXPROC
 
 func main() {
 	time.Sleep(5 * time.Second)
 
 	s := grpc.NewServer()
+
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
 
 	mongoUri := RequiredStringEnv("USER_SERVICE_MONGODB_URI")
 	databaseName := RequiredStringEnv("USER_SERVICE_MONGODB_DATABASE_NAME")
