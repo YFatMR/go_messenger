@@ -1,8 +1,11 @@
 package utils
 
-import "os"
+import (
+	"os"
+	"strconv"
+)
 
-func GetEnv(envKey string) string {
+func RequiredStringEnv(envKey string) string {
 	env := os.Getenv(envKey)
 	if env == "" {
 		panic("Please, set environment variable " + envKey)
@@ -10,6 +13,18 @@ func GetEnv(envKey string) string {
 	return env
 }
 
+func RequiredIntEnv(envKey string) int {
+	env := os.Getenv(envKey)
+	if env == "" {
+		panic("Please, set environment variable " + envKey)
+	}
+	intEnv, err := strconv.Atoi(env)
+	if err != nil {
+		panic(err)
+	}
+	return intEnv
+}
+
 func GetFullServiceAddress(serviceName string) string {
-	return GetEnv(serviceName+"_SERVICE_ADDRESS") + ":" + GetEnv(serviceName+"_SERVICE_PORT")
+	return RequiredStringEnv(serviceName+"_SERVICE_ADDRESS") + ":" + RequiredStringEnv(serviceName+"_SERVICE_PORT")
 }

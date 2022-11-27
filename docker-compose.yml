@@ -2,39 +2,59 @@ version: '3.8'
 
 services:
   front_service:
-    image: golang:1.19
-    volumes:
-      - ./_bin:/usr/bin
-    command: bash -c "/usr/bin/front_service"
+    build:
+      context: .
+      dockerfile: ./front_service/Dockerfile
 
     container_name: front_service
     environment:
-      - FRONT_SERVICE_ADDRESS=front_service
-      - FRONT_SERVICE_PORT=${FRONT_SERVER_PORT}
+      - FRONT_REST_SERVICE_ADDRESS=front_service
+      - FRONT_REST_SERVICE_PORT=${FRONT_REST_SERVICE_PORT}
+
+      - FRONT_GRPC_SERVICE_ADDRESS=front_service
+      - FRONT_GRPC_SERVICE_PORT=${FRONT_GRPC_SERVICE_PORT}
 
       - USER_SERVICE_ADDRESS=user_service
-      - USER_SERVICE_PORT=${USER_SERVER_PORT}
+      - USER_SERVICE_PORT=${USER_SERVICE_PORT}
     ports:
-      - "8000:${FRONT_SERVER_PORT}"
+      - "8010:${FRONT_REST_SERVICE_PORT}"
+      - "8020:${FRONT_GRPC_SERVICE_PORT}"
     depends_on:
       - user_service
     networks:
       - default
 
   user_service:
-    image: golang:1.19
-    volumes:
-      - ./_bin:/usr/bin
-    command: bash -c "/usr/bin/user_service"
+    build:
+      context: .
+      dockerfile: ./user_service/Dockerfile
 
     container_name: user_service
     environment:
       - USER_SERVICE_ADDRESS=user_service
-      - USER_SERVICE_PORT=${USER_SERVER_PORT}
+      - USER_SERVICE_PORT=${USER_SERVICE_PORT}
+      - USER_SERVICE_MONGODB_URI=mongodb://${USER_SERVICE_MONGODB_USERNAME}:${USER_SERVICE_MONGODB_PASSWORD}@user_service_mongodb:${USER_SERVICE_MONGODB_PORT}
+      - USER_SERVICE_MONGODB_DATABASE_NAME=${USER_SERVICE_MONGODB_DATABASE_NAME}
+      - USER_SERVICE_MONGODB_DATABASE_COLLECTION_NAME=${USER_SERVICE_MONGODB_DATABASE_COLLECTION_NAME}
+      - USER_SERVICE_MONGODB_CONNECTION_TIMEOUT_SEC=${USER_SERVICE_MONGODB_CONNECTION_TIMEOUT_SEC}
     ports:
-      - "8020:${USER_SERVER_PORT}"
+      - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
+    depends_on:
+      - user_service_mongodb
     networks:
       - default
+
+  user_service_mongodb:
+    image: mongo
+    container_name: user_service_mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${USER_SERVICE_MONGODB_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${USER_SERVICE_MONGODB_PASSWORD}
+    # volumes:
+    #   - ./mongodb:/usr/src/messenger
+    ports:
+      - "27017:${USER_SERVICE_MONGODB_PORT}"
+
 
 
 networks:
