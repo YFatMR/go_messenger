@@ -23,9 +23,10 @@ type GRPCUserServer struct {
 	logger     *zap.Logger
 }
 
-func NewGRPCUserServer(controller userController) *GRPCUserServer {
+func NewGRPCUserServer(controller userController, logger *zap.Logger) *GRPCUserServer {
 	return &GRPCUserServer{
 		controller: controller,
+		logger:     logger,
 	}
 }
 

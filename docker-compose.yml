@@ -8,6 +8,9 @@ services:
 
     container_name: front_service
     environment:
+      - FRONT_SERVICE_LOG_LEVEL=${FRONT_SERVICE_LOG_LEVEL}
+      - FRONT_SERVICE_LOG_PATH=${FRONT_SERVICE_LOG_PATH}
+
       - FRONT_REST_SERVICE_ADDRESS=front_service
       - FRONT_REST_SERVICE_PORT=${FRONT_REST_SERVICE_PORT}
 
@@ -16,6 +19,10 @@ services:
 
       - USER_SERVICE_ADDRESS=user_service
       - USER_SERVICE_PORT=${USER_SERVICE_PORT}
+    volumes:
+      - type: bind
+        source: /home/am/dev/golang/messenger/_log/front_service.log
+        target: ${FRONT_SERVICE_LOG_PATH}
     ports:
       - "8010:${FRONT_REST_SERVICE_PORT}"
       - "8020:${FRONT_GRPC_SERVICE_PORT}"
@@ -37,6 +44,12 @@ services:
       - USER_SERVICE_MONGODB_DATABASE_NAME=${USER_SERVICE_MONGODB_DATABASE_NAME}
       - USER_SERVICE_MONGODB_DATABASE_COLLECTION_NAME=${USER_SERVICE_MONGODB_DATABASE_COLLECTION_NAME}
       - USER_SERVICE_MONGODB_CONNECTION_TIMEOUT_SEC=${USER_SERVICE_MONGODB_CONNECTION_TIMEOUT_SEC}
+      - USER_SERVICE_LOG_LEVEL=${USER_SERVICE_LOG_LEVEL}
+      - USER_SERVICE_LOG_PATH=${USER_SERVICE_LOG_PATH}
+    volumes:
+      - type: bind
+        source: /home/am/dev/golang/messenger/_log/user_service.log
+        target: ${USER_SERVICE_LOG_PATH}
     ports:
       - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
     depends_on:
@@ -54,8 +67,6 @@ services:
     #   - ./mongodb:/usr/src/messenger
     ports:
       - "27017:${USER_SERVICE_MONGODB_PORT}"
-
-
 
 networks:
   default:

@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
+	. "core/pkg/loggers"
 	. "core/pkg/utils"
 	"fmt"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"net"
 	proto "protocol/pkg/proto"
@@ -22,7 +22,9 @@ func main() {
 
 	s := grpc.NewServer()
 
-	logger, _ := zap.NewProduction()
+	logLevel := RequiredZapcoreLogLevelEnv("USER_SERVICE_LOG_LEVEL")
+	logPath := RequiredStringEnv("USER_SERVICE_LOG_PATH")
+	logger := NewBaseFileLogger(logLevel, logPath)
 	defer logger.Sync()
 
 	mongoUri := RequiredStringEnv("USER_SERVICE_MONGODB_URI")
@@ -37,10 +39,10 @@ func main() {
 	fmt.Println("Connected to mongo...")
 	defer cancelConnection()
 
-	userRepository := repositories.NewUserMongoRepository(mongoCollection)
-	userService := services.NewUserService(userRepository)
-	userController := controllers.NewUserController(userService)
-	gRPCUserServer := servers.NewGRPCUserServer(userController)
+	userRepository := repositories.NewUserMongoRepository(mongoCollection, logger)
+	userService := services.NewUserService(userRepository, logger)
+	userController := controllers.NewUserController(userService, logger)
+	gRPCUserServer := servers.NewGRPCUserServer(userController, logger)
 	proto.RegisterUserServer(s, gRPCUserServer)
 
 	userServerAddress := GetFullServiceAddress("USER")

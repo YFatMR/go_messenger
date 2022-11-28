@@ -2,8 +2,8 @@ package internal
 
 import (
 	"context"
-	"fmt"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	proto "protocol/pkg/proto"
@@ -12,11 +12,19 @@ import (
 type frontUserServer struct {
 	proto.UnimplementedFrontUserServer
 	userServerAddress string
+	logger            *zap.Logger
 }
 
-func (server *frontUserServer) CreateUser(ctx context.Context, request *proto.UserData) (*proto.UserId, error) {
-	fmt.Println(" CreateUser call")
-	conn, err := grpc.Dial(server.userServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func newFrontUserServer(userServerAddress string, logger *zap.Logger) *frontUserServer {
+	return &frontUserServer{
+		userServerAddress: userServerAddress,
+		logger:            logger,
+	}
+}
+
+func (s *frontUserServer) CreateUser(ctx context.Context, request *proto.UserData) (*proto.UserId, error) {
+	s.logger.Debug("called CreateUser endpoint")
+	conn, err := grpc.Dial(s.userServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
@@ -24,9 +32,9 @@ func (server *frontUserServer) CreateUser(ctx context.Context, request *proto.Us
 	return client.CreateUser(ctx, request)
 }
 
-func (server *frontUserServer) GetUserById(ctx context.Context, request *proto.UserId) (*proto.UserData, error) {
-	fmt.Println(" GetUserById call")
-	conn, err := grpc.Dial(server.userServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (s *frontUserServer) GetUserById(ctx context.Context, request *proto.UserId) (*proto.UserData, error) {
+	s.logger.Debug("called GetUserById endpoint")
+	conn, err := grpc.Dial(s.userServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
@@ -37,9 +45,6 @@ func (server *frontUserServer) GetUserById(ctx context.Context, request *proto.U
 // registration
 
 func RegisterRestUserServer(ctx context.Context, mux *runtime.ServeMux, grpcFrontServerAddress string) {
-	// TODO: if pass  context.WithValue, can't extract it via function
-	fmt.Println("CreateUser registration")
-
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	err := proto.RegisterFrontUserHandlerFromEndpoint(ctx, mux, grpcFrontServerAddress, opts)
 	if err != nil {
@@ -47,7 +52,6 @@ func RegisterRestUserServer(ctx context.Context, mux *runtime.ServeMux, grpcFron
 	}
 }
 
-func RegisterGrpcUserServer(grpcServer grpc.ServiceRegistrar, userServerAddress string) {
-	proto.RegisterFrontUserServer(grpcServer, &frontUserServer{
-		userServerAddress: userServerAddress})
+func RegisterGrpcUserServer(grpcServer grpc.ServiceRegistrar, userServerAddress string, logger *zap.Logger) {
+	proto.RegisterFrontUserServer(grpcServer, newFrontUserServer(userServerAddress, logger))
 }
