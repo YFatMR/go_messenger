@@ -17,5 +17,8 @@ jobs:
         with:
           go-version: 1.19
 
-      - name: Show go version
-        run: echo $GOPATH && go version
+      - name: Display Go version
+        run: go version
+
+      - name: Build
+        run: make build
