@@ -10,7 +10,7 @@ import (
 	proto "protocol/pkg/proto"
 	"time"
 	"user_server/internal/controllers"
-	"user_server/internal/repositories"
+	"user_server/internal/repositories/mongo"
 	"user_server/internal/servers"
 	"user_server/internal/services"
 )
@@ -31,15 +31,15 @@ func main() {
 	databaseName := RequiredStringEnv("USER_SERVICE_MONGODB_DATABASE_NAME")
 	collectionName := RequiredStringEnv("USER_SERVICE_MONGODB_DATABASE_COLLECTION_NAME")
 	connectionTimeout := RequiredIntEnv("USER_SERVICE_MONGODB_CONNECTION_TIMEOUT_SEC")
-	mongoSetting := NewMongoSettings(mongoUri, databaseName, collectionName, time.Duration(connectionTimeout)*time.Second)
+	mongoSetting := mongo.NewMongoSettings(mongoUri, databaseName, collectionName, time.Duration(connectionTimeout)*time.Second)
 
 	mongoCtx := context.Background()
 	fmt.Println("Connection to mongo...")
-	mongoCollection, cancelConnection := NewMongoCollection(mongoCtx, mongoSetting)
+	mongoCollection, cancelConnection := mongo.NewMongoCollection(mongoCtx, mongoSetting)
 	fmt.Println("Connected to mongo...")
 	defer cancelConnection()
 
-	userRepository := repositories.NewUserMongoRepository(mongoCollection, logger)
+	userRepository := mongo.NewUserMongoRepository(mongoCollection, logger)
 	userService := services.NewUserService(userRepository, logger)
 	userController := controllers.NewUserController(userService, logger)
 	gRPCUserServer := servers.NewGRPCUserServer(userController, logger)

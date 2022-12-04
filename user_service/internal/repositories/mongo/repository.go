@@ -1,4 +1,4 @@
-package repositories
+package mongo
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 	"user_server/internal/enities"
+	"user_server/internal/repositories"
 )
 
 type UserMongoRepository struct {
@@ -32,6 +33,9 @@ func (r *UserMongoRepository) Create(ctx context.Context, request *enities.User)
 		Name:    request.GetName(),
 		Surname: request.GetSurname(),
 	})
+	if err != nil {
+		return "", err
+	}
 	r.logger.Debug("Insert result", zap.String("id", insertResult.InsertedID.(primitive.ObjectID).Hex()))
 	return insertResult.InsertedID.(primitive.ObjectID).Hex(), err
 }
@@ -40,7 +44,7 @@ func (r *UserMongoRepository) GetById(ctx context.Context, id string) (*enities.
 	var document userDocument
 	objectId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, WrongUserIdFormatErr
+		return nil, repositories.WrongUserIdFormatErr
 	}
 	err = r.collection.FindOne(ctx, bson.D{
 		{"_id", objectId},
@@ -49,7 +53,7 @@ func (r *UserMongoRepository) GetById(ctx context.Context, id string) (*enities.
 		return enities.NewUser(document.Name, document.Surname), nil
 	} else if err == mongo.ErrNoDocuments {
 		r.logger.Debug("User not found", zap.String("id", id))
-		return nil, UserNotFoundErr
+		return nil, repositories.UserNotFoundErr
 	}
 	r.logger.Error("Database connection error", zap.String("error", err.Error()))
 	return nil, err
