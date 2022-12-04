@@ -20,4 +20,4 @@ jobs:
       - name: Setup go environment
         run: export GOROOT=/usr/local/go && export GOPATH=$HOME/messenger && export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
       - name: Show go version
-        run: go version
+        run: echo $GOPATH && /usr/local/go version
