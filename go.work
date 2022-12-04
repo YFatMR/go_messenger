@@ -3,7 +3,6 @@ go 1.19
 use (
 	core
 	protocol
-	_qa
 	chat_service
 	front_service
 	user_service
