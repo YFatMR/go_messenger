@@ -13,3 +13,6 @@ build_docker_compose: build
 
 run: build_docker_compose
 	sudo docker-compose --env-file ${CURRENT_DIR}/.env --verbose up  --force-recreate --remove-orphans
+
+run-integration-test: build
+	go test ${CURRENT_DIR}/user_service/internal/repositories/mongo/

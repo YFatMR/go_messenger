@@ -22,3 +22,6 @@ jobs:
 
       - name: Build
         run: make build
+
+      - name: Go linter checks
+        uses: golangci/golangci-lint-action@v3
