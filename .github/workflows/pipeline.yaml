@@ -23,5 +23,5 @@ jobs:
       - name: Build
         run: make build
 
-      - name: Go run tests
+      - name: Run Go tests
         run: make run-tests
