@@ -16,3 +16,7 @@ run: build_docker_compose
 
 run-tests:
 	go test ${CURRENT_DIR}/user_service/internal/repositories/mongo/ -v
+
+# problem to work with go.work, have to set exactly directory
+lint:
+	golangci-lint run

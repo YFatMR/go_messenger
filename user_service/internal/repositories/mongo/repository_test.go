@@ -2,11 +2,9 @@ package mongo
 
 import (
 	"context"
-	"fmt"
+	recipe "core/pkg/go_recipes/mongo"
 	"github.com/google/uuid"
-	"github.com/ory/dockertest/v3"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 	"os"
 	"testing"
@@ -16,55 +14,15 @@ import (
 var testDatabase *mongo.Database
 
 func TestMain(m *testing.M) {
-	mongoUsername := "root"
-	mongoPassword := "password"
-	mongoDockerTag := "6.0"
-	mongoEndpointUrl := "localhost"
-	mongoDatabaseName := "TEST_DATABASE"
 	const dockerDeletionTimeoutSeconds uint = 60
-
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		panic(err)
-	}
-	environmentVariables := []string{
-		"MONGO_INITDB_ROOT_USERNAME=" + mongoUsername,
-		"MONGO_INITDB_ROOT_PASSWORD=" + mongoPassword,
-	}
-	resource, err := pool.Run("mongo", mongoDockerTag, environmentVariables)
-	if err != nil {
-		panic(err)
-	}
-
-	var client *mongo.Client
-	if err = pool.Retry(func() error {
-		mongoUri := fmt.Sprintf("mongodb://%s:%s@%s:%s", mongoUsername, mongoPassword, mongoEndpointUrl, resource.GetPort("27017/tcp"))
-		var err error
-		ctx := context.Background()
-		client, err = mongo.Connect(ctx, options.Client().ApplyURI(mongoUri))
-		if err != nil {
-			return err
-		}
-		return client.Ping(ctx, nil)
-	}); err != nil {
-		panic(err)
-	}
+	mongoDatabaseName := "TEST_DATABASE"
+	mongoClient := recipe.NewMongoClient(dockerDeletionTimeoutSeconds)
 
 	// setup global variables
-	testDatabase = client.Database(mongoDatabaseName)
-
-	// set docker deletion timeout
-	err = resource.Expire(dockerDeletionTimeoutSeconds)
-	if err != nil {
-		panic(err)
-	}
+	testDatabase = mongoClient.Database(mongoDatabaseName)
 
 	// Run tests
 	exitCode := m.Run()
-
-	if err != nil {
-		panic(err)
-	}
 	os.Exit(exitCode)
 }
 

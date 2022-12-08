@@ -5,6 +5,7 @@ import (
 	. "core/pkg/loggers"
 	. "core/pkg/utils"
 	"fmt"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"net"
 	proto "protocol/pkg/proto"
@@ -22,6 +23,7 @@ func main() {
 
 	s := grpc.NewServer()
 
+	fmt.Println("some testing,,,,", viper.GetString("USER_SERVICE_LOG_PATH"))
 	logLevel := RequiredZapcoreLogLevelEnv("USER_SERVICE_LOG_LEVEL")
 	logPath := RequiredStringEnv("USER_SERVICE_LOG_PATH")
 	logger := NewBaseFileLogger(logLevel, logPath)

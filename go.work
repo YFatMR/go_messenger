@@ -1,9 +1,9 @@
 go 1.19
 
 use (
-	core
-	protocol
 	chat_service
+	core
 	front_service
+	protocol
 	user_service
 )
