@@ -6,9 +6,11 @@ import (
 	"core/pkg/traces"
 	. "core/pkg/utils"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/otel"
 	resourcesdk "go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 )
 
@@ -24,10 +26,18 @@ func main() {
 	serviceName := RequiredStringEnv("SERVICE_NAME")
 
 	// Init logger
-	logger, err := NewOtelZapLoggerWithTraceID(logLevel, logPath)
+	zapLogger, err := NewBaseZapFileLogger(logLevel, logPath)
 	if err != nil {
 		panic(err)
 	}
+	logger := NewOtelZapLoggerWithTraceID(
+		otelzap.New(
+			zapLogger,
+			otelzap.WithTraceIDField(true),
+			otelzap.WithMinLevel(zapcore.ErrorLevel),
+			otelzap.WithStackTrace(true),
+		),
+	)
 	defer logger.Sync()
 
 	// Init metrics

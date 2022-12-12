@@ -36,19 +36,6 @@ func NewBaseZapFileLogger(logLevel zapcore.LevelEnabler, logFilePath string) (*z
 	return zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel)), nil
 }
 
-func NewBaseOtelZapLogger(logLevel zapcore.LevelEnabler, logFilePath string) (*otelzap.Logger, error) {
-	logger, err := NewBaseZapFileLogger(logLevel, logFilePath)
-	if err != nil {
-		return nil, err
-	}
-	return otelzap.New(
-		logger,
-		otelzap.WithTraceIDField(true),
-		otelzap.WithMinLevel(zapcore.ErrorLevel),
-		otelzap.WithStackTrace(true),
-	), nil
-}
-
 // OtelZapLoggerWithTraceID expands the capabilities of the logger otelzap.
 // otelzap can only add trace_id to messages that will be passed to the exporter.
 // Functions with suffix `...NoExport` resolve this problem
@@ -56,14 +43,10 @@ type OtelZapLoggerWithTraceID struct {
 	*otelzap.Logger
 }
 
-func NewOtelZapLoggerWithTraceID(logLevel zapcore.LevelEnabler, logFilePath string) (*OtelZapLoggerWithTraceID, error) {
-	logger, err := NewBaseOtelZapLogger(logLevel, logFilePath)
-	if err != nil {
-		return nil, err
-	}
+func NewOtelZapLoggerWithTraceID(logger *otelzap.Logger) *OtelZapLoggerWithTraceID {
 	return &OtelZapLoggerWithTraceID{
 		Logger: logger,
-	}, nil
+	}
 }
 
 func (l *OtelZapLoggerWithTraceID) LogContextNoExport(ctx context.Context, level zapcore.Level, msg string, fields ...zapcore.Field) {

@@ -5,12 +5,14 @@ import (
 	. "core/pkg/loggers"
 	"core/pkg/traces"
 	. "core/pkg/utils"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	resourcesdk "go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"net"
 	proto "protocol/pkg/proto"
@@ -43,10 +45,18 @@ func main() {
 	//fmt.Println("some testing,,,,", viper.GetString("USER_SERVICE_LOG_PATH"))
 
 	// Init logger
-	logger, err := NewOtelZapLoggerWithTraceID(logLevel, logPath)
+	zapLogger, err := NewBaseZapFileLogger(logLevel, logPath)
 	if err != nil {
 		panic(err)
 	}
+	logger := NewOtelZapLoggerWithTraceID(
+		otelzap.New(
+			zapLogger,
+			otelzap.WithTraceIDField(true),
+			otelzap.WithMinLevel(zapcore.ErrorLevel),
+			otelzap.WithStackTrace(true),
+		),
+	)
 	defer logger.Sync()
 
 	// Init database
