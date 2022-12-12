@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	. "core/pkg/loggers"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -12,10 +13,10 @@ import (
 
 type UserMongoRepository struct {
 	collection *mongo.Collection
-	logger     *zap.Logger
+	logger     *OtelZapLoggerWithTraceID
 }
 
-func NewUserMongoRepository(collection *mongo.Collection, logger *zap.Logger) *UserMongoRepository {
+func NewUserMongoRepository(collection *mongo.Collection, logger *OtelZapLoggerWithTraceID) *UserMongoRepository {
 	return &UserMongoRepository{
 		collection: collection,
 		logger:     logger,
@@ -36,7 +37,7 @@ func (r *UserMongoRepository) Create(ctx context.Context, request *enities.User)
 	if err != nil {
 		return "", err
 	}
-	r.logger.Debug("Insert result", zap.String("id", insertResult.InsertedID.(primitive.ObjectID).Hex()))
+	r.logger.DebugContextNoExport(ctx, "Insert result", zap.String("id", insertResult.InsertedID.(primitive.ObjectID).Hex()))
 	return insertResult.InsertedID.(primitive.ObjectID).Hex(), err
 }
 
@@ -52,9 +53,9 @@ func (r *UserMongoRepository) GetById(ctx context.Context, id string) (*enities.
 	if err == nil { // TODO: handle err == mongo.ErrNoDocuments
 		return enities.NewUser(document.Name, document.Surname), nil
 	} else if err == mongo.ErrNoDocuments {
-		r.logger.Debug("User not found", zap.String("id", id))
+		r.logger.DebugContextNoExport(ctx, "User not found", zap.String("id", id))
 		return nil, repositories.UserNotFoundErr
 	}
-	r.logger.Error("Database connection error", zap.String("error", err.Error()))
+	r.logger.ErrorContext(ctx, "Database connection error", zap.String("error", err.Error()))
 	return nil, err
 }

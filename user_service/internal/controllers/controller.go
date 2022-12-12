@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"context"
-	"go.uber.org/zap"
+	. "core/pkg/loggers"
 	proto "protocol/pkg/proto"
 	"user_server/internal/enities"
 )
@@ -14,10 +14,10 @@ type userService interface {
 
 type UserController struct {
 	service userService
-	logger  *zap.Logger
+	logger  *OtelZapLoggerWithTraceID
 }
 
-func NewUserController(service userService, logger *zap.Logger) *UserController {
+func NewUserController(service userService, logger *OtelZapLoggerWithTraceID) *UserController {
 	return &UserController{
 		service: service,
 		logger:  logger,

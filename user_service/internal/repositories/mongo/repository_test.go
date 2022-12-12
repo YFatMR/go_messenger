@@ -2,8 +2,9 @@ package mongo
 
 import (
 	"context"
-	recipe "core/pkg/go_recipes/mongo"
+	recipe "core/pkg/recipes/go/mongo"
 	"github.com/google/uuid"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 	"os"
@@ -43,7 +44,7 @@ func TestUserCreation(t *testing.T) {
 	// initialize repository
 	collection, dropCollection := NewUserMongoCollectionWithDrop(t, testDatabase)
 	defer dropCollection(context.Background(), collection)
-	repository := NewUserMongoRepository(collection, zap.NewNop())
+	repository := NewUserMongoRepository(collection, otelzap.New(zap.NewNop()))
 
 	// start test
 	userData := enities.NewUser("Ivan", "Petrov")
@@ -57,7 +58,7 @@ func TestFindCreatedUser(t *testing.T) {
 	// initialize repository
 	collection, dropCollection := NewUserMongoCollectionWithDrop(t, testDatabase)
 	defer dropCollection(context.Background(), collection)
-	repository := NewUserMongoRepository(collection, zap.NewNop())
+	repository := NewUserMongoRepository(collection, otelzap.New(zap.NewNop()))
 
 	// start test
 	userData := enities.NewUser("Sergey", "Satnav")

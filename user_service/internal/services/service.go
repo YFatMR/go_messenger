@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	"go.uber.org/zap"
+	. "core/pkg/loggers"
 	"user_server/internal/enities"
 )
 
@@ -13,10 +13,10 @@ type userRepository interface {
 
 type UserService struct {
 	repository userRepository
-	logger     *zap.Logger
+	logger     *OtelZapLoggerWithTraceID
 }
 
-func NewUserService(repository userRepository, logger *zap.Logger) *UserService {
+func NewUserService(repository userRepository, logger *OtelZapLoggerWithTraceID) *UserService {
 	return &UserService{
 		repository: repository,
 		logger:     logger,

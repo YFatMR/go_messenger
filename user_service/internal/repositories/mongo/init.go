@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	. "core/pkg/loggers"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
@@ -23,17 +24,19 @@ func NewMongoSettings(mongoUri string, databaseName string, collectionName strin
 	}
 }
 
-func NewMongoCollection(ctx context.Context, settings *MongoSettings) (*mongo.Collection, context.CancelFunc) {
+func NewMongoCollection(ctx context.Context, settings *MongoSettings, logger *OtelZapLoggerWithTraceID) (*mongo.Collection, context.CancelFunc) {
 	ctx, cancel := context.WithTimeout(ctx, settings.connectionTimeout)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(settings.uri))
 	if err != nil {
 		panic(err)
 	}
 
+	logger.Info("Starting Ping mongodb")
 	err = client.Ping(ctx, nil)
 	if err != nil {
 		panic(err)
 	}
+	logger.Info("mongodb Ping successfully finished")
 
 	collection := client.Database(settings.databaseName).Collection(settings.collectionName)
 	return collection, cancel

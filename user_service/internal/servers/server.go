@@ -1,16 +1,11 @@
 package servers
 
 import (
-	"go.uber.org/zap"
+	. "core/pkg/loggers"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/net/context"
 	proto "protocol/pkg/proto"
 )
-
-// // 1 -> many
-// // DBCLient -> cinnection
-// // Controller -> create_user, ...
-// // Repository   -> call create_user 2 times for example (buisness logic)
-// // Server (Endpoints) ->
 
 type userController interface {
 	Create(ctx context.Context, request *proto.UserData) (*proto.UserId, error)
@@ -20,17 +15,23 @@ type userController interface {
 type GRPCUserServer struct {
 	proto.UnimplementedUserServer
 	controller userController
-	logger     *zap.Logger
+	logger     *OtelZapLoggerWithTraceID
+	tracer     trace.Tracer
 }
 
-func NewGRPCUserServer(controller userController, logger *zap.Logger) *GRPCUserServer {
+func NewGRPCUserServer(controller userController, logger *OtelZapLoggerWithTraceID, tracer trace.Tracer) *GRPCUserServer {
 	return &GRPCUserServer{
 		controller: controller,
 		logger:     logger,
+		tracer:     tracer,
 	}
 }
 
 func (s *GRPCUserServer) CreateUser(ctx context.Context, request *proto.UserData) (*proto.UserId, error) {
+	var span trace.Span
+	ctx, span = s.tracer.Start(ctx, "/CreateUser - grpc")
+	defer span.End()
+
 	return s.controller.Create(ctx, request)
 }
 
