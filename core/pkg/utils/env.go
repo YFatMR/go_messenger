@@ -24,7 +24,3 @@ func RequiredIntEnv(envKey string) int {
 	}
 	return intEnv
 }
-
-func GetFullServiceAddress(serviceName string) string {
-	return RequiredStringEnv(serviceName+"_SERVICE_ADDRESS") + ":" + RequiredStringEnv(serviceName+"_SERVICE_PORT")
-}

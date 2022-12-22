@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	. "core/pkg/loggers"
-	. "front_server/internal/user_server"
+	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
+	. "github.com/YFatMR/go_messenger/front_server/internal/user_server"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"

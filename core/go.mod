@@ -1,4 +1,4 @@
-module core
+module github.com/YFatMR/go_messenger/core
 
 go 1.19
 

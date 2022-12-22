@@ -7,20 +7,17 @@ services:
       dockerfile: ./front_service/Dockerfile
 
     container_name: front_service
+    hostname: front_service
     environment:
       - SERVICE_NAME=front_service
 
-      - FRONT_SERVICE_LOG_LEVEL=${FRONT_SERVICE_LOG_LEVEL}
-      - FRONT_SERVICE_LOG_PATH=${FRONT_SERVICE_LOG_PATH}
+      - LOG_LEVEL=${FRONT_SERVICE_LOG_LEVEL}
+      - LOG_PATH=${FRONT_SERVICE_LOG_PATH}
 
-      - FRONT_REST_SERVICE_ADDRESS=front_service
-      - FRONT_REST_SERVICE_PORT=${FRONT_REST_SERVICE_PORT}
+      - REST_SERVICE_ADDRESS=front_service:${FRONT_REST_SERVICE_PORT}
+      - GRPC_SERVICE_ADDRESS=front_service:${FRONT_GRPC_SERVICE_PORT}
 
-      - FRONT_GRPC_SERVICE_ADDRESS=front_service
-      - FRONT_GRPC_SERVICE_PORT=${FRONT_GRPC_SERVICE_PORT}
-
-      - USER_SERVICE_ADDRESS=user_service
-      - USER_SERVICE_PORT=${USER_SERVICE_PORT}
+      - USER_SERVICE_ADDRESS=user_service:${USER_SERVICE_PORT}
 
       - JAEGER_COLLECTOR_ENDPOINT=http://jaeger:${JAEGER_COLLECTOR_PORT}/api/traces
     volumes:
@@ -41,25 +38,30 @@ services:
       dockerfile: ./user_service/Dockerfile
 
     container_name: user_service
+    hostname: user_service
     environment:
       - SERVICE_NAME=user_service
+      - SERVICE_ADDRESS=user_service:${USER_SERVICE_PORT}
 
-      - USER_SERVICE_ADDRESS=user_service
-      - USER_SERVICE_PORT=${USER_SERVICE_PORT}
-      - USER_SERVICE_MONGODB_URI=mongodb://${USER_SERVICE_MONGODB_USERNAME}:${USER_SERVICE_MONGODB_PASSWORD}@user_service_mongodb:${USER_SERVICE_MONGODB_PORT}
-      - USER_SERVICE_MONGODB_DATABASE_NAME=${USER_SERVICE_MONGODB_DATABASE_NAME}
-      - USER_SERVICE_MONGODB_DATABASE_COLLECTION_NAME=${USER_SERVICE_MONGODB_DATABASE_COLLECTION_NAME}
-      - USER_SERVICE_MONGODB_CONNECTION_TIMEOUT_SEC=${USER_SERVICE_MONGODB_CONNECTION_TIMEOUT_SEC}
-      - USER_SERVICE_LOG_LEVEL=${USER_SERVICE_LOG_LEVEL}
-      - USER_SERVICE_LOG_PATH=${USER_SERVICE_LOG_PATH}
+      - MONGODB_URI=mongodb://${USER_SERVICE_MONGODB_USERNAME}:${USER_SERVICE_MONGODB_PASSWORD}@user_service_mongodb:${USER_SERVICE_MONGODB_PORT}
+      - MONGODB_DATABASE_NAME=${USER_SERVICE_MONGODB_DATABASE_NAME}
+      - MONGODB_DATABASE_COLLECTION_NAME=${USER_SERVICE_MONGODB_DATABASE_COLLECTION_NAME}
+      - MONGODB_CONNECTION_TIMEOUT_SEC=${USER_SERVICE_MONGODB_CONNECTION_TIMEOUT_SEC}
+
+      - LOG_LEVEL=${USER_SERVICE_LOG_LEVEL}
+      - LOG_PATH=${USER_SERVICE_LOG_PATH}
 
       - JAEGER_COLLECTOR_ENDPOINT=http://jaeger:${JAEGER_COLLECTOR_PORT}/api/traces
+
+      - METRICS_ADDRESS=user_service:${USER_SERVICE_METRICS_PORT}
+      - METRICS_LISTING_SUFFIX=/metrics
     volumes:
       - type: bind
         source: /home/am/dev/golang/messenger/_log/user_service.log
         target: ${USER_SERVICE_LOG_PATH}
     ports:
-      - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
+      - "9030:${USER_SERVICE_PORT}"
+      - "2112:${USER_SERVICE_METRICS_PORT}"
     depends_on:
       - user_service_mongodb
     networks:
@@ -68,6 +70,7 @@ services:
   user_service_mongodb:
     image: mongo
     container_name: user_service_mongodb
+    hostname: user_service_mongodb
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${USER_SERVICE_MONGODB_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${USER_SERVICE_MONGODB_PASSWORD}
@@ -75,15 +78,53 @@ services:
     #   - ./mongodb:/usr/src/messenger
     ports:
       - "27017:${USER_SERVICE_MONGODB_PORT}"
+    networks:
+      - default
 
   jaeger:
     container_name: jaeger
+    hostname: jaeger
     image: jaegertracing/all-in-one:latest
     ports:
       - "14268:${JAEGER_COLLECTOR_PORT}/udp"
       - "16686:${JAEGER_UI_PORT}"
     networks:
       - default
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    hostname: prometheus
+    environment:
+      TZ: "Europe/Moscow"
+    volumes:
+      - ./prometheus:/etc/prometheus/
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:${PROMETHEUS_UI_PORT}"
+    networks:
+      - default
+
+#  graylog:
+#    image: graylog/graylog:latest
+#    container_name: graylog
+#    hostname: graylog
+#
+#  graylog_mongodb:
+#    image: mongo:latest
+#    container_name: graylog_mongodb
+#    hostname: graylog_mongodb
+#
+#  graylog_elasticsearch:
+#    image: elasticsearch:latest
+#    container_name: graylog_elasticsearch
+#    hostname: graylog_elasticsearch
+#    environment:
+#      -
+
+
+
 
 networks:
   default:

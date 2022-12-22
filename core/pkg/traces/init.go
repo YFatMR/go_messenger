@@ -8,11 +8,6 @@ import (
 )
 
 func NewTraceProvider(exporter tracesdk.SpanExporter, resource *resourcesdk.Resource) (*tracesdk.TracerProvider, error) {
-	//exporter, err := newJaegerExporter("http://" + jaegerEndpoint + "/api/traces")
-	//if err != nil {
-	//	return nil, err
-	//}
-	// resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceNameKey.String("Front service"))
 	traceProvider := tracesdk.NewTracerProvider(
 		tracesdk.WithBatcher(exporter),
 		tracesdk.WithResource(resource),

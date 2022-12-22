@@ -2,47 +2,41 @@ package main
 
 import (
 	"context"
-	. "core/pkg/loggers"
-	"core/pkg/traces"
-	. "core/pkg/utils"
+	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/traces"
+	. "github.com/YFatMR/go_messenger/core/pkg/utils"
+	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
+	"github.com/YFatMR/go_messenger/user_service/internal/controllers"
+	"github.com/YFatMR/go_messenger/user_service/internal/repositories/mongo"
+	"github.com/YFatMR/go_messenger/user_service/internal/servers"
+	"github.com/YFatMR/go_messenger/user_service/internal/services"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	resourcesdk "go.opentelemetry.io/otel/sdk/resource"
-	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"net"
-	proto "protocol/pkg/proto"
+	"net/http"
 	"time"
-	"user_server/internal/controllers"
-	"user_server/internal/repositories/mongo"
-	"user_server/internal/servers"
-	"user_server/internal/services"
 )
-
-// GOMAXPROC
-
-func newJaegerExporter(jaegerEndpoint string) (tracesdk.SpanExporter, error) {
-	return jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerEndpoint)))
-}
 
 func main() {
 	time.Sleep(5 * time.Second)
 
 	// Init environment vars
-	logLevel := RequiredZapcoreLogLevelEnv("USER_SERVICE_LOG_LEVEL")
-	logPath := RequiredStringEnv("USER_SERVICE_LOG_PATH")
-	mongoUri := RequiredStringEnv("USER_SERVICE_MONGODB_URI")
-	databaseName := RequiredStringEnv("USER_SERVICE_MONGODB_DATABASE_NAME")
-	collectionName := RequiredStringEnv("USER_SERVICE_MONGODB_DATABASE_COLLECTION_NAME")
-	connectionTimeout := RequiredIntEnv("USER_SERVICE_MONGODB_CONNECTION_TIMEOUT_SEC")
+	logLevel := RequiredZapcoreLogLevelEnv("LOG_LEVEL")
+	logPath := RequiredStringEnv("LOG_PATH")
+	mongoUri := RequiredStringEnv("MONGODB_URI")
+	databaseName := RequiredStringEnv("MONGODB_DATABASE_NAME")
+	collectionName := RequiredStringEnv("MONGODB_DATABASE_COLLECTION_NAME")
+	connectionTimeout := RequiredIntEnv("MONGODB_CONNECTION_TIMEOUT_SEC")
 	jaegerEndpoint := RequiredStringEnv("JAEGER_COLLECTOR_ENDPOINT")
 	serviceName := RequiredStringEnv("SERVICE_NAME")
-	userServerAddress := GetFullServiceAddress("USER")
-	//fmt.Println("some testing,,,,", viper.GetString("USER_SERVICE_LOG_PATH"))
+	userServiceAddress := RequiredStringEnv("SERVICE_ADDRESS")
 
 	// Init logger
 	zapLogger, err := NewBaseZapFileLogger(logLevel, logPath)
@@ -66,9 +60,9 @@ func main() {
 	mongoCollection, cancelConnection := mongo.NewMongoCollection(mongoCtx, mongoSetting, logger)
 	defer cancelConnection()
 
-	// Init metrics
+	// Init tracing
 	logger.Info("Init metrics")
-	exporter, err := traces.NewJaegerExporter(jaegerEndpoint)
+	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerEndpoint)))
 	if err != nil {
 		panic(err)
 	}
@@ -86,11 +80,22 @@ func main() {
 	}()
 	tracer := otel.Tracer(serviceName)
 
+	// Init metrics
+
+	go func(logger *OtelZapLoggerWithTraceID) {
+		http.Handle(RequiredStringEnv("METRICS_LISTING_SUFFIX"), promhttp.Handler())
+		metricsEndpoint := RequiredStringEnv("METRICS_ADDRESS")
+		if err := http.ListenAndServe(metricsEndpoint, nil); err != nil {
+			logger.Error("Can't up metrics server with endpoint" + metricsEndpoint + ". Operation finished with error: " + err.Error())
+			panic(err)
+		}
+	}(logger)
+
 	// Init Server
 	logger.Info("Init server")
-	userRepository := mongo.NewUserMongoRepository(mongoCollection, logger)
-	userService := services.NewUserService(userRepository, logger)
-	userController := controllers.NewUserController(userService, logger)
+	userRepository := mongo.NewUserMongoRepository(mongoCollection, logger, tracer)
+	userService := services.NewUserService(userRepository, logger, tracer)
+	userController := controllers.NewUserController(userService, logger, tracer)
 	gRPCUserServer := servers.NewGRPCUserServer(userController, logger, tracer)
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
@@ -103,7 +108,7 @@ func main() {
 
 	// Listen connection
 	logger.Info("Server successfully setup. Starting listen...")
-	listener, err := net.Listen("tcp", userServerAddress)
+	listener, err := net.Listen("tcp", userServiceAddress)
 	if err != nil {
 		panic(err)
 	}

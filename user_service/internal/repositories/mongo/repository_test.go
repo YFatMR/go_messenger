@@ -2,15 +2,16 @@ package mongo
 
 import (
 	"context"
-	"core/pkg/loggers"
-	recipe "core/pkg/recipes/go/mongo"
+	"github.com/YFatMR/go_messenger/core/pkg/loggers"
+	recipe "github.com/YFatMR/go_messenger/core/pkg/recipes/go/mongo"
+	"github.com/YFatMR/go_messenger/user_service/internal/enities"
 	"github.com/google/uuid"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"os"
 	"testing"
-	"user_server/internal/enities"
 )
 
 var testDatabase *mongo.Database
@@ -45,7 +46,8 @@ func TestUserCreation(t *testing.T) {
 	// initialize repository
 	collection, dropCollection := NewUserMongoCollectionWithDrop(t, testDatabase)
 	defer dropCollection(context.Background(), collection)
-	repository := NewUserMongoRepository(collection, loggers.NewOtelZapLoggerWithTraceID(otelzap.New(zap.NewNop())))
+	tracer := otel.Tracer("fake")
+	repository := NewUserMongoRepository(collection, loggers.NewOtelZapLoggerWithTraceID(otelzap.New(zap.NewNop())), tracer)
 
 	// start test
 	userData := enities.NewUser("Ivan", "Petrov")
@@ -59,7 +61,8 @@ func TestFindCreatedUser(t *testing.T) {
 	// initialize repository
 	collection, dropCollection := NewUserMongoCollectionWithDrop(t, testDatabase)
 	defer dropCollection(context.Background(), collection)
-	repository := NewUserMongoRepository(collection, loggers.NewOtelZapLoggerWithTraceID(otelzap.New(zap.NewNop())))
+	tracer := otel.Tracer("fake")
+	repository := NewUserMongoRepository(collection, loggers.NewOtelZapLoggerWithTraceID(otelzap.New(zap.NewNop())), tracer)
 
 	// start test
 	userData := enities.NewUser("Sergey", "Satnav")

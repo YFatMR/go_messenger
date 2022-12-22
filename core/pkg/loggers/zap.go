@@ -2,7 +2,7 @@ package loggers
 
 import (
 	"context"
-	. "core/pkg/utils"
+	. "github.com/YFatMR/go_messenger/core/pkg/utils"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -49,6 +49,7 @@ func NewOtelZapLoggerWithTraceID(logger *otelzap.Logger) *OtelZapLoggerWithTrace
 	}
 }
 
+// LogContextNoExport Provide an ability to write trace ID without exporting
 func (l *OtelZapLoggerWithTraceID) LogContextNoExport(ctx context.Context, level zapcore.Level, msg string, fields ...zapcore.Field) {
 	span := trace.SpanFromContext(ctx)
 	traceID := span.SpanContext().TraceID().String()

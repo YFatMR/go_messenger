@@ -1,4 +1,4 @@
-module protocol
+module github.com/YFatMR/go_messenger/protocol
 
 go 1.19
 

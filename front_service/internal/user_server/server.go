@@ -2,13 +2,13 @@ package user_server
 
 import (
 	"context"
-	. "core/pkg/loggers"
+	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
+	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	proto "protocol/pkg/proto"
 )
 
 // endpoints

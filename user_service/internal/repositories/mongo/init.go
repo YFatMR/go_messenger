@@ -2,7 +2,7 @@ package mongo
 
 import (
 	"context"
-	. "core/pkg/loggers"
+	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"

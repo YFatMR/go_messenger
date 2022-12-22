@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	. "core/pkg/loggers"
-	"core/pkg/traces"
-	. "core/pkg/utils"
+	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/traces"
+	. "github.com/YFatMR/go_messenger/core/pkg/utils"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
 	resourcesdk "go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.uber.org/zap/zapcore"
@@ -17,11 +18,11 @@ import (
 func main() {
 
 	// Init environment vars
-	logLevel := RequiredZapcoreLogLevelEnv("FRONT_SERVICE_LOG_LEVEL")
-	logPath := RequiredStringEnv("FRONT_SERVICE_LOG_PATH")
-	frontRestUserServerAddress := GetFullServiceAddress("FRONT_REST")
-	frontGrpcUserServerAddress := GetFullServiceAddress("FRONT_GRPC")
-	userServerAddress := GetFullServiceAddress("USER")
+	logLevel := RequiredZapcoreLogLevelEnv("LOG_LEVEL")
+	logPath := RequiredStringEnv("LOG_PATH")
+	frontRestUserServerAddress := RequiredStringEnv("REST_SERVICE_ADDRESS")
+	frontGrpcUserServerAddress := RequiredStringEnv("GRPC_SERVICE_ADDRESS")
+	userServerAddress := RequiredStringEnv("USER_SERVICE_ADDRESS")
 	jaegerEndpoint := RequiredStringEnv("JAEGER_COLLECTOR_ENDPOINT")
 	serviceName := RequiredStringEnv("SERVICE_NAME")
 
@@ -40,8 +41,8 @@ func main() {
 	)
 	defer logger.Sync()
 
-	// Init metrics
-	exporter, err := traces.NewJaegerExporter(jaegerEndpoint)
+	// Init tracing
+	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerEndpoint)))
 	if err != nil {
 		panic(err)
 	}

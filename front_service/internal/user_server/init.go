@@ -2,12 +2,12 @@ package user_server
 
 import (
 	"context"
-	. "core/pkg/loggers"
+	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
+	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	proto "protocol/pkg/proto"
 )
 
 func RegisterRestUserServer(ctx context.Context, mux *runtime.ServeMux, grpcFrontServerAddress string) {

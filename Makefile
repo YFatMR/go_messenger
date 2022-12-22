@@ -9,10 +9,10 @@ build: create_binary_dir
 	go build -o ${BINARY_DIR}/user_service ${CURRENT_DIR}/user_service/cmd
 
 build_docker_compose: build
-	sudo docker-compose build --no-cache
+	sudo docker-compose build
 
 run: build_docker_compose
-	sudo docker-compose --env-file ${CURRENT_DIR}/.env --verbose up  --force-recreate --remove-orphans
+	sudo docker-compose --env-file ${CURRENT_DIR}/.env --verbose up
 
 run-tests:
 	go test ${CURRENT_DIR}/user_service/internal/repositories/mongo/ -v

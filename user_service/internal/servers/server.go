@@ -1,10 +1,10 @@
 package servers
 
 import (
-	. "core/pkg/loggers"
+	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
+	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/net/context"
-	proto "protocol/pkg/proto"
 )
 
 type userController interface {
@@ -29,7 +29,7 @@ func NewGRPCUserServer(controller userController, logger *OtelZapLoggerWithTrace
 
 func (s *GRPCUserServer) CreateUser(ctx context.Context, request *proto.UserData) (*proto.UserId, error) {
 	var span trace.Span
-	ctx, span = s.tracer.Start(ctx, "/CreateUser - grpc")
+	ctx, span = s.tracer.Start(ctx, "/GRPCUserServer CreateUser")
 	defer span.End()
 
 	return s.controller.Create(ctx, request)

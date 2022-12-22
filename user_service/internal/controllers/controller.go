@@ -2,9 +2,10 @@ package controllers
 
 import (
 	"context"
-	. "core/pkg/loggers"
-	proto "protocol/pkg/proto"
-	"user_server/internal/enities"
+	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
+	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
+	"github.com/YFatMR/go_messenger/user_service/internal/enities"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type userService interface {
@@ -15,12 +16,14 @@ type userService interface {
 type UserController struct {
 	service userService
 	logger  *OtelZapLoggerWithTraceID
+	tracer  trace.Tracer
 }
 
-func NewUserController(service userService, logger *OtelZapLoggerWithTraceID) *UserController {
+func NewUserController(service userService, logger *OtelZapLoggerWithTraceID, tracer trace.Tracer) *UserController {
 	return &UserController{
 		service: service,
 		logger:  logger,
+		tracer:  tracer,
 	}
 }
 
