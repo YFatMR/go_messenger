@@ -12,8 +12,7 @@ import (
 
 func RegisterRestUserServer(ctx context.Context, mux *runtime.ServeMux, grpcFrontServerAddress string) {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	err := proto.RegisterFrontUserHandlerFromEndpoint(ctx, mux, grpcFrontServerAddress, opts)
-	if err != nil {
+	if err := proto.RegisterFrontUserHandlerFromEndpoint(ctx, mux, grpcFrontServerAddress, opts); err != nil {
 		panic(err)
 	}
 }
