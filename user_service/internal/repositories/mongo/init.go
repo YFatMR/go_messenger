@@ -2,7 +2,7 @@ package mongo
 
 import (
 	"context"
-	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
@@ -24,7 +24,7 @@ func NewMongoSettings(mongoUri string, databaseName string, collectionName strin
 	}
 }
 
-func NewMongoCollection(ctx context.Context, settings *MongoSettings, logger *OtelZapLoggerWithTraceID) (*mongo.Collection, context.CancelFunc) {
+func NewMongoCollection(ctx context.Context, settings *MongoSettings, logger *loggers.OtelZapLoggerWithTraceID) (*mongo.Collection, context.CancelFunc) {
 	ctx, cancel := context.WithTimeout(ctx, settings.connectionTimeout)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(settings.uri))
 	if err != nil {

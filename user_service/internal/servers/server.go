@@ -1,7 +1,7 @@
 package servers
 
 import (
-	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/net/context"
@@ -15,11 +15,11 @@ type userController interface {
 type GRPCUserServer struct {
 	proto.UnimplementedUserServer
 	controller userController
-	logger     *OtelZapLoggerWithTraceID
+	logger     *loggers.OtelZapLoggerWithTraceID
 	tracer     trace.Tracer
 }
 
-func NewGRPCUserServer(controller userController, logger *OtelZapLoggerWithTraceID, tracer trace.Tracer) *GRPCUserServer {
+func NewGRPCUserServer(controller userController, logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer) *GRPCUserServer {
 	return &GRPCUserServer{
 		controller: controller,
 		logger:     logger,

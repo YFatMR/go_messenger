@@ -2,7 +2,7 @@ package mongo
 
 import (
 	"context"
-	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"github.com/YFatMR/go_messenger/user_service/internal/enities"
 	"github.com/YFatMR/go_messenger/user_service/internal/metrics/prometheus"
 	"github.com/YFatMR/go_messenger/user_service/internal/repositories"
@@ -16,11 +16,11 @@ import (
 
 type UserMongoRepository struct {
 	collection *mongo.Collection
-	logger     *OtelZapLoggerWithTraceID
+	logger     *loggers.OtelZapLoggerWithTraceID
 	tracer     trace.Tracer
 }
 
-func NewUserMongoRepository(collection *mongo.Collection, logger *OtelZapLoggerWithTraceID, tracer trace.Tracer) *UserMongoRepository {
+func NewUserMongoRepository(collection *mongo.Collection, logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer) *UserMongoRepository {
 	return &UserMongoRepository{
 		collection: collection,
 		logger:     logger,
@@ -60,7 +60,7 @@ func (r *UserMongoRepository) GetById(ctx context.Context, id string) (foundUser
 	var document userDocument
 	objectId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, repositories.WrongUserIdFormatErr
+		return nil, repositories.ErrWrongUserIDFormat
 	}
 	err = r.collection.FindOne(ctx, bson.D{
 		{"_id", objectId},
@@ -69,7 +69,7 @@ func (r *UserMongoRepository) GetById(ctx context.Context, id string) (foundUser
 		return enities.NewUser(document.Name, document.Surname), nil
 	} else if err == mongo.ErrNoDocuments {
 		r.logger.DebugContextNoExport(ctx, "User not found", zap.String("id", id))
-		return nil, repositories.UserNotFoundErr
+		return nil, repositories.ErrUserNotFound
 	}
 	r.logger.ErrorContext(ctx, "Database connection error", zap.String("error", err.Error()))
 	return nil, err

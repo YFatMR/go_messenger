@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"github.com/YFatMR/go_messenger/user_service/internal/enities"
 	"github.com/YFatMR/go_messenger/user_service/internal/metrics/prometheus"
 	"go.opentelemetry.io/otel/trace"
@@ -15,11 +15,11 @@ type userRepository interface {
 
 type UserService struct {
 	repository userRepository
-	logger     *OtelZapLoggerWithTraceID
+	logger     *loggers.OtelZapLoggerWithTraceID
 	tracer     trace.Tracer
 }
 
-func NewUserService(repository userRepository, logger *OtelZapLoggerWithTraceID, tracer trace.Tracer) *UserService {
+func NewUserService(repository userRepository, logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer) *UserService {
 	return &UserService{
 		repository: repository,
 		logger:     logger,

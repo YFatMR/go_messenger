@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
-	. "github.com/YFatMR/go_messenger/front_server/internal/user_server"
+	"github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/front_server/internal/user_server"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -12,20 +12,20 @@ import (
 	"net/http"
 )
 
-func runRest(ctx context.Context, mux *runtime.ServeMux, restFrontServiceAddress string, grpcFrontServiceAddress string, logger *OtelZapLoggerWithTraceID) {
+func runRest(ctx context.Context, mux *runtime.ServeMux, restFrontServiceAddress string, grpcFrontServiceAddress string, logger *loggers.OtelZapLoggerWithTraceID) {
 	logger.Info(
 		"Starting to register REST user server",
 		zap.String("REST front server address", restFrontServiceAddress),
 		zap.String("gRPC front service address", grpcFrontServiceAddress),
 	)
-	RegisterRestUserServer(ctx, mux, grpcFrontServiceAddress)
+	user_server.RegisterRestUserServer(ctx, mux, grpcFrontServiceAddress)
 	logger.Info("Starting serve REST front server")
 	if err := http.ListenAndServe(restFrontServiceAddress, mux); err != nil {
 		panic(err)
 	}
 }
 
-func runGrpc(grpcServer *grpc.Server, grpcFrontServiceAddress string, userServerAddress string, logger *OtelZapLoggerWithTraceID, tracer trace.Tracer) {
+func runGrpc(grpcServer *grpc.Server, grpcFrontServiceAddress string, userServerAddress string, logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer) {
 	listener, err := net.Listen("tcp", grpcFrontServiceAddress)
 	if err != nil {
 		panic(err)
@@ -35,7 +35,7 @@ func runGrpc(grpcServer *grpc.Server, grpcFrontServiceAddress string, userServer
 		zap.String("grpc front server address", grpcFrontServiceAddress),
 		zap.String("user server address", userServerAddress),
 	)
-	RegisterGrpcUserServer(grpcServer, userServerAddress, logger, tracer)
+	user_server.RegisterGrpcUserServer(grpcServer, userServerAddress, logger, tracer)
 	logger.Info("Starting serve gRPC front server")
 	if err := grpcServer.Serve(listener); err != nil {
 		panic(err)

@@ -3,7 +3,7 @@ package mongo
 import (
 	"context"
 	"fmt"
-	"github.com/ory/dockertest/v3"
+	dockertest "github.com/ory/dockertest/v3" // alias for golangci-lint
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )

@@ -1,9 +1,8 @@
 go 1.19
 
 use (
-	chat_service
-	core
-	front_service
-	protocol
-	user_service
+	./core
+	./front_service
+	./protocol
+	./user_service
 )

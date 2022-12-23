@@ -17,7 +17,12 @@ issues:
         - dupl
         - gocyclo
         - gosec
-
+    - path: zap.go # core/pkg/loggers/zap.go
+      linters:
+        - typecheck # Problems with embedded structure from other package https://github.com/golangci/golangci-lint/issues/2286
+    - path: cgo.go # snap/golangci-lint/104/src/runtime/cgo/cgo.go
+      linters:
+        - typecheck # could not import C (cgo preprocessing failed) (typecheck)
 linters:
   disable-all: true
   enable:

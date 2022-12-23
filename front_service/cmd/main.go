@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"github.com/YFatMR/go_messenger/core/pkg/traces"
 	. "github.com/YFatMR/go_messenger/core/pkg/utils"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -18,7 +18,7 @@ import (
 func main() {
 
 	// Init environment vars
-	logLevel := RequiredZapcoreLogLevelEnv("LOG_LEVEL")
+	logLevel := loggers.RequiredZapcoreLogLevelEnv("LOG_LEVEL")
 	logPath := RequiredStringEnv("LOG_PATH")
 	frontRestUserServerAddress := RequiredStringEnv("REST_SERVICE_ADDRESS")
 	frontGrpcUserServerAddress := RequiredStringEnv("GRPC_SERVICE_ADDRESS")
@@ -27,11 +27,11 @@ func main() {
 	serviceName := RequiredStringEnv("SERVICE_NAME")
 
 	// Init logger
-	zapLogger, err := NewBaseZapFileLogger(logLevel, logPath)
+	zapLogger, err := loggers.NewBaseZapFileLogger(logLevel, logPath)
 	if err != nil {
 		panic(err)
 	}
-	logger := NewOtelZapLoggerWithTraceID(
+	logger := loggers.NewOtelZapLoggerWithTraceID(
 		otelzap.New(
 			zapLogger,
 			otelzap.WithTraceIDField(true),

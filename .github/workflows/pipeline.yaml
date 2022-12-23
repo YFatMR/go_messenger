@@ -20,6 +20,12 @@ jobs:
       - name: Display Go version
         run: go version
 
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.50.1
+          args: --config .golangci.yml -- $(go work edit -json | jq -c -r '[.Use[].DiskPath] | map_values(. + "/...")[]')
+
       - name: Build
         run: make build
 

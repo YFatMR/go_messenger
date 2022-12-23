@@ -2,7 +2,7 @@ package user_server
 
 import (
 	"context"
-	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel/attribute"
@@ -16,11 +16,11 @@ import (
 type frontUserServer struct {
 	proto.UnimplementedFrontUserServer
 	userServerAddress string
-	logger            *OtelZapLoggerWithTraceID
+	logger            *loggers.OtelZapLoggerWithTraceID
 	tracer            trace.Tracer
 }
 
-func newFrontUserServer(userServerAddress string, logger *OtelZapLoggerWithTraceID, tracer trace.Tracer) *frontUserServer {
+func newFrontUserServer(userServerAddress string, logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer) *frontUserServer {
 	return &frontUserServer{
 		userServerAddress: userServerAddress,
 		logger:            logger,

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	. "github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"github.com/YFatMR/go_messenger/core/pkg/traces"
 	. "github.com/YFatMR/go_messenger/core/pkg/utils"
 	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
@@ -28,7 +28,7 @@ func main() {
 	time.Sleep(5 * time.Second)
 
 	// Init environment vars
-	logLevel := RequiredZapcoreLogLevelEnv("LOG_LEVEL")
+	logLevel := loggers.RequiredZapcoreLogLevelEnv("LOG_LEVEL")
 	logPath := RequiredStringEnv("LOG_PATH")
 	mongoUri := RequiredStringEnv("MONGODB_URI")
 	databaseName := RequiredStringEnv("MONGODB_DATABASE_NAME")
@@ -39,11 +39,11 @@ func main() {
 	userServiceAddress := RequiredStringEnv("SERVICE_ADDRESS")
 
 	// Init logger
-	zapLogger, err := NewBaseZapFileLogger(logLevel, logPath)
+	zapLogger, err := loggers.NewBaseZapFileLogger(logLevel, logPath)
 	if err != nil {
 		panic(err)
 	}
-	logger := NewOtelZapLoggerWithTraceID(
+	logger := loggers.NewOtelZapLoggerWithTraceID(
 		otelzap.New(
 			zapLogger,
 			otelzap.WithTraceIDField(true),
@@ -82,7 +82,7 @@ func main() {
 
 	// Init metrics
 
-	go func(logger *OtelZapLoggerWithTraceID) {
+	go func(logger *loggers.OtelZapLoggerWithTraceID) {
 		http.Handle(RequiredStringEnv("METRICS_LISTING_SUFFIX"), promhttp.Handler())
 		metricsEndpoint := RequiredStringEnv("METRICS_ADDRESS")
 		if err := http.ListenAndServe(metricsEndpoint, nil); err != nil {
