@@ -6,6 +6,9 @@ on:
       - main
       - dev
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -24,7 +27,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: v1.50.1
-          args: --config .golangci.yml -- ./core/... ./front_service/... ./protocol/... ./user_service/...
+          args: --config ./.golangci.yml ./core/... ./front_service/... ./protocol/... ./user_service/...
 
       - name: Build
         run: make build
