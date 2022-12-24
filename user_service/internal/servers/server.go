@@ -8,8 +8,8 @@ import (
 )
 
 type userController interface {
-	Create(ctx context.Context, request *proto.UserData) (*proto.UserId, error)
-	GetById(ctx context.Context, request *proto.UserId) (*proto.UserData, error)
+	Create(ctx context.Context, request *proto.UserData) (*proto.UserID, error)
+	GetByID(ctx context.Context, request *proto.UserID) (*proto.UserData, error)
 }
 
 type GRPCUserServer struct {
@@ -19,7 +19,9 @@ type GRPCUserServer struct {
 	tracer     trace.Tracer
 }
 
-func NewGRPCUserServer(controller userController, logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer) *GRPCUserServer {
+func NewGRPCUserServer(controller userController, logger *loggers.OtelZapLoggerWithTraceID,
+	tracer trace.Tracer,
+) *GRPCUserServer {
 	return &GRPCUserServer{
 		controller: controller,
 		logger:     logger,
@@ -27,7 +29,7 @@ func NewGRPCUserServer(controller userController, logger *loggers.OtelZapLoggerW
 	}
 }
 
-func (s *GRPCUserServer) CreateUser(ctx context.Context, request *proto.UserData) (*proto.UserId, error) {
+func (s *GRPCUserServer) CreateUser(ctx context.Context, request *proto.UserData) (*proto.UserID, error) {
 	var span trace.Span
 	ctx, span = s.tracer.Start(ctx, "/GRPCUserServer CreateUser")
 	defer span.End()
@@ -35,6 +37,6 @@ func (s *GRPCUserServer) CreateUser(ctx context.Context, request *proto.UserData
 	return s.controller.Create(ctx, request)
 }
 
-func (s *GRPCUserServer) GetUserById(ctx context.Context, request *proto.UserId) (*proto.UserData, error) {
-	return s.controller.GetById(ctx, request)
+func (s *GRPCUserServer) GetUserByID(ctx context.Context, request *proto.UserID) (*proto.UserData, error) {
+	return s.controller.GetByID(ctx, request)
 }

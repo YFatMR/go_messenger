@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/YFatMR/go_messenger/user_service/internal/enities"
@@ -10,7 +11,7 @@ import (
 
 type userService interface {
 	Create(ctx context.Context, request *enities.User) (string, error)
-	GetById(ctx context.Context, id string) (*enities.User, error)
+	GetByID(ctx context.Context, id string) (*enities.User, error)
 }
 
 type UserController struct {
@@ -19,7 +20,9 @@ type UserController struct {
 	tracer  trace.Tracer
 }
 
-func NewUserController(service userService, logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer) *UserController {
+func NewUserController(service userService, logger *loggers.OtelZapLoggerWithTraceID,
+	tracer trace.Tracer,
+) *UserController {
 	return &UserController{
 		service: service,
 		logger:  logger,
@@ -27,20 +30,20 @@ func NewUserController(service userService, logger *loggers.OtelZapLoggerWithTra
 	}
 }
 
-func (s *UserController) Create(ctx context.Context, request *proto.UserData) (*proto.UserId, error) {
+func (s *UserController) Create(ctx context.Context, request *proto.UserData) (*proto.UserID, error) {
 	user := enities.NewUser(request.Name, request.Surname)
-	insertedId, err := s.service.Create(ctx, user)
+	insertedID, err := s.service.Create(ctx, user)
 	if err != nil {
 		return nil, err
 	}
-	return &proto.UserId{
-		Id: insertedId,
+	return &proto.UserID{
+		ID: insertedID,
 	}, nil
 }
 
-func (s *UserController) GetById(ctx context.Context, request *proto.UserId) (*proto.UserData, error) {
-	userId := request.GetId()
-	userData, err := s.service.GetById(ctx, userId)
+func (s *UserController) GetByID(ctx context.Context, request *proto.UserID) (*proto.UserData, error) {
+	UserID := request.GetID()
+	userData, err := s.service.GetByID(ctx, UserID)
 	if err != nil {
 		return nil, err
 	}

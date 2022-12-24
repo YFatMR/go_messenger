@@ -2,6 +2,9 @@ package mongo
 
 import (
 	"context"
+	"os"
+	"testing"
+
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	recipe "github.com/YFatMR/go_messenger/core/pkg/recipes/go/mongo"
 	"github.com/YFatMR/go_messenger/user_service/internal/enities"
@@ -10,8 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"os"
-	"testing"
 )
 
 var testDatabase *mongo.Database
@@ -33,7 +34,10 @@ func NewDatabaseCollection(database *mongo.Database) *mongo.Collection {
 	return database.Collection(uuid.New().String())
 }
 
-func NewUserMongoCollectionWithDrop(t *testing.T, database *mongo.Database) (*mongo.Collection, func(context.Context, *mongo.Collection)) {
+func NewUserMongoCollectionWithDrop(t *testing.T,
+	database *mongo.Database,
+) (*mongo.Collection, func(context.Context, *mongo.Collection)) {
+	t.Helper()
 	return NewDatabaseCollection(database), func(ctx context.Context, collection *mongo.Collection) {
 		err := collection.Drop(ctx)
 		if err != nil {
@@ -47,7 +51,8 @@ func TestUserCreation(t *testing.T) {
 	collection, dropCollection := NewUserMongoCollectionWithDrop(t, testDatabase)
 	defer dropCollection(context.Background(), collection)
 	tracer := otel.Tracer("fake")
-	repository := NewUserMongoRepository(collection, loggers.NewOtelZapLoggerWithTraceID(otelzap.New(zap.NewNop())), tracer)
+	nopLogger := loggers.NewOtelZapLoggerWithTraceID(otelzap.New(zap.NewNop()))
+	repository := NewUserMongoRepository(collection, nopLogger, tracer)
 
 	// start test
 	userData := enities.NewUser("Ivan", "Petrov")
@@ -62,21 +67,22 @@ func TestFindCreatedUser(t *testing.T) {
 	collection, dropCollection := NewUserMongoCollectionWithDrop(t, testDatabase)
 	defer dropCollection(context.Background(), collection)
 	tracer := otel.Tracer("fake")
-	repository := NewUserMongoRepository(collection, loggers.NewOtelZapLoggerWithTraceID(otelzap.New(zap.NewNop())), tracer)
+	nopLogger := loggers.NewOtelZapLoggerWithTraceID(otelzap.New(zap.NewNop()))
+	repository := NewUserMongoRepository(collection, nopLogger, tracer)
 
 	// start test
 	userData := enities.NewUser("Sergey", "Satnav")
-	userId, err := repository.Create(context.Background(), userData)
+	UserID, err := repository.Create(context.Background(), userData)
 	if err != nil {
 		t.Fatalf("User creation failed with error: %s", err)
 	}
 
-	responseUserData, err := repository.GetById(context.Background(), userId)
+	responseUserData, err := repository.GetByID(context.Background(), UserID)
 	if err != nil {
 		t.Fatalf("User search failed with error: %s", err)
 	}
 	if responseUserData == nil {
-		t.Fatalf("User with id %s not exist", userId)
+		t.Fatalf("User with id %s not exist", UserID)
 	}
 
 	if *userData != *responseUserData {

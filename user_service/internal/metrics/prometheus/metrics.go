@@ -7,13 +7,13 @@ import (
 
 // Naming rule: https://prometheus.io/docs/practices/naming/
 
-// Common tags
+// Common tags.
 const (
 	OkStatusTag    = "ok"
 	ErrorStatusTag = "error"
 )
 
-// Metrics for high level endpoints (gRPC endpoints)
+// Metrics for high level endpoints (gRPC endpoints).
 const (
 	ServerSideErrorRequestTag = "server_side"
 	ClientSideErrorRequestTag = "user_side"
@@ -30,7 +30,7 @@ var (
 	}, []string{"endpoint", "error_type"})
 )
 
-// Metrics for database
+// Metrics for database.
 const (
 	InsertOperationTag = "insert"
 	FindOperationTag   = "find"

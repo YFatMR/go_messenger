@@ -7,15 +7,15 @@ import "user.proto";
 import "google/api/annotations.proto";
 
 service FrontUser {
-  rpc CreateUser (UserData) returns (UserId) {
+  rpc CreateUser (UserData) returns (UserID) {
     option (google.api.http) = {
       post: "/users"
       body: "*"
     };
   }
-  rpc GetUserById (UserId) returns (UserData) {
+  rpc GetUserByID (UserID) returns (UserData) {
     option (google.api.http) = {
-      get: "/users/{id}"
+      get: "/users/{ID}"
     };
   }
 }

@@ -7,7 +7,9 @@ import (
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 )
 
-func NewTraceProvider(exporter tracesdk.SpanExporter, resource *resourcesdk.Resource) (*tracesdk.TracerProvider, error) {
+func NewTraceProvider(exporter tracesdk.SpanExporter,
+	resource *resourcesdk.Resource,
+) (*tracesdk.TracerProvider, error) {
 	traceProvider := tracesdk.NewTracerProvider(
 		tracesdk.WithBatcher(exporter),
 		tracesdk.WithResource(resource),

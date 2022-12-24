@@ -1,8 +1,9 @@
 package mongo
 
 import (
-	"github.com/YFatMR/go_messenger/user_service/internal/metrics/prometheus"
 	"time"
+
+	"github.com/YFatMR/go_messenger/user_service/internal/metrics/prometheus"
 )
 
 func collectDatabaseQueryMetrics(startTime time.Time, operationTag string, err *error) {

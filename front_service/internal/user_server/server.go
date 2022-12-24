@@ -1,7 +1,8 @@
-package user_server
+package userserver
 
 import (
 	"context"
+
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -20,7 +21,9 @@ type frontUserServer struct {
 	tracer            trace.Tracer
 }
 
-func newFrontUserServer(userServerAddress string, logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer) *frontUserServer {
+func newFrontUserServer(userServerAddress string, logger *loggers.OtelZapLoggerWithTraceID,
+	tracer trace.Tracer,
+) *frontUserServer {
 	return &frontUserServer{
 		userServerAddress: userServerAddress,
 		logger:            logger,
@@ -28,7 +31,7 @@ func newFrontUserServer(userServerAddress string, logger *loggers.OtelZapLoggerW
 	}
 }
 
-func (s *frontUserServer) CreateUser(ctx context.Context, request *proto.UserData) (*proto.UserId, error) {
+func (s *frontUserServer) CreateUser(ctx context.Context, request *proto.UserData) (*proto.UserID, error) {
 	var span trace.Span
 	ctx, span = s.tracer.Start(ctx, "/SpanCreateUser", trace.WithAttributes(attribute.String("extra.key1", "extra.value")))
 	defer span.End()
@@ -46,12 +49,12 @@ func (s *frontUserServer) CreateUser(ctx context.Context, request *proto.UserDat
 	return client.CreateUser(ctx, request)
 }
 
-func (s *frontUserServer) GetUserById(ctx context.Context, request *proto.UserId) (*proto.UserData, error) {
-	s.logger.DebugContextNoExport(ctx, "called GetUserById endpoint")
+func (s *frontUserServer) GetUserByID(ctx context.Context, request *proto.UserID) (*proto.UserData, error) {
+	s.logger.DebugContextNoExport(ctx, "called GetUserByID endpoint")
 	conn, err := grpc.Dial(s.userServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
 	client := proto.NewUserClient(conn)
-	return client.GetUserById(ctx, request)
+	return client.GetUserByID(ctx, request)
 }

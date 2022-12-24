@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
+	"net"
+	"net/http"
+	"time"
+
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"github.com/YFatMR/go_messenger/core/pkg/traces"
-	. "github.com/YFatMR/go_messenger/core/pkg/utils"
+	"github.com/YFatMR/go_messenger/core/pkg/utils"
 	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/YFatMR/go_messenger/user_service/internal/controllers"
 	"github.com/YFatMR/go_messenger/user_service/internal/repositories/mongo"
@@ -19,9 +23,6 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
-	"net"
-	"net/http"
-	"time"
 )
 
 func main() {
@@ -29,14 +30,14 @@ func main() {
 
 	// Init environment vars
 	logLevel := loggers.RequiredZapcoreLogLevelEnv("LOG_LEVEL")
-	logPath := RequiredStringEnv("LOG_PATH")
-	mongoUri := RequiredStringEnv("MONGODB_URI")
-	databaseName := RequiredStringEnv("MONGODB_DATABASE_NAME")
-	collectionName := RequiredStringEnv("MONGODB_DATABASE_COLLECTION_NAME")
-	connectionTimeout := RequiredIntEnv("MONGODB_CONNECTION_TIMEOUT_SEC")
-	jaegerEndpoint := RequiredStringEnv("JAEGER_COLLECTOR_ENDPOINT")
-	serviceName := RequiredStringEnv("SERVICE_NAME")
-	userServiceAddress := RequiredStringEnv("SERVICE_ADDRESS")
+	logPath := utils.RequiredStringEnv("LOG_PATH")
+	mongoURI := utils.RequiredStringEnv("MONGODB_URI")
+	databaseName := utils.RequiredStringEnv("MONGODB_DATABASE_NAME")
+	collectionName := utils.RequiredStringEnv("MONGODB_DATABASE_COLLECTION_NAME")
+	connectionTimeout := utils.RequiredIntEnv("MONGODB_CONNECTION_TIMEOUT_SEC")
+	jaegerEndpoint := utils.RequiredStringEnv("JAEGER_COLLECTOR_ENDPOINT")
+	serviceName := utils.RequiredStringEnv("SERVICE_NAME")
+	userServiceAddress := utils.RequiredStringEnv("SERVICE_ADDRESS")
 
 	// Init logger
 	zapLogger, err := loggers.NewBaseZapFileLogger(logLevel, logPath)
@@ -55,7 +56,8 @@ func main() {
 
 	// Init database
 	logger.Info("Init database")
-	mongoSetting := mongo.NewMongoSettings(mongoUri, databaseName, collectionName, time.Duration(connectionTimeout)*time.Second)
+	mongoConnectionTimeout := time.Duration(connectionTimeout) * time.Second
+	mongoSetting := mongo.NewMongoSettings(mongoURI, databaseName, collectionName, mongoConnectionTimeout)
 	mongoCtx := context.Background()
 	mongoCollection, cancelConnection := mongo.NewMongoCollection(mongoCtx, mongoSetting, logger)
 	defer cancelConnection()
@@ -83,10 +85,12 @@ func main() {
 	// Init metrics
 
 	go func(logger *loggers.OtelZapLoggerWithTraceID) {
-		http.Handle(RequiredStringEnv("METRICS_LISTING_SUFFIX"), promhttp.Handler())
-		metricsEndpoint := RequiredStringEnv("METRICS_ADDRESS")
+		http.Handle(utils.RequiredStringEnv("METRICS_LISTING_SUFFIX"), promhttp.Handler())
+		metricsEndpoint := utils.RequiredStringEnv("METRICS_ADDRESS")
+		//#nosec G114: Use of net/http serve function that has no support for setting timeouts
 		if err := http.ListenAndServe(metricsEndpoint, nil); err != nil {
-			logger.Error("Can't up metrics server with endpoint" + metricsEndpoint + ". Operation finished with error: " + err.Error())
+			logger.Error("Can't up metrics server with endpoint" + metricsEndpoint +
+				". Operation finished with error: " + err.Error())
 			panic(err)
 		}
 	}(logger)

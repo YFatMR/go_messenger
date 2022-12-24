@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"github.com/YFatMR/go_messenger/user_service/internal/enities"
 	"github.com/YFatMR/go_messenger/user_service/internal/metrics/prometheus"
@@ -10,7 +11,7 @@ import (
 
 type userRepository interface {
 	Create(ctx context.Context, request *enities.User) (string, error)
-	GetById(ctx context.Context, id string) (*enities.User, error)
+	GetByID(ctx context.Context, id string) (*enities.User, error)
 }
 
 type UserService struct {
@@ -19,7 +20,9 @@ type UserService struct {
 	tracer     trace.Tracer
 }
 
-func NewUserService(repository userRepository, logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer) *UserService {
+func NewUserService(repository userRepository, logger *loggers.OtelZapLoggerWithTraceID,
+	tracer trace.Tracer,
+) *UserService {
 	return &UserService{
 		repository: repository,
 		logger:     logger,
@@ -31,18 +34,18 @@ func (s *UserService) Create(ctx context.Context, request *enities.User) (string
 	const endpointTag = "CreateUser"
 
 	prometheus.RequestProcessingTotal.WithLabelValues(endpointTag).Inc()
-	userID, err := s.repository.Create(ctx, request)
+	UserID, err := s.repository.Create(ctx, request)
 	if err != nil {
 		prometheus.RequestProcessingErrorsTotal.WithLabelValues(endpointTag, prometheus.ServerSideErrorRequestTag).Inc()
 	}
-	return userID, err
+	return UserID, err
 }
 
-func (s *UserService) GetById(ctx context.Context, id string) (*enities.User, error) {
+func (s *UserService) GetByID(ctx context.Context, id string) (*enities.User, error) {
 	const endpointTag = "GetUserByID"
 
 	prometheus.RequestProcessingTotal.WithLabelValues(endpointTag).Inc()
-	userEntity, err := s.repository.GetById(ctx, id)
+	userEntity, err := s.repository.GetByID(ctx, id)
 	if err != nil {
 		prometheus.RequestProcessingErrorsTotal.WithLabelValues(endpointTag, prometheus.ServerSideErrorRequestTag).Inc()
 	}

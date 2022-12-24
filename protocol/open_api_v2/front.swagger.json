@@ -23,7 +23,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/go_protoUserId"
+              "$ref": "#/definitions/go_protoUserID"
             }
           },
           "default": {
@@ -48,9 +48,9 @@
         ]
       }
     },
-    "/users/{id}": {
+    "/users/{ID}": {
       "get": {
-        "operationId": "FrontUser_GetUserById",
+        "operationId": "FrontUser_GetUserByID",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -67,7 +67,7 @@
         },
         "parameters": [
           {
-            "name": "id",
+            "name": "ID",
             "in": "path",
             "required": true,
             "type": "string"
@@ -91,10 +91,10 @@
         }
       }
     },
-    "go_protoUserId": {
+    "go_protoUserID": {
       "type": "object",
       "properties": {
-        "id": {
+        "ID": {
           "type": "string"
         }
       }

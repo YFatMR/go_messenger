@@ -2,6 +2,9 @@ package mongo
 
 import (
 	"context"
+	"errors"
+	"time"
+
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"github.com/YFatMR/go_messenger/user_service/internal/enities"
 	"github.com/YFatMR/go_messenger/user_service/internal/metrics/prometheus"
@@ -11,7 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"time"
 )
 
 type UserMongoRepository struct {
@@ -20,7 +22,9 @@ type UserMongoRepository struct {
 	tracer     trace.Tracer
 }
 
-func NewUserMongoRepository(collection *mongo.Collection, logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer) *UserMongoRepository {
+func NewUserMongoRepository(collection *mongo.Collection, logger *loggers.OtelZapLoggerWithTraceID,
+	tracer trace.Tracer,
+) *UserMongoRepository {
 	return &UserMongoRepository{
 		collection: collection,
 		logger:     logger,
@@ -29,7 +33,7 @@ func NewUserMongoRepository(collection *mongo.Collection, logger *loggers.OtelZa
 }
 
 type userDocument struct {
-	Id      primitive.ObjectID `bson:"_id,omitempty"`
+	ID      primitive.ObjectID `bson:"_id,omitempty"`
 	Name    string             `bson:"name"`
 	Surname string             `bson:"surname"`
 }
@@ -47,27 +51,28 @@ func (r *UserMongoRepository) Create(ctx context.Context, request *enities.User)
 	if err != nil {
 		return "", err
 	}
-	r.logger.DebugContextNoExport(ctx, "Insert result", zap.String("id", insertResult.InsertedID.(primitive.ObjectID).Hex()))
-	return insertResult.InsertedID.(primitive.ObjectID).Hex(), err
+	insertedID = insertResult.InsertedID.(primitive.ObjectID).Hex()
+	r.logger.DebugContextNoExport(ctx, "Insert result", zap.String("id", insertedID))
+	return insertedID, err
 }
 
-func (r *UserMongoRepository) GetById(ctx context.Context, id string) (foundUser *enities.User, err error) { // metrics
+func (r *UserMongoRepository) GetByID(ctx context.Context, id string) (foundUser *enities.User, err error) { // metrics
 	// metrics
 	startTime := time.Now()
 	defer collectDatabaseQueryMetrics(startTime, prometheus.FindOperationTag, &err)
 
 	// process database search
 	var document userDocument
-	objectId, err := primitive.ObjectIDFromHex(id)
+	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, repositories.ErrWrongUserIDFormat
 	}
 	err = r.collection.FindOne(ctx, bson.D{
-		{"_id", objectId},
+		{Key: "_id", Value: objectID},
 	}).Decode(&document)
 	if err == nil { // TODO: handle err == mongo.ErrNoDocuments
 		return enities.NewUser(document.Name, document.Surname), nil
-	} else if err == mongo.ErrNoDocuments {
+	} else if errors.Is(err, mongo.ErrNoDocuments) {
 		r.logger.DebugContextNoExport(ctx, "User not found", zap.String("id", id))
 		return nil, repositories.ErrUserNotFound
 	}

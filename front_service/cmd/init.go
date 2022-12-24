@@ -2,30 +2,36 @@ package main
 
 import (
 	"context"
+	"net"
+	"net/http"
+
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
-	"github.com/YFatMR/go_messenger/front_server/internal/user_server"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	userserver "github.com/YFatMR/go_messenger/front_server/internal/user_server"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"net"
-	"net/http"
 )
 
-func runRest(ctx context.Context, mux *runtime.ServeMux, restFrontServiceAddress string, grpcFrontServiceAddress string, logger *loggers.OtelZapLoggerWithTraceID) {
+func runRest(ctx context.Context, mux *runtime.ServeMux, restFrontServiceAddress string,
+	grpcFrontServiceAddress string, logger *loggers.OtelZapLoggerWithTraceID,
+) {
 	logger.Info(
 		"Starting to register REST user server",
 		zap.String("REST front server address", restFrontServiceAddress),
 		zap.String("gRPC front service address", grpcFrontServiceAddress),
 	)
-	user_server.RegisterRestUserServer(ctx, mux, grpcFrontServiceAddress)
+	userserver.RegisterRestUserServer(ctx, mux, grpcFrontServiceAddress)
 	logger.Info("Starting serve REST front server")
+	//#nosec G114: Use of net/http serve function that has no support for setting timeouts
 	if err := http.ListenAndServe(restFrontServiceAddress, mux); err != nil {
 		panic(err)
 	}
 }
 
-func runGrpc(grpcServer *grpc.Server, grpcFrontServiceAddress string, userServerAddress string, logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer) {
+func runGrpc(grpcServer *grpc.Server, grpcFrontServiceAddress string,
+	userServerAddress string, logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer,
+) {
 	listener, err := net.Listen("tcp", grpcFrontServiceAddress)
 	if err != nil {
 		panic(err)
@@ -35,7 +41,7 @@ func runGrpc(grpcServer *grpc.Server, grpcFrontServiceAddress string, userServer
 		zap.String("grpc front server address", grpcFrontServiceAddress),
 		zap.String("user server address", userServerAddress),
 	)
-	user_server.RegisterGrpcUserServer(grpcServer, userServerAddress, logger, tracer)
+	userserver.RegisterGrpcUserServer(grpcServer, userServerAddress, logger, tracer)
 	logger.Info("Starting serve gRPC front server")
 	if err := grpcServer.Serve(listener); err != nil {
 		panic(err)

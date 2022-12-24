@@ -8,11 +8,11 @@ message UserData {
   string surname = 2;
 }
 
-message UserId {
-  string id = 1;
+message UserID {
+  string ID = 1;
 }
 
 service User {
-  rpc CreateUser (UserData) returns (UserId) {}
-  rpc GetUserById (UserId) returns (UserData) {}
+  rpc CreateUser (UserData) returns (UserID) {}
+  rpc GetUserByID (UserID) returns (UserData) {}
 }

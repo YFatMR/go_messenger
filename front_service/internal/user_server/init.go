@@ -1,10 +1,11 @@
-package user_server
+package userserver
 
 import (
 	"context"
+
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -17,6 +18,8 @@ func RegisterRestUserServer(ctx context.Context, mux *runtime.ServeMux, grpcFron
 	}
 }
 
-func RegisterGrpcUserServer(grpcServer grpc.ServiceRegistrar, userServerAddress string, logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer) {
+func RegisterGrpcUserServer(grpcServer grpc.ServiceRegistrar, userServerAddress string,
+	logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer,
+) {
 	proto.RegisterFrontUserServer(grpcServer, newFrontUserServer(userServerAddress, logger, tracer))
 }

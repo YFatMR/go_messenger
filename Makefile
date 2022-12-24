@@ -1,6 +1,7 @@
 ROOT_PROJECT_DIRECTORY=$(shell pwd)
 BINARY_DIRECTORY=${ROOT_PROJECT_DIRECTORY}/_bin
 GO_WORK_SUBDIRECTORIES=$(shell go work edit -json | jq -c -r '[.Use[].DiskPath] | map_values(. + "/...")[]')
+GO_LINTER_BINARY=$(shell go env GOPATH)/bin/golangci-lint
 
 create_BINARY_DIRECTORY:
 	mkdir -p ${BINARY_DIRECTORY}
@@ -19,4 +20,4 @@ run-tests:
 	go test ${ROOT_PROJECT_DIRECTORY}/user_service/internal/repositories/mongo/ -v
 
 lint:
-	golangci-lint run --config ${ROOT_PROJECT_DIRECTORY}/.golangci.yml ${GO_WORK_SUBDIRECTORIES}
+	${GO_LINTER_BINARY} run -v --config ${ROOT_PROJECT_DIRECTORY}/.golangci.yml -- ${GO_WORK_SUBDIRECTORIES}
