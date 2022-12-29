@@ -5,6 +5,7 @@ import (
 	"flag"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
@@ -65,7 +66,8 @@ func dropCollection(ctx context.Context, t *testing.T, collection *mongo.Collect
 func newMockUserMongoRepository(collection *mongo.Collection) *UserMongoRepository {
 	tracer := otel.Tracer("fake")
 	nopLogger := loggers.NewOtelZapLoggerWithTraceID(otelzap.New(zap.NewNop()))
-	return NewUserMongoRepository(collection, nopLogger, tracer)
+	timeout := 2 * time.Second
+	return NewUserMongoRepository(collection, timeout, nopLogger, tracer)
 }
 
 func TestUserCreation(t *testing.T) {
