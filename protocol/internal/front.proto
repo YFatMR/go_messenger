@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package go_proto;
+option go_package = "./go_proto";
+
+import "user.proto";
+import "google/api/annotations.proto";
+
+service FrontUser {
+  rpc CreateUser (UserData) returns (UserID) {
+    option (google.api.http) = {
+      post: "/users"
+      body: "*"
+    };
+  }
+  rpc GetUserByID (UserID) returns (UserData) {
+    option (google.api.http) = {
+      get: "/users/{ID}"
+    };
+  }
+}

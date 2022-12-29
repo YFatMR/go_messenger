@@ -1,0 +1,6 @@
+_bin
+_log
+_log_qa
+.idea
+!.gitkeep
+.vscode

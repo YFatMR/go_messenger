@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  front_service:
+    build:
+      context: .
+      dockerfile: ./front_service/Dockerfile
+
+    container_name: front_service
+    hostname: front_service
+    environment:
+      - SERVICE_NAME=front_service
+
+      - LOG_LEVEL=${FRONT_SERVICE_LOG_LEVEL}
+      - LOG_PATH=${FRONT_SERVICE_LOG_PATH}
+
+      - REST_SERVICE_ADDRESS=front_service:${FRONT_REST_SERVICE_PORT}
+      - REST_FRONT_SERVICE_READ_TIMEOUT_SECONDS=2
+      - REST_FRONT_SERVICE_WRITE_TIMEOUT_SECONDS=2
+      - GRPC_SERVICE_ADDRESS=front_service:${FRONT_GRPC_SERVICE_PORT}
+
+      - USER_SERVICE_ADDRESS=user_service:${USER_SERVICE_PORT}
+
+      - JAEGER_COLLECTOR_ENDPOINT=http://jaeger:${JAEGER_COLLECTOR_PORT}/api/traces
+    volumes:
+      - type: bind
+        source: /home/am/dev/golang/messenger/_log/front_service.log
+        target: ${FRONT_SERVICE_LOG_PATH}
+    ports:
+      - "8010:${FRONT_REST_SERVICE_PORT}"
+      - "8020:${FRONT_GRPC_SERVICE_PORT}"
+    depends_on:
+      - user_service
+    networks:
+      - default
+
+  user_service:
+    build:
+      context: .
+      dockerfile: ./user_service/Dockerfile
+
+    container_name: user_service
+    hostname: user_service
+    environment:
+      - SERVICE_NAME=user_service
+      - SERVICE_ADDRESS=user_service:${USER_SERVICE_PORT}
+
+      - MONGODB_URI=mongodb://${USER_SERVICE_MONGODB_USERNAME}:${USER_SERVICE_MONGODB_PASSWORD}@user_service_mongodb:${USER_SERVICE_MONGODB_PORT}
+      - MONGODB_DATABASE_NAME=${USER_SERVICE_MONGODB_DATABASE_NAME}
+      - MONGODB_DATABASE_COLLECTION_NAME=${USER_SERVICE_MONGODB_DATABASE_COLLECTION_NAME}
+      - MONGODB_CONNECTION_TIMEOUT_SECONDS=${USER_SERVICE_MONGODB_CONNECTION_TIMEOUT_SECONDS}
+
+      - LOG_LEVEL=${USER_SERVICE_LOG_LEVEL}
+      - LOG_PATH=${USER_SERVICE_LOG_PATH}
+
+      - JAEGER_COLLECTOR_ENDPOINT=http://jaeger:${JAEGER_COLLECTOR_PORT}/api/traces
+
+      - METRICS_SERVICE_ADDRESS=user_service:${USER_SERVICE_METRICS_PORT}
+      - METRICS_SERVICE_LISTING_SUFFIX=/metrics
+      - METRICS_SERVICE_READ_OPERATION_TIMEOUT_SECONDS=2
+      - METRICS_SERVICE_WRITE_OPERATION_TIMEOUT_SECONDS=2
+    volumes:
+      - type: bind
+        source: /home/am/dev/golang/messenger/_log/user_service.log
+        target: ${USER_SERVICE_LOG_PATH}
+    ports:
+      - "9030:${USER_SERVICE_PORT}"
+      - "2112:${USER_SERVICE_METRICS_PORT}"
+    depends_on:
+      - user_service_mongodb
+    networks:
+      - default
+
+  user_service_mongodb:
+    image: mongo
+    container_name: user_service_mongodb
+    hostname: user_service_mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${USER_SERVICE_MONGODB_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${USER_SERVICE_MONGODB_PASSWORD}
+    # volumes:
+    #   - ./mongodb:/usr/src/messenger
+    ports:
+      - "27017:${USER_SERVICE_MONGODB_PORT}"
+    networks:
+      - default
+
+  jaeger:
+    container_name: jaeger
+    hostname: jaeger
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "14268:${JAEGER_COLLECTOR_PORT}/udp"
+      - "16686:${JAEGER_UI_PORT}"
+    networks:
+      - default
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    hostname: prometheus
+    environment:
+      TZ: "Europe/Moscow"
+    volumes:
+      - ./prometheus:/etc/prometheus/
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:${PROMETHEUS_UI_PORT}"
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge

@@ -1,0 +1,8 @@
+go 1.19
+
+use (
+	./core
+	./front_service
+	./protocol
+	./user_service
+)

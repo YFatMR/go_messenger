@@ -1,0 +1,36 @@
+name: pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+
+      - name: Display Go version
+        run: go version
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.50.1
+          args: --config ./.golangci.yml ./core/... ./front_service/... ./protocol/... ./user_service/...
+
+      - name: Build
+        run: make build
+
+      - name: Run Go tests
+        run: make run-tests

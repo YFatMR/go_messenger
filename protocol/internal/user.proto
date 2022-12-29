@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package go_proto;
+option go_package = "./go_proto";
+
+message UserData {
+  string name = 1;
+  string surname = 2;
+}
+
+message UserID {
+  string ID = 1;
+}
+
+service User {
+  rpc CreateUser (UserData) returns (UserID) {}
+  rpc GetUserByID (UserID) returns (UserData) {}
+}

@@ -1,0 +1,76 @@
+run:
+  tests: true
+  build-tags:
+    - bench
+    - !bench
+
+linters-settings:
+  funlen:
+    lines: 120
+    statements: 120
+  lll:
+    line-length: 120
+  gocyclo:
+    min-complexity: 12
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - dupl
+        - gocyclo
+        - gosec
+    - path: zap.go # core/pkg/loggers/zap.go
+      linters:
+        - typecheck # Problems with embedded structure from other package https://github.com/golangci/golangci-lint/issues/2286
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+linters:
+  disable-all: true
+  enable:
+    - asciicheck
+    - bodyclose
+    - depguard
+    - dogsled
+    - dupl
+    - durationcheck
+    - errorlint
+    - exhaustive
+    - exportloopref
+    - funlen
+    - gci
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - gofmt
+    - gofumpt
+    - goheader
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - importas
+    - ineffassign
+    - lll
+    - makezero
+    - misspell
+    - nestif
+    - nilerr
+    - noctx
+    - nolintlint
+    - prealloc
+    - predeclared
+    - revive
+    - staticcheck
+    - stylecheck
+    - tagliatelle
+    - thelper
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
