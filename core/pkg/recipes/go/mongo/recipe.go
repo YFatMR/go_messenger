@@ -4,16 +4,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	dockertest "github.com/ory/dockertest/v3" // alias for golangci-lint
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func NewMongoClient(dockerDeletionTimeoutSeconds uint) *mongo.Client {
-	mongoUsername := "root"
-	mongoPassword := "password"
-	mongoDockerTag := "6.0"
-	mongoEndpointURI := "localhost"
+func NewMongoTestDatabase(mongoConfig *cviper.CustomViper) (*mongo.Database, func() error) {
+	if err := mongoConfig.ReadInConfig(); err != nil {
+		panic(err)
+	}
+
+	mongoUsername := mongoConfig.GetStringRequired("MONGO_INITDB_ROOT_USERNAME")
+	mongoPassword := mongoConfig.GetStringRequired("MONGO_INITDB_ROOT_PASSWORD")
+	mongoDockerTag := mongoConfig.GetStringRequired("MONGO_DOCKER_TAG")
+	mongoTestDatabaseName := mongoConfig.GetStringRequired("MONGO_TEST_DATABASE_NAME")
 
 	pool, err := dockertest.NewPool("")
 	if err != nil {
@@ -31,7 +36,7 @@ func NewMongoClient(dockerDeletionTimeoutSeconds uint) *mongo.Client {
 	var client *mongo.Client
 	if err = pool.Retry(func() error {
 		port := resource.GetPort("27017/tcp")
-		mongoURI := fmt.Sprintf("mongodb://%s:%s@%s:%s", mongoUsername, mongoPassword, mongoEndpointURI, port)
+		mongoURI := fmt.Sprintf("mongodb://%s:%s@localhost:%s", mongoUsername, mongoPassword, port)
 		var err error
 		ctx := context.Background()
 		client, err = mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
@@ -42,5 +47,7 @@ func NewMongoClient(dockerDeletionTimeoutSeconds uint) *mongo.Client {
 	}); err != nil {
 		panic(err)
 	}
-	return client
+	return client.Database(mongoTestDatabaseName), func() error {
+		return pool.Purge(resource)
+	}
 }

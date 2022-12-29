@@ -31,12 +31,16 @@ func NewGRPCUserServer(controller userController, logger *loggers.OtelZapLoggerW
 
 func (s *GRPCUserServer) CreateUser(ctx context.Context, request *proto.UserData) (*proto.UserID, error) {
 	var span trace.Span
-	ctx, span = s.tracer.Start(ctx, "/GRPCUserServer CreateUser")
+	ctx, span = s.tracer.Start(ctx, "/ServerCreateUserSpan")
 	defer span.End()
 
 	return s.controller.Create(ctx, request)
 }
 
 func (s *GRPCUserServer) GetUserByID(ctx context.Context, request *proto.UserID) (*proto.UserData, error) {
+	var span trace.Span
+	ctx, span = s.tracer.Start(ctx, "/ServerGetUserByIDSpan")
+	defer span.End()
+
 	return s.controller.GetByID(ctx, request)
 }

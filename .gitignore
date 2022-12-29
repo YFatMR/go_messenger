@@ -3,3 +3,4 @@ _log
 _log_qa
 .idea
 !.gitkeep
+.vscode

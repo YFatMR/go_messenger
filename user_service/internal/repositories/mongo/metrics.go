@@ -6,10 +6,10 @@ import (
 	"github.com/YFatMR/go_messenger/user_service/internal/metrics/prometheus"
 )
 
-func collectDatabaseQueryMetrics(startTime time.Time, operationTag string, err *error) {
+func collectDatabaseQueryMetrics(startTime time.Time, operationTag string, err error) {
 	functionDuration := time.Since(startTime).Seconds()
 	statusTag := prometheus.ErrorStatusTag
-	if *err == nil {
+	if err == nil {
 		prometheus.DatabaseSuccessQueryDurationSeconds.WithLabelValues(operationTag).Observe(functionDuration)
 		statusTag = prometheus.OkStatusTag
 	}

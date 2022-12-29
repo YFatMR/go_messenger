@@ -6,7 +6,6 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -33,10 +32,10 @@ func newFrontUserServer(userServerAddress string, logger *loggers.OtelZapLoggerW
 
 func (s *frontUserServer) CreateUser(ctx context.Context, request *proto.UserData) (*proto.UserID, error) {
 	var span trace.Span
-	ctx, span = s.tracer.Start(ctx, "/SpanCreateUser", trace.WithAttributes(attribute.String("extra.key1", "extra.value")))
+	ctx, span = s.tracer.Start(ctx, "/CreateUserSpan")
 	defer span.End()
 
-	s.logger.DebugContextNoExport(ctx, "called CreateUser endpoint2")
+	s.logger.DebugContextNoExport(ctx, "called CreateUser endpoint")
 	conn, err := grpc.Dial(
 		s.userServerAddress,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -50,8 +49,16 @@ func (s *frontUserServer) CreateUser(ctx context.Context, request *proto.UserDat
 }
 
 func (s *frontUserServer) GetUserByID(ctx context.Context, request *proto.UserID) (*proto.UserData, error) {
+	var span trace.Span
+	ctx, span = s.tracer.Start(ctx, "/GetUserByIDSpan")
+	defer span.End()
+
 	s.logger.DebugContextNoExport(ctx, "called GetUserByID endpoint")
-	conn, err := grpc.Dial(s.userServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(
+		s.userServerAddress,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+	)
 	if err != nil {
 		panic(err)
 	}

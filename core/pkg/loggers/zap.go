@@ -4,26 +4,11 @@ import (
 	"context"
 	"os"
 
-	"github.com/YFatMR/go_messenger/core/pkg/utils"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
-
-func RequiredZapcoreLogLevelEnv(env string) zapcore.Level {
-	level := utils.RequiredStringEnv(env)
-	switch level {
-	case "debug":
-		return zapcore.DebugLevel
-	case "info":
-		return zapcore.InfoLevel
-	case "error":
-		return zapcore.ErrorLevel
-	default:
-		panic("Variable " + env + " has unexpected values")
-	}
-}
 
 func NewBaseZapFileLogger(logLevel zapcore.LevelEnabler, logFilePath string) (*zap.Logger, error) {
 	config := zap.NewProductionEncoderConfig()

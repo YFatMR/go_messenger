@@ -41,7 +41,7 @@ type userDocument struct {
 func (r *UserMongoRepository) Create(ctx context.Context, request *enities.User) (insertedID string, err error) {
 	// metrics
 	startTime := time.Now()
-	defer collectDatabaseQueryMetrics(startTime, prometheus.InsertOperationTag, &err)
+	defer collectDatabaseQueryMetrics(startTime, prometheus.InsertOperationTag, err)
 
 	// process database insertion
 	insertResult, err := r.collection.InsertOne(ctx, userDocument{
@@ -59,7 +59,7 @@ func (r *UserMongoRepository) Create(ctx context.Context, request *enities.User)
 func (r *UserMongoRepository) GetByID(ctx context.Context, id string) (foundUser *enities.User, err error) { // metrics
 	// metrics
 	startTime := time.Now()
-	defer collectDatabaseQueryMetrics(startTime, prometheus.FindOperationTag, &err)
+	defer collectDatabaseQueryMetrics(startTime, prometheus.FindOperationTag, err)
 
 	// process database search
 	var document userDocument
@@ -70,7 +70,7 @@ func (r *UserMongoRepository) GetByID(ctx context.Context, id string) (foundUser
 	err = r.collection.FindOne(ctx, bson.D{
 		{Key: "_id", Value: objectID},
 	}).Decode(&document)
-	if err == nil { // TODO: handle err == mongo.ErrNoDocuments
+	if err == nil {
 		return enities.NewUser(document.Name, document.Surname), nil
 	} else if errors.Is(err, mongo.ErrNoDocuments) {
 		r.logger.DebugContextNoExport(ctx, "User not found", zap.String("id", id))

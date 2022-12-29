@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	userserver "github.com/YFatMR/go_messenger/front_server/internal/user_server"
@@ -14,8 +15,15 @@ import (
 )
 
 func runRest(ctx context.Context, mux *runtime.ServeMux, restFrontServiceAddress string,
-	grpcFrontServiceAddress string, logger *loggers.OtelZapLoggerWithTraceID,
+	grpcFrontServiceAddress string, restServiceReadTimeout time.Duration,
+	restServiceWriteTimeout time.Duration, logger *loggers.OtelZapLoggerWithTraceID,
 ) {
+	service := http.Server{
+		ReadTimeout:  restServiceReadTimeout,
+		WriteTimeout: restServiceWriteTimeout,
+		Addr:         restFrontServiceAddress,
+		Handler:      mux,
+	}
 	logger.Info(
 		"Starting to register REST user server",
 		zap.String("REST front server address", restFrontServiceAddress),
@@ -24,7 +32,7 @@ func runRest(ctx context.Context, mux *runtime.ServeMux, restFrontServiceAddress
 	userserver.RegisterRestUserServer(ctx, mux, grpcFrontServiceAddress)
 	logger.Info("Starting serve REST front server")
 	//#nosec G114: Use of net/http serve function that has no support for setting timeouts
-	if err := http.ListenAndServe(restFrontServiceAddress, mux); err != nil {
+	if err := service.ListenAndServe(); err != nil {
 		panic(err)
 	}
 }

@@ -4,11 +4,13 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"os"
+	"os/signal"
 	"time"
 
+	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"github.com/YFatMR/go_messenger/core/pkg/traces"
-	"github.com/YFatMR/go_messenger/core/pkg/utils"
 	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/YFatMR/go_messenger/user_service/internal/controllers"
 	"github.com/YFatMR/go_messenger/user_service/internal/repositories/mongo"
@@ -27,17 +29,30 @@ import (
 
 func main() {
 	time.Sleep(5 * time.Second)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	config := cviper.New()
+	config.AutomaticEnv()
 
 	// Init environment vars
-	logLevel := loggers.RequiredZapcoreLogLevelEnv("LOG_LEVEL")
-	logPath := utils.RequiredStringEnv("LOG_PATH")
-	mongoURI := utils.RequiredStringEnv("MONGODB_URI")
-	databaseName := utils.RequiredStringEnv("MONGODB_DATABASE_NAME")
-	collectionName := utils.RequiredStringEnv("MONGODB_DATABASE_COLLECTION_NAME")
-	connectionTimeout := utils.RequiredIntEnv("MONGODB_CONNECTION_TIMEOUT_SEC")
-	jaegerEndpoint := utils.RequiredStringEnv("JAEGER_COLLECTOR_ENDPOINT")
-	serviceName := utils.RequiredStringEnv("SERVICE_NAME")
-	userServiceAddress := utils.RequiredStringEnv("SERVICE_ADDRESS")
+	logLevel := config.GetZapcoreLogLevelRequired("LOG_LEVEL")
+	logPath := config.GetStringRequired("LOG_PATH")
+	mongoURI := config.GetStringRequired("MONGODB_URI")
+	databaseName := config.GetStringRequired("MONGODB_DATABASE_NAME")
+	collectionName := config.GetStringRequired("MONGODB_DATABASE_COLLECTION_NAME")
+	connectionTimeout := config.GetIntRequired("MONGODB_CONNECTION_TIMEOUT_SECONDS")
+	jaegerEndpoint := config.GetStringRequired("JAEGER_COLLECTOR_ENDPOINT")
+	serviceName := config.GetStringRequired("SERVICE_NAME")
+	userServiceAddress := config.GetStringRequired("SERVICE_ADDRESS")
+	metricsServiceReadOperationTimeout := config.GetSecondsDurationRequired(
+		"METRICS_SERVICE_READ_OPERATION_TIMEOUT_SECONDS",
+	)
+	metricsServiceWriteOperationTimeout := config.GetSecondsDurationRequired(
+		"METRICS_SERVICE_WRITE_OPERATION_TIMEOUT_SECONDS",
+	)
+	metricsServiceListingSuffix := config.GetStringRequired("METRICS_SERVICE_LISTING_SUFFIX")
+	metricsServiceAddress := config.GetStringRequired("METRICS_SERVICE_ADDRESS")
 
 	// Init logger
 	zapLogger, err := loggers.NewBaseZapFileLogger(logLevel, logPath)
@@ -58,8 +73,7 @@ func main() {
 	logger.Info("Init database")
 	mongoConnectionTimeout := time.Duration(connectionTimeout) * time.Second
 	mongoSetting := mongo.NewMongoSettings(mongoURI, databaseName, collectionName, mongoConnectionTimeout)
-	mongoCtx := context.Background()
-	mongoCollection, cancelConnection := mongo.NewMongoCollection(mongoCtx, mongoSetting, logger)
+	mongoCollection, cancelConnection := mongo.NewMongoCollection(ctx, mongoSetting, logger)
 	defer cancelConnection()
 
 	// Init tracing
@@ -84,16 +98,23 @@ func main() {
 
 	// Init metrics
 
-	go func(logger *loggers.OtelZapLoggerWithTraceID) {
-		http.Handle(utils.RequiredStringEnv("METRICS_LISTING_SUFFIX"), promhttp.Handler())
-		metricsEndpoint := utils.RequiredStringEnv("METRICS_ADDRESS")
+	go func(logger *loggers.OtelZapLoggerWithTraceID, metricsServiceListingSuffix string,
+		metricsServiceReadOperationTimeout time.Duration, metricsServiceWriteOperationTimeout time.Duration,
+	) {
+		server := &http.Server{
+			ReadTimeout:  metricsServiceReadOperationTimeout,
+			WriteTimeout: metricsServiceWriteOperationTimeout,
+			Addr:         metricsServiceAddress,
+			Handler:      nil,
+		}
+		http.Handle(metricsServiceListingSuffix, promhttp.Handler())
 		//#nosec G114: Use of net/http serve function that has no support for setting timeouts
-		if err := http.ListenAndServe(metricsEndpoint, nil); err != nil {
-			logger.Error("Can't up metrics server with endpoint" + metricsEndpoint +
+		if err := server.ListenAndServe(); err != nil {
+			logger.Error("Can't up metrics server with endpoint" + metricsServiceAddress +
 				". Operation finished with error: " + err.Error())
 			panic(err)
 		}
-	}(logger)
+	}(logger, metricsServiceListingSuffix, metricsServiceReadOperationTimeout, metricsServiceWriteOperationTimeout)
 
 	// Init Server
 	logger.Info("Init server")

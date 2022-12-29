@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
 
+	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"github.com/YFatMR/go_messenger/core/pkg/traces"
-	"github.com/YFatMR/go_messenger/core/pkg/utils"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/otel"
@@ -17,14 +19,22 @@ import (
 )
 
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	config := cviper.New()
+	config.AutomaticEnv()
+
 	// Init environment vars
-	logLevel := loggers.RequiredZapcoreLogLevelEnv("LOG_LEVEL")
-	logPath := utils.RequiredStringEnv("LOG_PATH")
-	frontRestUserServerAddress := utils.RequiredStringEnv("REST_SERVICE_ADDRESS")
-	frontGrpcUserServerAddress := utils.RequiredStringEnv("GRPC_SERVICE_ADDRESS")
-	userServerAddress := utils.RequiredStringEnv("USER_SERVICE_ADDRESS")
-	jaegerEndpoint := utils.RequiredStringEnv("JAEGER_COLLECTOR_ENDPOINT")
-	serviceName := utils.RequiredStringEnv("SERVICE_NAME")
+	logLevel := config.GetZapcoreLogLevelRequired("LOG_LEVEL")
+	logPath := config.GetStringRequired("LOG_PATH")
+	frontRestUserServerAddress := config.GetStringRequired("REST_SERVICE_ADDRESS")
+	frontGrpcUserServerAddress := config.GetStringRequired("GRPC_SERVICE_ADDRESS")
+	userServerAddress := config.GetStringRequired("USER_SERVICE_ADDRESS")
+	jaegerEndpoint := config.GetStringRequired("JAEGER_COLLECTOR_ENDPOINT")
+	serviceName := config.GetStringRequired("SERVICE_NAME")
+	restServiceReadTimeout := config.GetSecondsDurationRequired("REST_FRONT_SERVICE_READ_TIMEOUT_SECONDS")
+	restServiceWriteTimeout := config.GetSecondsDurationRequired("REST_FRONT_SERVICE_WRITE_TIMEOUT_SECONDS")
 
 	// Init logger
 	zapLogger, err := loggers.NewBaseZapFileLogger(logLevel, logPath)
@@ -53,19 +63,21 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		if err := traceProvider.Shutdown(context.Background()); err != nil { // TODO: Shutdown -> with timeout
+	defer func(ctx context.Context) {
+		if err := traceProvider.Shutdown(ctx); err != nil { // TODO: Shutdown -> with timeout
 			panic(err)
 		}
-	}()
+	}(ctx)
 	tracer := otel.Tracer(serviceName)
 
 	// Init servers
 	mux := runtime.NewServeMux()
 	grpcServer := grpc.NewServer()
-	ctx := context.Background()
 
 	// Run servers
-	go runRest(ctx, mux, frontRestUserServerAddress, frontGrpcUserServerAddress, logger)
+	go runRest(
+		ctx, mux, frontRestUserServerAddress, frontGrpcUserServerAddress,
+		restServiceReadTimeout, restServiceWriteTimeout, logger,
+	)
 	runGrpc(grpcServer, frontGrpcUserServerAddress, userServerAddress, logger, tracer)
 }

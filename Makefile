@@ -17,7 +17,7 @@ run: build_docker_compose
 	sudo docker-compose --env-file ${ROOT_PROJECT_DIRECTORY}/.env --verbose up
 
 run-tests:
-	go test ${ROOT_PROJECT_DIRECTORY}/user_service/internal/repositories/mongo/ -v
+	go test -v -race -o ${BINARY_DIRECTORY}/user_service_repository_tests ${ROOT_PROJECT_DIRECTORY}/user_service/internal/repositories/mongo/ -args -mongo_config_path="${ROOT_PROJECT_DIRECTORY}/core/pkg/recipes/go/mongo/.env"
 
 lint:
 	${GO_LINTER_BINARY} run -v --config ${ROOT_PROJECT_DIRECTORY}/.golangci.yml -- ${GO_WORK_SUBDIRECTORIES}

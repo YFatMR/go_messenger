@@ -2,9 +2,11 @@ package mongo
 
 import (
 	"context"
+	"flag"
 	"os"
 	"testing"
 
+	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	recipe "github.com/YFatMR/go_messenger/core/pkg/recipes/go/mongo"
 	"github.com/YFatMR/go_messenger/user_service/internal/enities"
@@ -15,46 +17,67 @@ import (
 	"go.uber.org/zap"
 )
 
-var testDatabase *mongo.Database
+var (
+	testDatabase        *mongo.Database
+	mongoConfigPathFlag string
+)
+
+func init() {
+	flag.StringVar(&mongoConfigPathFlag, "mongo_config_path", "", "Path to mongodb configuration")
+}
 
 func TestMain(m *testing.M) {
-	const dockerDeletionTimeoutSeconds uint = 60
-	mongoDatabaseName := "TEST_DATABASE"
-	mongoClient := recipe.NewMongoClient(dockerDeletionTimeoutSeconds)
+	flag.Parse()
 
-	// setup global variables
-	testDatabase = mongoClient.Database(mongoDatabaseName)
+	ctx := context.Background()
+
+	mongoConfig := cviper.New()
+	mongoConfig.SetConfigFile(mongoConfigPathFlag)
+	database, dockerContainerPurge := recipe.NewMongoTestDatabase(mongoConfig)
+
+	// Setup global variable
+	testDatabase = database
 
 	// Run tests
 	exitCode := m.Run()
+
+	// Clenup database
+	if err := testDatabase.Drop(ctx); err != nil {
+		panic(err)
+	}
+
+	// Clenup container
+	if err := dockerContainerPurge(); err != nil {
+		panic(err)
+	}
 	os.Exit(exitCode)
 }
 
-func NewDatabaseCollection(database *mongo.Database) *mongo.Collection {
-	return database.Collection(uuid.New().String())
-}
-
-func NewUserMongoCollectionWithDrop(t *testing.T,
-	database *mongo.Database,
-) (*mongo.Collection, func(context.Context, *mongo.Collection)) {
+func dropCollection(ctx context.Context, t *testing.T, collection *mongo.Collection) {
 	t.Helper()
-	return NewDatabaseCollection(database), func(ctx context.Context, collection *mongo.Collection) {
-		err := collection.Drop(ctx)
-		if err != nil {
-			t.Error(err)
-		}
+
+	err := collection.Drop(ctx)
+	if err != nil {
+		t.Error(err)
 	}
 }
 
-func TestUserCreation(t *testing.T) {
-	// initialize repository
-	collection, dropCollection := NewUserMongoCollectionWithDrop(t, testDatabase)
-	defer dropCollection(context.Background(), collection)
+func newMockUserMongoRepository(collection *mongo.Collection) *UserMongoRepository {
 	tracer := otel.Tracer("fake")
 	nopLogger := loggers.NewOtelZapLoggerWithTraceID(otelzap.New(zap.NewNop()))
-	repository := NewUserMongoRepository(collection, nopLogger, tracer)
+	return NewUserMongoRepository(collection, nopLogger, tracer)
+}
 
-	// start test
+func TestUserCreation(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// Initialize repository
+	randomCollection := testDatabase.Collection(uuid.New().String())
+	defer dropCollection(ctx, t, randomCollection)
+	repository := newMockUserMongoRepository(randomCollection)
+
+	// Start test
 	userData := enities.NewUser("Ivan", "Petrov")
 	_, err := repository.Create(context.Background(), userData)
 	if err != nil {
@@ -63,14 +86,15 @@ func TestUserCreation(t *testing.T) {
 }
 
 func TestFindCreatedUser(t *testing.T) {
-	// initialize repository
-	collection, dropCollection := NewUserMongoCollectionWithDrop(t, testDatabase)
-	defer dropCollection(context.Background(), collection)
-	tracer := otel.Tracer("fake")
-	nopLogger := loggers.NewOtelZapLoggerWithTraceID(otelzap.New(zap.NewNop()))
-	repository := NewUserMongoRepository(collection, nopLogger, tracer)
+	t.Parallel()
+	ctx := context.Background()
 
-	// start test
+	// Initialize repository
+	randomCollection := testDatabase.Collection(uuid.New().String())
+	defer dropCollection(ctx, t, randomCollection)
+	repository := newMockUserMongoRepository(randomCollection)
+
+	// Start test
 	userData := enities.NewUser("Sergey", "Satnav")
 	UserID, err := repository.Create(context.Background(), userData)
 	if err != nil {
