@@ -8,29 +8,32 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 // endpoints
 
-type frontUserServer struct {
+type FrontUserServer struct {
 	proto.UnimplementedFrontUserServer
 	userServerAddress string
 	logger            *loggers.OtelZapLoggerWithTraceID
 	tracer            trace.Tracer
+	backoffConfig     backoff.Config
 }
 
-func newFrontUserServer(userServerAddress string, logger *loggers.OtelZapLoggerWithTraceID,
-	tracer trace.Tracer,
-) *frontUserServer {
-	return &frontUserServer{
+func NewFrontUserServer(userServerAddress string, logger *loggers.OtelZapLoggerWithTraceID,
+	tracer trace.Tracer, backoffConfig backoff.Config,
+) *FrontUserServer {
+	return &FrontUserServer{
 		userServerAddress: userServerAddress,
 		logger:            logger,
 		tracer:            tracer,
+		backoffConfig:     backoffConfig,
 	}
 }
 
-func (s *frontUserServer) CreateUser(ctx context.Context, request *proto.UserData) (*proto.UserID, error) {
+func (s *FrontUserServer) CreateUser(ctx context.Context, request *proto.UserData) (*proto.UserID, error) {
 	var span trace.Span
 	ctx, span = s.tracer.Start(ctx, "/CreateUserSpan")
 	defer span.End()
@@ -40,6 +43,11 @@ func (s *frontUserServer) CreateUser(ctx context.Context, request *proto.UserDat
 		s.userServerAddress,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithConnectParams(
+			grpc.ConnectParams{
+				Backoff: s.backoffConfig,
+			},
+		),
 	)
 	if err != nil {
 		panic(err)
@@ -48,7 +56,7 @@ func (s *frontUserServer) CreateUser(ctx context.Context, request *proto.UserDat
 	return client.CreateUser(ctx, request)
 }
 
-func (s *frontUserServer) GetUserByID(ctx context.Context, request *proto.UserID) (*proto.UserData, error) {
+func (s *FrontUserServer) GetUserByID(ctx context.Context, request *proto.UserID) (*proto.UserData, error) {
 	var span trace.Span
 	ctx, span = s.tracer.Start(ctx, "/GetUserByIDSpan")
 	defer span.End()
@@ -58,6 +66,11 @@ func (s *frontUserServer) GetUserByID(ctx context.Context, request *proto.UserID
 		s.userServerAddress,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithConnectParams(
+			grpc.ConnectParams{
+				Backoff: s.backoffConfig,
+			},
+		),
 	)
 	if err != nil {
 		panic(err)

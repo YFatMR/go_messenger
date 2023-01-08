@@ -11,6 +11,7 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"github.com/YFatMR/go_messenger/core/pkg/traces"
 	userserver "github.com/YFatMR/go_messenger/front_server/internal/user_server"
+	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/otel"
@@ -20,6 +21,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/backoff"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -41,6 +44,13 @@ func main() {
 	restServiceWriteTimeout := config.GetSecondsDurationRequired("REST_FRONT_SERVICE_WRITE_TIMEOUT_SECONDS")
 	restServiceIdleTimeout := config.GetSecondsDurationRequired("REST_FRONT_SERVICE_IDLE_TIMEOUT_SECONDS")
 	restServiceReadHeaderTimeout := config.GetSecondsDurationRequired("REST_FRONT_SERVICE_READ_HEADER_TIMEOUT_SECONDS")
+
+	grpcBackoffCongig := backoff.Config{
+		BaseDelay:  config.GetMillisecondsDurationRequired("GRPC_CONNECTION_BACKOFF_DELAY_MILLISECONDS"),
+		Multiplier: config.GetFloat64Required("GRPC_CONNECTION_BACKOFF_MULTIPLIER"),
+		Jitter:     config.GetFloat64Required("GRPC_CONNECTION_BACKOFF_JITTER"),
+		MaxDelay:   config.GetMillisecondsDurationRequired("GRPC_CONNECTION_BACKOFF_MAX_DELAY_MILLISECONDS"),
+	}
 
 	// Init logger
 	zapLogger, err := loggers.NewBaseZapFileLogger(logLevel, logPath)
@@ -93,7 +103,12 @@ func main() {
 			zap.String("REST front server address", restFrontUserServerAddress),
 			zap.String("gRPC front service address", grpcFrontUserServerAddress),
 		)
-		userserver.RegisterRestUserServer(ctx, mux, grpcFrontUserServerAddress)
+
+		opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+		if err := proto.RegisterFrontUserHandlerFromEndpoint(ctx, mux, grpcFrontUserServerAddress, opts); err != nil {
+			panic(err)
+		}
+
 		logger.Info("Starting serve REST front server")
 		//#nosec G114: Use of net/http serve function that has no support for setting timeouts
 		if err := service.ListenAndServe(); err != nil {
@@ -114,7 +129,11 @@ func main() {
 			zap.String("grpc front server address", grpcFrontUserServerAddress),
 			zap.String("user server address", userServerAddress),
 		)
-		userserver.RegisterGrpcUserServer(grpcServer, userServerAddress, logger, tracer)
+
+		proto.RegisterFrontUserServer(grpcServer, userserver.NewFrontUserServer(
+			userServerAddress, logger, tracer, grpcBackoffCongig,
+		))
+
 		logger.Info("Starting serve gRPC front server")
 		if err := grpcServer.Serve(listener); err != nil {
 			panic(err)
