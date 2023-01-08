@@ -15,9 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install protoc
-        uses: arduino/setup-protoc@v1
-
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
@@ -32,8 +29,8 @@ jobs:
           version: v1.50.1
           args: --config ./.golangci.yml ./core/... ./front_service/... ./protocol/... ./user_service/...
 
-      - name: Build
-        run: make build
+      - name: Build (without proto file generation)
+        run: make raw_build
 
       - name: Run Go tests
         run: make run-tests

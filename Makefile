@@ -9,9 +9,12 @@ create_binary_directory:
 generate_proto:
 	${ROOT_PROJECT_DIRECTORY}/protocol/generate.sh
 
-build: generate_proto
+raw_build:
 	go build -o ${BINARY_DIRECTORY}/front_service ${ROOT_PROJECT_DIRECTORY}/front_service/cmd
 	go build -o ${BINARY_DIRECTORY}/user_service ${ROOT_PROJECT_DIRECTORY}/user_service/cmd
+
+build: generate_proto
+	make raw_build
 
 build_docker_compose: build
 	sudo docker-compose build

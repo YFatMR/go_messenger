@@ -9,6 +9,7 @@ GO_GRPC_OUT="./pkg/proto"
 GO_GRPC_GATEWAY_OUT="./pkg/proto"
 OPEN_API_V2_OUT="./open_api_v2"
 
+export GOPATH=/home/am/dev/golang/packages
 # https://grpc.io/docs/languages/go/quickstart/
 export PATH="$PATH:$(go env GOPATH)/bin"
 
