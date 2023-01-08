@@ -29,8 +29,8 @@ jobs:
           version: v1.50.1
           args: --config ./.golangci.yml ./core/... ./front_service/... ./protocol/... ./user_service/...
 
-      - name: Build
-        run: make build
+      - name: Build (without proto file generation)
+        run: make raw_build
 
       - name: Run Go tests
         run: make run-tests

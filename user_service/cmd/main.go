@@ -13,11 +13,13 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/traces"
 	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/YFatMR/go_messenger/user_service/internal/controllers"
-	"github.com/YFatMR/go_messenger/user_service/internal/repositories/mongo"
+	mongorepository "github.com/YFatMR/go_messenger/user_service/internal/repositories/mongo"
 	"github.com/YFatMR/go_messenger/user_service/internal/servers"
 	"github.com/YFatMR/go_messenger/user_service/internal/services"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -28,7 +30,7 @@ import (
 )
 
 func main() {
-	time.Sleep(5 * time.Second)
+	time.Sleep(3 * time.Second)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
@@ -41,16 +43,14 @@ func main() {
 	mongoURI := config.GetStringRequired("MONGODB_URI")
 	databaseName := config.GetStringRequired("MONGODB_DATABASE_NAME")
 	collectionName := config.GetStringRequired("MONGODB_DATABASE_COLLECTION_NAME")
-	connectionTimeout := config.GetIntRequired("MONGODB_CONNECTION_TIMEOUT_SECONDS")
+	mongoOperationTimeout := config.GetSecondsDurationRequired("MONGODB_OPERATION_TIMEOUT_SECONDS")
 	jaegerEndpoint := config.GetStringRequired("JAEGER_COLLECTOR_ENDPOINT")
 	serviceName := config.GetStringRequired("SERVICE_NAME")
 	userServiceAddress := config.GetStringRequired("SERVICE_ADDRESS")
-	metricsServiceReadOperationTimeout := config.GetSecondsDurationRequired(
-		"METRICS_SERVICE_READ_OPERATION_TIMEOUT_SECONDS",
-	)
-	metricsServiceWriteOperationTimeout := config.GetSecondsDurationRequired(
-		"METRICS_SERVICE_WRITE_OPERATION_TIMEOUT_SECONDS",
-	)
+	metricsServiceReadTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_READ_TIMEOUT_SECONDS")
+	metricsServiceWriteTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_WRITE_TIMEOUT_SECONDS")
+	metricsServiceIdleTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_IDLE_TIMEOUT_SECONDS")
+	metricsServiceReadHeaderTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_READ_HEADER_TIMEOUT_SECONDS")
 	metricsServiceListingSuffix := config.GetStringRequired("METRICS_SERVICE_LISTING_SUFFIX")
 	metricsServiceAddress := config.GetStringRequired("METRICS_SERVICE_ADDRESS")
 
@@ -71,9 +71,23 @@ func main() {
 
 	// Init database
 	logger.Info("Init database")
-	mongoConnectionTimeout := time.Duration(connectionTimeout) * time.Second
-	mongoSetting := mongo.NewMongoSettings(mongoURI, databaseName, collectionName, mongoConnectionTimeout)
-	mongoCollection, cancelConnection := mongo.NewMongoCollection(ctx, mongoSetting, logger)
+	mongoCollection, cancelConnection := func() (*mongo.Collection, func()) {
+		ctx, cancel := context.WithTimeout(ctx, mongoOperationTimeout)
+		client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
+		if err != nil {
+			panic(err)
+		}
+
+		logger.Info("Starting Ping mongodb")
+		err = client.Ping(ctx, nil)
+		if err != nil {
+			panic(err)
+		}
+		logger.Info("mongodb Ping successfully finished")
+
+		collection := client.Database(databaseName).Collection(collectionName)
+		return collection, cancel
+	}()
 	defer cancelConnection()
 
 	// Init tracing
@@ -98,14 +112,14 @@ func main() {
 
 	// Init metrics
 
-	go func(logger *loggers.OtelZapLoggerWithTraceID, metricsServiceListingSuffix string,
-		metricsServiceReadOperationTimeout time.Duration, metricsServiceWriteOperationTimeout time.Duration,
-	) {
+	go func(logger *loggers.OtelZapLoggerWithTraceID) {
 		server := &http.Server{
-			ReadTimeout:  metricsServiceReadOperationTimeout,
-			WriteTimeout: metricsServiceWriteOperationTimeout,
-			Addr:         metricsServiceAddress,
-			Handler:      nil,
+			ReadTimeout:       metricsServiceReadTimeout,
+			WriteTimeout:      metricsServiceWriteTimeout,
+			IdleTimeout:       metricsServiceIdleTimeout,
+			ReadHeaderTimeout: metricsServiceReadHeaderTimeout,
+			Addr:              metricsServiceAddress,
+			Handler:           nil,
 		}
 		http.Handle(metricsServiceListingSuffix, promhttp.Handler())
 		//#nosec G114: Use of net/http serve function that has no support for setting timeouts
@@ -114,11 +128,11 @@ func main() {
 				". Operation finished with error: " + err.Error())
 			panic(err)
 		}
-	}(logger, metricsServiceListingSuffix, metricsServiceReadOperationTimeout, metricsServiceWriteOperationTimeout)
+	}(logger)
 
 	// Init Server
 	logger.Info("Init server")
-	userRepository := mongo.NewUserMongoRepository(mongoCollection, logger, tracer)
+	userRepository := mongorepository.NewUserMongoRepository(mongoCollection, mongoOperationTimeout, logger, tracer)
 	userService := services.NewUserService(userRepository, logger, tracer)
 	userController := controllers.NewUserController(userService, logger, tracer)
 	gRPCUserServer := servers.NewGRPCUserServer(userController, logger, tracer)

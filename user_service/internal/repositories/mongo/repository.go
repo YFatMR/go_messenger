@@ -18,15 +18,17 @@ import (
 
 type UserMongoRepository struct {
 	collection *mongo.Collection
+	timeout    time.Duration
 	logger     *loggers.OtelZapLoggerWithTraceID
 	tracer     trace.Tracer
 }
 
-func NewUserMongoRepository(collection *mongo.Collection, logger *loggers.OtelZapLoggerWithTraceID,
-	tracer trace.Tracer,
+func NewUserMongoRepository(collection *mongo.Collection, timeout time.Duration,
+	logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer,
 ) *UserMongoRepository {
 	return &UserMongoRepository{
 		collection: collection,
+		timeout:    timeout,
 		logger:     logger,
 		tracer:     tracer,
 	}
@@ -43,8 +45,11 @@ func (r *UserMongoRepository) Create(ctx context.Context, request *enities.User)
 	startTime := time.Now()
 	defer collectDatabaseQueryMetrics(startTime, prometheus.InsertOperationTag, err)
 
+	mongoCtx, cancel := context.WithTimeout(ctx, r.timeout)
+	defer cancel()
+
 	// process database insertion
-	insertResult, err := r.collection.InsertOne(ctx, userDocument{
+	insertResult, err := r.collection.InsertOne(mongoCtx, userDocument{
 		Name:    request.GetName(),
 		Surname: request.GetSurname(),
 	})
@@ -61,13 +66,16 @@ func (r *UserMongoRepository) GetByID(ctx context.Context, id string) (foundUser
 	startTime := time.Now()
 	defer collectDatabaseQueryMetrics(startTime, prometheus.FindOperationTag, err)
 
+	mongoCtx, cancel := context.WithTimeout(ctx, r.timeout)
+	defer cancel()
+
 	// process database search
 	var document userDocument
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, repositories.ErrWrongUserIDFormat
 	}
-	err = r.collection.FindOne(ctx, bson.D{
+	err = r.collection.FindOne(mongoCtx, bson.D{
 		{Key: "_id", Value: objectID},
 	}).Decode(&document)
 	if err == nil {
