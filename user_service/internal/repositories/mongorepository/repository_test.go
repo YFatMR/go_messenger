@@ -1,4 +1,4 @@
-package mongo
+package mongorepository
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	recipe "github.com/YFatMR/go_messenger/core/pkg/recipes/go/mongo"
-	"github.com/YFatMR/go_messenger/user_service/internal/enities"
+	"github.com/YFatMR/go_messenger/user_service/internal/entities"
 	"github.com/google/uuid"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -66,8 +66,8 @@ func dropCollection(ctx context.Context, t *testing.T, collection *mongo.Collect
 func newMockUserMongoRepository(collection *mongo.Collection) *UserMongoRepository {
 	tracer := otel.Tracer("fake")
 	nopLogger := loggers.NewOtelZapLoggerWithTraceID(otelzap.New(zap.NewNop()))
-	timeout := 2 * time.Second
-	return NewUserMongoRepository(collection, timeout, nopLogger, tracer)
+	databaseOperationTimeout := time.Millisecond * 800
+	return NewUserMongoRepository(collection, databaseOperationTimeout, nopLogger, tracer)
 }
 
 func TestUserCreation(t *testing.T) {
@@ -80,8 +80,9 @@ func TestUserCreation(t *testing.T) {
 	repository := newMockUserMongoRepository(randomCollection)
 
 	// Start test
-	userData := enities.NewUser("Ivan", "Petrov")
-	_, err := repository.Create(context.Background(), userData)
+	userData := entities.NewMockUser("Ivan", "Petrov")
+	accountID := entities.NewMockAccountID("63c6f759bbe1022255a6b9b5")
+	_, err := repository.Create(context.Background(), userData, accountID)
 	if err != nil {
 		t.Fatalf("User creation failed with error: %s", err)
 	}
@@ -97,21 +98,22 @@ func TestFindCreatedUser(t *testing.T) {
 	repository := newMockUserMongoRepository(randomCollection)
 
 	// Start test
-	userData := enities.NewUser("Sergey", "Satnav")
-	UserID, err := repository.Create(context.Background(), userData)
+	userData := entities.NewMockUser("Ivan1", "Petrov1")
+	accountID := entities.NewMockAccountID("53c6f759bbe1022255a6b9b5")
+	userID, err := repository.Create(context.Background(), userData, accountID)
 	if err != nil {
 		t.Fatalf("User creation failed with error: %s", err)
 	}
 
-	responseUserData, err := repository.GetByID(context.Background(), UserID)
+	responseUserData, err := repository.GetByID(context.Background(), userID)
 	if err != nil {
 		t.Fatalf("User search failed with error: %s", err)
 	}
 	if responseUserData == nil {
-		t.Fatalf("User with id %s not exist", UserID)
+		t.Fatalf("User with id %s not exist", userID)
 	}
 
-	if *userData != *responseUserData {
+	if userData.GetName() != responseUserData.GetName() || userData.GetSurname() != responseUserData.GetSurname() {
 		t.Fatalf("Created and found different users %s %s", userData, responseUserData)
 	}
 }

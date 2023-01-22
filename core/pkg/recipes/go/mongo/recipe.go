@@ -19,6 +19,7 @@ func NewMongoTestDatabase(mongoConfig *cviper.CustomViper) (*mongo.Database, fun
 	mongoPassword := mongoConfig.GetStringRequired("MONGO_INITDB_ROOT_PASSWORD")
 	mongoDockerTag := mongoConfig.GetStringRequired("MONGO_DOCKER_TAG")
 	mongoTestDatabaseName := mongoConfig.GetStringRequired("MONGO_TEST_DATABASE_NAME")
+	mongoConnectionTimeout := mongoConfig.GetSecondsDurationRequired("DATABASE_CONNECTION_TIMEOUT_MILLISECONDS")
 
 	pool, err := dockertest.NewPool("")
 	if err != nil {
@@ -39,7 +40,11 @@ func NewMongoTestDatabase(mongoConfig *cviper.CustomViper) (*mongo.Database, fun
 		mongoURI := fmt.Sprintf("mongodb://%s:%s@localhost:%s", mongoUsername, mongoPassword, port)
 		var err error
 		ctx := context.Background()
-		client, err = mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
+		client, err = mongo.Connect(
+			ctx,
+			options.Client().ApplyURI(mongoURI),
+			options.Client().SetConnectTimeout(mongoConnectionTimeout),
+		)
 		if err != nil {
 			return err
 		}

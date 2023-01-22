@@ -1,6 +1,7 @@
 package cviper
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/spf13/viper"
@@ -18,6 +19,7 @@ func New() *CustomViper {
 }
 
 func (v *CustomViper) getNoKeyPanicMessage(key string) string {
+	fmt.Println("Can't find required key:", key)
 	return "Can't find required key: " + key
 }
 
@@ -61,5 +63,12 @@ func (v *CustomViper) GetSecondsDurationRequired(key string) time.Duration {
 }
 
 func (v *CustomViper) GetMillisecondsDurationRequired(key string) time.Duration {
-	return time.Duration(v.GetIntRequired(key)) * time.Second
+	return time.Duration(v.GetIntRequired(key)) * time.Millisecond
+}
+
+func (v *CustomViper) GetBoolRequired(key string) bool {
+	if v.Get(key) == nil {
+		panic(v.getNoKeyPanicMessage(key))
+	}
+	return v.GetBool(key)
 }

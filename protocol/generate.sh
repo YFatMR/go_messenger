@@ -9,7 +9,7 @@ GO_GRPC_OUT="./pkg/proto"
 GO_GRPC_GATEWAY_OUT="./pkg/proto"
 OPEN_API_V2_OUT="./open_api_v2"
 
-export GOPATH=/home/am/dev/golang/packages
+export GOPATH=/home/am/go
 # https://grpc.io/docs/languages/go/quickstart/
 export PATH="$PATH:$(go env GOPATH)/bin"
 
@@ -26,7 +26,8 @@ protoc \
     --grpc-gateway_opt logtostderr=true \
     --grpc-gateway_opt paths=source_relative \
     internal/front.proto \
-    internal/user.proto
+    internal/user.proto \
+    internal/auth.proto
 
 # generate openapiv2 for REST endpoint
 protoc \

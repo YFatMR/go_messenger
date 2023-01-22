@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package go_proto;
+option go_package = "./go_proto";
+
+message Credential {
+  string login = 1;
+  string password = 2;
+}
+
+message TokenPayload {
+  string accountID = 1;
+  string userRole = 2;
+}
+
+message Token { string accessToken = 1; }
+
+message AccountID { string ID = 1; }
+
+service Auth {
+  rpc CreateAccount(Credential) returns (AccountID) {}
+  rpc GetToken(Credential) returns (Token) {}
+  rpc GetTokenPayload(Token) returns (TokenPayload) {}
+}

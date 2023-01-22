@@ -4,18 +4,32 @@ package go_proto;
 option go_package = "./go_proto";
 
 import "user.proto";
+import "auth.proto";
 import "google/api/annotations.proto";
 
+message CreateUserRequest {
+  Credential credential = 1;
+  UserData userData = 2;
+}
+
 service FrontUser {
-  rpc CreateUser (UserData) returns (UserID) {
+  rpc CreateUser(CreateUserRequest) returns (UserID) {
     option (google.api.http) = {
-      post: "/users"
-      body: "*"
+      post : "/users"
+      body : "*"
     };
   }
-  rpc GetUserByID (UserID) returns (UserData) {
+
+  rpc GetToken(Credential) returns (Token) {
     option (google.api.http) = {
-      get: "/users/{ID}"
+      post : "/token"
+      body : "*"
+    };
+  }
+
+  rpc GetUserByID(UserID) returns (UserData) {
+    option (google.api.http) = {
+      get : "/users/{ID}"
     };
   }
 }

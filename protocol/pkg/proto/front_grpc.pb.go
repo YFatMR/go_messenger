@@ -22,7 +22,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FrontUserClient interface {
-	CreateUser(ctx context.Context, in *UserData, opts ...grpc.CallOption) (*UserID, error)
+	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserID, error)
+	GetToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error)
 	GetUserByID(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*UserData, error)
 }
 
@@ -34,9 +35,18 @@ func NewFrontUserClient(cc grpc.ClientConnInterface) FrontUserClient {
 	return &frontUserClient{cc}
 }
 
-func (c *frontUserClient) CreateUser(ctx context.Context, in *UserData, opts ...grpc.CallOption) (*UserID, error) {
+func (c *frontUserClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserID, error) {
 	out := new(UserID)
 	err := c.cc.Invoke(ctx, "/go_proto.FrontUser/CreateUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *frontUserClient) GetToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error) {
+	out := new(Token)
+	err := c.cc.Invoke(ctx, "/go_proto.FrontUser/GetToken", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +66,8 @@ func (c *frontUserClient) GetUserByID(ctx context.Context, in *UserID, opts ...g
 // All implementations must embed UnimplementedFrontUserServer
 // for forward compatibility
 type FrontUserServer interface {
-	CreateUser(context.Context, *UserData) (*UserID, error)
+	CreateUser(context.Context, *CreateUserRequest) (*UserID, error)
+	GetToken(context.Context, *Credential) (*Token, error)
 	GetUserByID(context.Context, *UserID) (*UserData, error)
 	mustEmbedUnimplementedFrontUserServer()
 }
@@ -65,8 +76,11 @@ type FrontUserServer interface {
 type UnimplementedFrontUserServer struct {
 }
 
-func (UnimplementedFrontUserServer) CreateUser(context.Context, *UserData) (*UserID, error) {
+func (UnimplementedFrontUserServer) CreateUser(context.Context, *CreateUserRequest) (*UserID, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
+}
+func (UnimplementedFrontUserServer) GetToken(context.Context, *Credential) (*Token, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetToken not implemented")
 }
 func (UnimplementedFrontUserServer) GetUserByID(context.Context, *UserID) (*UserData, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserByID not implemented")
@@ -85,7 +99,7 @@ func RegisterFrontUserServer(s grpc.ServiceRegistrar, srv FrontUserServer) {
 }
 
 func _FrontUser_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UserData)
+	in := new(CreateUserRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -97,7 +111,25 @@ func _FrontUser_CreateUser_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: "/go_proto.FrontUser/CreateUser",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FrontUserServer).CreateUser(ctx, req.(*UserData))
+		return srv.(FrontUserServer).CreateUser(ctx, req.(*CreateUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FrontUser_GetToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Credential)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FrontUserServer).GetToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/go_proto.FrontUser/GetToken",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FrontUserServer).GetToken(ctx, req.(*Credential))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -130,6 +162,10 @@ var FrontUser_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateUser",
 			Handler:    _FrontUser_CreateUser_Handler,
+		},
+		{
+			MethodName: "GetToken",
+			Handler:    _FrontUser_GetToken_Handler,
 		},
 		{
 			MethodName: "GetUserByID",
