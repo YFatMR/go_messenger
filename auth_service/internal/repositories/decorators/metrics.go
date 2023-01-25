@@ -29,7 +29,7 @@ func (d *MetricRepositoryDecorator) CreateAccount(ctx context.Context, credentia
 	return decorators.CollectMetricForDatabaseCallbackWithReturnType(ctx, prometheus.InsertOperationTag, callback)
 }
 
-func (d *MetricRepositoryDecorator) cWithHashedPasswordByLogin(ctx context.Context, login string) (
+func (d *MetricRepositoryDecorator) GetTokenPayloadWithHashedPasswordByLogin(ctx context.Context, login string) (
 	_ *entities.TokenPayload, hashedPassword string, err error,
 ) {
 	callback := func(ctx context.Context) (_ *entities.TokenPayload, hashedPassword string, err error) {
