@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/mongodb"
 	"github.com/YFatMR/go_messenger/core/pkg/traces"
 	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/YFatMR/go_messenger/user_service/internal/controllers"
-	"github.com/YFatMR/go_messenger/user_service/internal/repositories/mongo"
+	"github.com/YFatMR/go_messenger/user_service/internal/repositories/mongorepository"
 	"github.com/YFatMR/go_messenger/user_service/internal/servers"
 	"github.com/YFatMR/go_messenger/user_service/internal/services"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -23,12 +23,12 @@ import (
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	resourcesdk "go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 )
 
 func main() {
-	time.Sleep(5 * time.Second)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
@@ -38,19 +38,24 @@ func main() {
 	// Init environment vars
 	logLevel := config.GetZapcoreLogLevelRequired("LOG_LEVEL")
 	logPath := config.GetStringRequired("LOG_PATH")
-	mongoURI := config.GetStringRequired("MONGODB_URI")
-	databaseName := config.GetStringRequired("MONGODB_DATABASE_NAME")
-	collectionName := config.GetStringRequired("MONGODB_DATABASE_COLLECTION_NAME")
-	connectionTimeout := config.GetIntRequired("MONGODB_CONNECTION_TIMEOUT_SECONDS")
+
+	databaseURI := config.GetStringRequired("DATABASE_URI")
+	databaseName := config.GetStringRequired("DATABASE_NAME")
+	databaseCollectionName := config.GetStringRequired("DATABASE_COLLECTION_NAME")
+	databaseOperationTimeout := config.GetSecondsDurationRequired("DATABASE_OPERATION_TIMEOUT_MILLISECONDS")
+	databaseConnectionTimeout := config.GetMillisecondsDurationRequired("DATABASE_CONNECTION_TIMEOUT_MILLISECONDS")
+	databaseReconnectionCount := config.GetIntRequired("DATABASE_RECONNECTION_COUNT")
+	databaseReconnectionInterval := config.GetMillisecondsDurationRequired(
+		"DATABASE_RECONNECTIONION_INTERVAL_MILLISECONDS",
+	)
+
 	jaegerEndpoint := config.GetStringRequired("JAEGER_COLLECTOR_ENDPOINT")
 	serviceName := config.GetStringRequired("SERVICE_NAME")
-	userServiceAddress := config.GetStringRequired("SERVICE_ADDRESS")
-	metricsServiceReadOperationTimeout := config.GetSecondsDurationRequired(
-		"METRICS_SERVICE_READ_OPERATION_TIMEOUT_SECONDS",
-	)
-	metricsServiceWriteOperationTimeout := config.GetSecondsDurationRequired(
-		"METRICS_SERVICE_WRITE_OPERATION_TIMEOUT_SECONDS",
-	)
+	serviceAddress := config.GetStringRequired("SERVICE_ADDRESS")
+	metricsServiceReadTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_READ_TIMEOUT_SECONDS")
+	metricsServiceWriteTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_WRITE_TIMEOUT_SECONDS")
+	metricsServiceIdleTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_IDLE_TIMEOUT_SECONDS")
+	metricsServiceReadHeaderTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_READ_HEADER_TIMEOUT_SECONDS")
 	metricsServiceListingSuffix := config.GetStringRequired("METRICS_SERVICE_LISTING_SUFFIX")
 	metricsServiceAddress := config.GetStringRequired("METRICS_SERVICE_ADDRESS")
 
@@ -70,11 +75,16 @@ func main() {
 	defer logger.Sync()
 
 	// Init database
-	logger.Info("Init database")
-	mongoConnectionTimeout := time.Duration(connectionTimeout) * time.Second
-	mongoSetting := mongo.NewMongoSettings(mongoURI, databaseName, collectionName, mongoConnectionTimeout)
-	mongoCollection, cancelConnection := mongo.NewMongoCollection(ctx, mongoSetting, logger)
-	defer cancelConnection()
+	logger.Info("Connecting to database...")
+	mongoSettings := mongodb.NewMongoSettings(
+		databaseURI, databaseName, databaseCollectionName, databaseConnectionTimeout, logger,
+	)
+	mongoCollection, err := mongodb.Connect(ctx, databaseReconnectionCount, databaseReconnectionInterval, mongoSettings)
+	if err != nil {
+		logger.Error("Can't establish connection with database", zap.Error(err))
+		panic(err)
+	}
+	logger.Info("Successfully connected to database")
 
 	// Init tracing
 	logger.Info("Init metrics")
@@ -98,14 +108,14 @@ func main() {
 
 	// Init metrics
 
-	go func(logger *loggers.OtelZapLoggerWithTraceID, metricsServiceListingSuffix string,
-		metricsServiceReadOperationTimeout time.Duration, metricsServiceWriteOperationTimeout time.Duration,
-	) {
+	go func(logger *loggers.OtelZapLoggerWithTraceID) {
 		server := &http.Server{
-			ReadTimeout:  metricsServiceReadOperationTimeout,
-			WriteTimeout: metricsServiceWriteOperationTimeout,
-			Addr:         metricsServiceAddress,
-			Handler:      nil,
+			ReadTimeout:       metricsServiceReadTimeout,
+			WriteTimeout:      metricsServiceWriteTimeout,
+			IdleTimeout:       metricsServiceIdleTimeout,
+			ReadHeaderTimeout: metricsServiceReadHeaderTimeout,
+			Addr:              metricsServiceAddress,
+			Handler:           nil,
 		}
 		http.Handle(metricsServiceListingSuffix, promhttp.Handler())
 		//#nosec G114: Use of net/http serve function that has no support for setting timeouts
@@ -114,14 +124,15 @@ func main() {
 				". Operation finished with error: " + err.Error())
 			panic(err)
 		}
-	}(logger, metricsServiceListingSuffix, metricsServiceReadOperationTimeout, metricsServiceWriteOperationTimeout)
+	}(logger)
 
 	// Init Server
 	logger.Info("Init server")
-	userRepository := mongo.NewUserMongoRepository(mongoCollection, logger, tracer)
-	userService := services.NewUserService(userRepository, logger, tracer)
-	userController := controllers.NewUserController(userService, logger, tracer)
-	gRPCUserServer := servers.NewGRPCUserServer(userController, logger, tracer)
+
+	repository := mongorepository.NewUserMongoRepository(mongoCollection, databaseOperationTimeout, logger, tracer)
+	service := services.NewUserService(repository, logger, tracer)
+	controller := controllers.NewUserController(service, logger, tracer)
+	server := servers.NewGRPCUserServer(controller, logger, tracer)
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
 		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
@@ -129,11 +140,11 @@ func main() {
 
 	// Register protobuf server
 	logger.Info("Register protobuf server")
-	proto.RegisterUserServer(s, gRPCUserServer)
+	proto.RegisterUserServer(s, &server)
 
 	// Listen connection
 	logger.Info("Server successfully setup. Starting listen...")
-	listener, err := net.Listen("tcp", userServiceAddress)
+	listener, err := net.Listen("tcp", serviceAddress)
 	if err != nil {
 		panic(err)
 	}

@@ -6,8 +6,8 @@ run:
 
 linters-settings:
   funlen:
-    lines: 120
-    statements: 120
+    lines: 50
+    statements: 50
   lll:
     line-length: 120
   gocyclo:
@@ -24,6 +24,12 @@ issues:
     - path: zap.go # core/pkg/loggers/zap.go
       linters:
         - typecheck # Problems with embedded structure from other package https://github.com/golangci/golangci-lint/issues/2286
+    - path: main.go
+      linters:
+        - funlen
+    - path: interceptors/auth.go
+      linters:
+        - funlen
   max-issues-per-linter: 0
   max-same-issues: 0
 

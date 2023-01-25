@@ -1,6 +1,7 @@
 go 1.19
 
 use (
+	./auth_service
 	./core
 	./front_service
 	./protocol

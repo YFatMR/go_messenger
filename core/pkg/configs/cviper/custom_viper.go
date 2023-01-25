@@ -1,6 +1,7 @@
 package cviper
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/spf13/viper"
@@ -18,6 +19,7 @@ func New() *CustomViper {
 }
 
 func (v *CustomViper) getNoKeyPanicMessage(key string) string {
+	fmt.Println("Can't find required key:", key)
 	return "Can't find required key: " + key
 }
 
@@ -33,6 +35,13 @@ func (v *CustomViper) GetIntRequired(key string) int {
 		panic(v.getNoKeyPanicMessage(key))
 	}
 	return v.GetInt(key)
+}
+
+func (v *CustomViper) GetFloat64Required(key string) float64 {
+	if v.Get(key) == nil {
+		panic(v.getNoKeyPanicMessage(key))
+	}
+	return v.GetFloat64(key)
 }
 
 func (v *CustomViper) GetZapcoreLogLevelRequired(key string) zapcore.Level {
@@ -51,4 +60,15 @@ func (v *CustomViper) GetZapcoreLogLevelRequired(key string) zapcore.Level {
 
 func (v *CustomViper) GetSecondsDurationRequired(key string) time.Duration {
 	return time.Duration(v.GetIntRequired(key)) * time.Second
+}
+
+func (v *CustomViper) GetMillisecondsDurationRequired(key string) time.Duration {
+	return time.Duration(v.GetIntRequired(key)) * time.Millisecond
+}
+
+func (v *CustomViper) GetBoolRequired(key string) bool {
+	if v.Get(key) == nil {
+		panic(v.getNoKeyPanicMessage(key))
+	}
+	return v.GetBool(key)
 }

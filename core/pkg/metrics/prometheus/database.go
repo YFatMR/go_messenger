@@ -1,36 +1,14 @@
 package prometheus
 
 import (
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 // Naming rule: https://prometheus.io/docs/practices/naming/
 
-// Common tags.
-const (
-	OkStatusTag    = "ok"
-	ErrorStatusTag = "error"
-)
-
-// Metrics for high level endpoints (gRPC endpoints).
-const (
-	ServerSideErrorRequestTag = "server_side"
-	ClientSideErrorRequestTag = "user_side"
-)
-
-var (
-	RequestProcessingTotal = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "request_processing_total",
-		Help: "The total number of requests",
-	}, []string{"endpoint"})
-	RequestProcessingErrorsTotal = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "request_processing",
-		Help: "The total number of error requests",
-	}, []string{"endpoint", "error_type"})
-)
-
-// Metrics for database.
 const (
 	InsertOperationTag = "insert"
 	FindOperationTag   = "find"
@@ -47,3 +25,13 @@ var (
 		Help: "Count of query to database",
 	}, []string{"status", "operation"})
 )
+
+func CollectDatabaseQueryMetrics(startTime time.Time, operationTag string, err error) {
+	functionDuration := time.Since(startTime).Seconds()
+	statusTag := ErrorStatusTag
+	if err == nil {
+		DatabaseSuccessQueryDurationSeconds.WithLabelValues(operationTag).Observe(functionDuration)
+		statusTag = OkStatusTag
+	}
+	DatabaseQueryProcessedTotal.WithLabelValues(statusTag, operationTag).Inc()
+}

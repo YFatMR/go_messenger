@@ -16,6 +16,38 @@
     "application/json"
   ],
   "paths": {
+    "/token": {
+      "post": {
+        "operationId": "FrontUser_GetToken",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/go_protoToken"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/go_protoCredential"
+            }
+          }
+        ],
+        "tags": [
+          "FrontUser"
+        ]
+      }
+    },
     "/users": {
       "post": {
         "operationId": "FrontUser_CreateUser",
@@ -39,7 +71,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/go_protoUserData"
+              "$ref": "#/definitions/go_protoCreateUserRequest"
             }
           }
         ],
@@ -80,6 +112,36 @@
     }
   },
   "definitions": {
+    "go_protoCreateUserRequest": {
+      "type": "object",
+      "properties": {
+        "credential": {
+          "$ref": "#/definitions/go_protoCredential"
+        },
+        "userData": {
+          "$ref": "#/definitions/go_protoUserData"
+        }
+      }
+    },
+    "go_protoCredential": {
+      "type": "object",
+      "properties": {
+        "login": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
+    "go_protoToken": {
+      "type": "object",
+      "properties": {
+        "accessToken": {
+          "type": "string"
+        }
+      }
+    },
     "go_protoUserData": {
       "type": "object",
       "properties": {

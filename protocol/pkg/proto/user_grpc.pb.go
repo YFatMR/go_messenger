@@ -22,8 +22,9 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UserClient interface {
-	CreateUser(ctx context.Context, in *UserData, opts ...grpc.CallOption) (*UserID, error)
+	CreateUser(ctx context.Context, in *CreateUserDataRequest, opts ...grpc.CallOption) (*UserID, error)
 	GetUserByID(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*UserData, error)
+	DeleteUserByID(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*Void, error)
 }
 
 type userClient struct {
@@ -34,7 +35,7 @@ func NewUserClient(cc grpc.ClientConnInterface) UserClient {
 	return &userClient{cc}
 }
 
-func (c *userClient) CreateUser(ctx context.Context, in *UserData, opts ...grpc.CallOption) (*UserID, error) {
+func (c *userClient) CreateUser(ctx context.Context, in *CreateUserDataRequest, opts ...grpc.CallOption) (*UserID, error) {
 	out := new(UserID)
 	err := c.cc.Invoke(ctx, "/go_proto.User/CreateUser", in, out, opts...)
 	if err != nil {
@@ -52,12 +53,22 @@ func (c *userClient) GetUserByID(ctx context.Context, in *UserID, opts ...grpc.C
 	return out, nil
 }
 
+func (c *userClient) DeleteUserByID(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*Void, error) {
+	out := new(Void)
+	err := c.cc.Invoke(ctx, "/go_proto.User/DeleteUserByID", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServer is the server API for User service.
 // All implementations must embed UnimplementedUserServer
 // for forward compatibility
 type UserServer interface {
-	CreateUser(context.Context, *UserData) (*UserID, error)
+	CreateUser(context.Context, *CreateUserDataRequest) (*UserID, error)
 	GetUserByID(context.Context, *UserID) (*UserData, error)
+	DeleteUserByID(context.Context, *UserID) (*Void, error)
 	mustEmbedUnimplementedUserServer()
 }
 
@@ -65,11 +76,14 @@ type UserServer interface {
 type UnimplementedUserServer struct {
 }
 
-func (UnimplementedUserServer) CreateUser(context.Context, *UserData) (*UserID, error) {
+func (UnimplementedUserServer) CreateUser(context.Context, *CreateUserDataRequest) (*UserID, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
 }
 func (UnimplementedUserServer) GetUserByID(context.Context, *UserID) (*UserData, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserByID not implemented")
+}
+func (UnimplementedUserServer) DeleteUserByID(context.Context, *UserID) (*Void, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteUserByID not implemented")
 }
 func (UnimplementedUserServer) mustEmbedUnimplementedUserServer() {}
 
@@ -85,7 +99,7 @@ func RegisterUserServer(s grpc.ServiceRegistrar, srv UserServer) {
 }
 
 func _User_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UserData)
+	in := new(CreateUserDataRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -97,7 +111,7 @@ func _User_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(int
 		FullMethod: "/go_proto.User/CreateUser",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServer).CreateUser(ctx, req.(*UserData))
+		return srv.(UserServer).CreateUser(ctx, req.(*CreateUserDataRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -120,6 +134,24 @@ func _User_GetUserByID_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _User_DeleteUserByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).DeleteUserByID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/go_proto.User/DeleteUserByID",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).DeleteUserByID(ctx, req.(*UserID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // User_ServiceDesc is the grpc.ServiceDesc for User service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -134,6 +166,10 @@ var User_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserByID",
 			Handler:    _User_GetUserByID_Handler,
+		},
+		{
+			MethodName: "DeleteUserByID",
+			Handler:    _User_DeleteUserByID_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

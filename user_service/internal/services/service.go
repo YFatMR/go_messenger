@@ -4,50 +4,51 @@ import (
 	"context"
 
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
-	"github.com/YFatMR/go_messenger/user_service/internal/enities"
-	"github.com/YFatMR/go_messenger/user_service/internal/metrics/prometheus"
+	"github.com/YFatMR/go_messenger/core/pkg/metrics/prometheus"
+	"github.com/YFatMR/go_messenger/user_service/internal/entities"
 	"go.opentelemetry.io/otel/trace"
 )
 
 type userRepository interface {
-	Create(ctx context.Context, request *enities.User) (string, error)
-	GetByID(ctx context.Context, id string) (*enities.User, error)
+	Create(ctx context.Context, user *entities.User, accountID *entities.AccountID) (*entities.UserID, error)
+	GetByID(ctx context.Context, userID *entities.UserID) (*entities.User, error)
+	DeleteByID(ctx context.Context, userID *entities.UserID) error
 }
 
 type UserService struct {
-	repository userRepository
-	logger     *loggers.OtelZapLoggerWithTraceID
-	tracer     trace.Tracer
+	userRepository userRepository
+	logger         *loggers.OtelZapLoggerWithTraceID
+	tracer         trace.Tracer
 }
 
-func NewUserService(repository userRepository, logger *loggers.OtelZapLoggerWithTraceID,
-	tracer trace.Tracer,
+func NewUserService(repository userRepository, logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer,
 ) *UserService {
 	return &UserService{
-		repository: repository,
-		logger:     logger,
-		tracer:     tracer,
+		userRepository: repository,
+		logger:         logger,
+		tracer:         tracer,
 	}
 }
 
-func (s *UserService) Create(ctx context.Context, request *enities.User) (string, error) {
-	const endpointTag = "CreateUser"
+func (s *UserService) Create(ctx context.Context, user *entities.User, accountID *entities.AccountID) (
+	_ *entities.UserID, err error,
+) {
+	const endpointTag = "GetAccountByToken"
+	defer prometheus.CollectServiceRequestMetrics(endpointTag, err)
 
-	prometheus.RequestProcessingTotal.WithLabelValues(endpointTag).Inc()
-	UserID, err := s.repository.Create(ctx, request)
-	if err != nil {
-		prometheus.RequestProcessingErrorsTotal.WithLabelValues(endpointTag, prometheus.ServerSideErrorRequestTag).Inc()
-	}
-	return UserID, err
+	return s.userRepository.Create(ctx, user, accountID)
 }
 
-func (s *UserService) GetByID(ctx context.Context, id string) (*enities.User, error) {
+func (s *UserService) GetByID(ctx context.Context, userID *entities.UserID) (_ *entities.User, err error) {
 	const endpointTag = "GetUserByID"
+	defer prometheus.CollectServiceRequestMetrics(endpointTag, err)
 
-	prometheus.RequestProcessingTotal.WithLabelValues(endpointTag).Inc()
-	userEntity, err := s.repository.GetByID(ctx, id)
-	if err != nil {
-		prometheus.RequestProcessingErrorsTotal.WithLabelValues(endpointTag, prometheus.ServerSideErrorRequestTag).Inc()
-	}
-	return userEntity, err
+	return s.userRepository.GetByID(ctx, userID)
+}
+
+func (s *UserService) DeleteByID(ctx context.Context, userID *entities.UserID) (err error) {
+	const endpointTag = "DeleteUserByID"
+	defer prometheus.CollectServiceRequestMetrics(endpointTag, err)
+
+	return s.userRepository.DeleteByID(ctx, userID)
 }
