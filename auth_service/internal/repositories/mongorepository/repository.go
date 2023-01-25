@@ -7,11 +7,9 @@ import (
 
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
-	"github.com/YFatMR/go_messenger/core/pkg/metrics/prometheus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -27,17 +25,15 @@ type AccountMongoRepository struct {
 	collection       *mongo.Collection
 	operationTimeout time.Duration
 	logger           *loggers.OtelZapLoggerWithTraceID
-	tracer           trace.Tracer
 }
 
 func NewAccountMongoRepository(collection *mongo.Collection, operationTimeout time.Duration,
-	logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer,
+	logger *loggers.OtelZapLoggerWithTraceID,
 ) *AccountMongoRepository {
 	return &AccountMongoRepository{
 		collection:       collection,
 		operationTimeout: operationTimeout,
 		logger:           logger,
-		tracer:           tracer,
 	}
 }
 
@@ -45,11 +41,6 @@ func (r *AccountMongoRepository) CreateAccount(ctx context.Context, credential *
 	userRole entities.Role) (
 	_ *entities.AccountID, err error,
 ) {
-	// metrics
-	startTime := time.Now()
-	defer prometheus.CollectDatabaseQueryMetrics(startTime, prometheus.InsertOperationTag, err)
-
-	// process database insertion
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
 	defer cancel()
 
@@ -71,11 +62,6 @@ func (r *AccountMongoRepository) CreateAccount(ctx context.Context, credential *
 func (r *AccountMongoRepository) GetTokenPayloadWithHashedPasswordByLogin(ctx context.Context, login string) (
 	_ *entities.TokenPayload, _ string, err error,
 ) {
-	// metrics
-	startTime := time.Now()
-	defer prometheus.CollectDatabaseQueryMetrics(startTime, prometheus.FindOperationTag, err)
-
-	// process database search
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
 	defer cancel()
 

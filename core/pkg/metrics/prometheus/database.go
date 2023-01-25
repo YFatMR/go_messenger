@@ -9,9 +9,12 @@ import (
 
 // Naming rule: https://prometheus.io/docs/practices/naming/
 
+type DatabaseOperatinTag string
+
 const (
-	InsertOperationTag = "insert"
-	FindOperationTag   = "find"
+	InsertOperationTag DatabaseOperatinTag = "insert"
+	FindOperationTag   DatabaseOperatinTag = "find"
+	DeleteOperationTag DatabaseOperatinTag = "find"
 )
 
 var (
@@ -26,12 +29,13 @@ var (
 	}, []string{"status", "operation"})
 )
 
-func CollectDatabaseQueryMetrics(startTime time.Time, operationTag string, err error) {
+func CollectDatabaseQueryMetrics(startTime time.Time, operationTag DatabaseOperatinTag, err error) {
 	functionDuration := time.Since(startTime).Seconds()
-	statusTag := ErrorStatusTag
+	statusTag := errorStatusTag
+	tag := string(operationTag)
 	if err == nil {
-		DatabaseSuccessQueryDurationSeconds.WithLabelValues(operationTag).Observe(functionDuration)
-		statusTag = OkStatusTag
+		DatabaseSuccessQueryDurationSeconds.WithLabelValues(tag).Observe(functionDuration)
+		statusTag = okStatusTag
 	}
-	DatabaseQueryProcessedTotal.WithLabelValues(statusTag, operationTag).Inc()
+	DatabaseQueryProcessedTotal.WithLabelValues(statusTag, tag).Inc()
 }

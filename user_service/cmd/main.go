@@ -13,6 +13,8 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/traces"
 	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/YFatMR/go_messenger/user_service/internal/controllers"
+	"github.com/YFatMR/go_messenger/user_service/internal/repositories"
+	"github.com/YFatMR/go_messenger/user_service/internal/repositories/decorators"
 	"github.com/YFatMR/go_messenger/user_service/internal/repositories/mongorepository"
 	"github.com/YFatMR/go_messenger/user_service/internal/servers"
 	"github.com/YFatMR/go_messenger/user_service/internal/services"
@@ -58,6 +60,9 @@ func main() {
 	metricsServiceReadHeaderTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_READ_HEADER_TIMEOUT_SECONDS")
 	metricsServiceListingSuffix := config.GetStringRequired("METRICS_SERVICE_LISTING_SUFFIX")
 	metricsServiceAddress := config.GetStringRequired("METRICS_SERVICE_ADDRESS")
+
+	collectDatabaseQueryMetrics := config.GetBoolRequired("COLLECT_DATABASE_QUERY_METRICS")
+	traceDatabaseQuery := config.GetBoolRequired("TRACE_DATABASE_QUERY")
 
 	// Init logger
 	zapLogger, err := loggers.NewBaseZapFileLogger(logLevel, logPath)
@@ -129,7 +134,17 @@ func main() {
 	// Init Server
 	logger.Info("Init server")
 
-	repository := mongorepository.NewUserMongoRepository(mongoCollection, databaseOperationTimeout, logger, tracer)
+	var repository repositories.UserRepository
+	repository = mongorepository.NewUserMongoRepository(mongoCollection, databaseOperationTimeout, logger)
+	if collectDatabaseQueryMetrics {
+		repository = decorators.NewMetricDecorator(repository)
+	}
+	if traceDatabaseQuery {
+		// TODO: make as config option (?)
+		recordTraceErrors := true
+		repository = decorators.NewTracingRepositoryDecorator(repository, tracer, recordTraceErrors)
+	}
+
 	service := services.NewUserService(repository, logger, tracer)
 	controller := controllers.NewUserController(service, logger, tracer)
 	server := servers.NewGRPCUserServer(controller, logger, tracer)

@@ -14,9 +14,9 @@ var (
 )
 
 func CollectServiceRequestMetrics(endpointTag string, err error) {
-	statusTag := OkStatusTag
+	statusTag := okStatusTag
 	if err != nil {
-		statusTag = ErrorStatusTag
+		statusTag = errorStatusTag
 	}
 	ServiceRequestsProcessedTotal.WithLabelValues(endpointTag, statusTag).Inc()
 }

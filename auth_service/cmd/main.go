@@ -9,6 +9,8 @@ import (
 
 	"github.com/YFatMR/go_messenger/auth_service/internal/auth"
 	"github.com/YFatMR/go_messenger/auth_service/internal/controllers"
+	"github.com/YFatMR/go_messenger/auth_service/internal/repositories"
+	"github.com/YFatMR/go_messenger/auth_service/internal/repositories/decorators"
 	"github.com/YFatMR/go_messenger/auth_service/internal/repositories/mongorepository"
 	"github.com/YFatMR/go_messenger/auth_service/internal/servers"
 	"github.com/YFatMR/go_messenger/auth_service/internal/services"
@@ -49,6 +51,7 @@ func main() {
 	databaseReconnectionInterval := config.GetMillisecondsDurationRequired(
 		"DATABASE_RECONNECTIONION_INTERVAL_MILLISECONDS",
 	)
+	collectDatabaseQueryMetrics := config.GetBoolRequired("COLLECT_DATABASE_QUERY_METRICS")
 
 	jaegerEndpoint := config.GetStringRequired("JAEGER_COLLECTOR_ENDPOINT")
 	serviceName := config.GetStringRequired("SERVICE_NAME")
@@ -135,7 +138,12 @@ func main() {
 	authManager := auth.NewJWTManager(authTokenSecretKey, authTokenExpirationDuration, logger, tracer)
 	passwordValidator := auth.NewDefaultPasswordValidator()
 
-	repository := mongorepository.NewAccountMongoRepository(mongoCollection, databaseOperationTimeout, logger, tracer)
+	var repository repositories.AccountRepository
+	repository = mongorepository.NewAccountMongoRepository(mongoCollection, databaseOperationTimeout, logger)
+	if collectDatabaseQueryMetrics {
+		repository = decorators.NewMetricDecorator(repository)
+	}
+
 	service := services.NewAccountService(repository, authManager, logger, tracer)
 	controller := controllers.NewAccountController(service, passwordValidator, logger, tracer)
 	server := servers.NewGRPCAuthServer(controller, logger, tracer)

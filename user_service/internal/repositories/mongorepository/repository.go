@@ -6,12 +6,10 @@ import (
 	"time"
 
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
-	"github.com/YFatMR/go_messenger/core/pkg/metrics/prometheus"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -26,28 +24,21 @@ type UserMongoRepository struct {
 	collection       *mongo.Collection
 	operationTimeout time.Duration
 	logger           *loggers.OtelZapLoggerWithTraceID
-	tracer           trace.Tracer
 }
 
 func NewUserMongoRepository(collection *mongo.Collection, operationTimeout time.Duration,
-	logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer,
+	logger *loggers.OtelZapLoggerWithTraceID,
 ) *UserMongoRepository {
 	return &UserMongoRepository{
 		collection:       collection,
 		operationTimeout: operationTimeout,
 		logger:           logger,
-		tracer:           tracer,
 	}
 }
 
 func (r *UserMongoRepository) Create(ctx context.Context, user *entities.User, accountID *entities.AccountID) (
 	_ *entities.UserID, err error,
 ) {
-	// metrics
-	startTime := time.Now()
-	defer prometheus.CollectDatabaseQueryMetrics(startTime, prometheus.InsertOperationTag, err)
-
-	// process database insertion
 	accountMongoID, err := primitive.ObjectIDFromHex(accountID.GetID())
 	if err != nil {
 		r.logger.ErrorContextNoExport(ctx, "Got wrong id format", zap.Error(err))
@@ -73,11 +64,6 @@ func (r *UserMongoRepository) Create(ctx context.Context, user *entities.User, a
 }
 
 func (r *UserMongoRepository) GetByID(ctx context.Context, userID *entities.UserID) (_ *entities.User, err error) {
-	// metrics
-	startTime := time.Now()
-	defer prometheus.CollectDatabaseQueryMetrics(startTime, prometheus.FindOperationTag, err)
-
-	// process database search
 	objectID, err := primitive.ObjectIDFromHex(userID.GetID())
 	if err != nil {
 		r.logger.ErrorContextNoExport(ctx, "Got wrong id format", zap.Error(err))
@@ -105,11 +91,6 @@ func (r *UserMongoRepository) GetByID(ctx context.Context, userID *entities.User
 }
 
 func (r *UserMongoRepository) DeleteByID(ctx context.Context, userID *entities.UserID) (err error) {
-	// metrics
-	startTime := time.Now()
-	defer prometheus.CollectDatabaseQueryMetrics(startTime, prometheus.FindOperationTag, err)
-
-	// process database deletion
 	objectID, err := primitive.ObjectIDFromHex(userID.GetID())
 	if err != nil {
 		r.logger.ErrorContextNoExport(ctx, "Got wrong id format", zap.Error(err))

@@ -14,7 +14,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
 
@@ -64,10 +63,9 @@ func dropCollection(ctx context.Context, t *testing.T, collection *mongo.Collect
 }
 
 func newMockUserMongoRepository(collection *mongo.Collection) *UserMongoRepository {
-	tracer := otel.Tracer("fake")
 	nopLogger := loggers.NewOtelZapLoggerWithTraceID(otelzap.New(zap.NewNop()))
 	databaseOperationTimeout := time.Millisecond * 800
-	return NewUserMongoRepository(collection, databaseOperationTimeout, nopLogger, tracer)
+	return NewUserMongoRepository(collection, databaseOperationTimeout, nopLogger)
 }
 
 func TestUserCreation(t *testing.T) {
