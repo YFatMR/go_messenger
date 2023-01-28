@@ -5,15 +5,15 @@ import (
 
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"github.com/YFatMR/go_messenger/front_server/internal/interceptors"
-	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
+	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/status"
 )
 
-type FrontUserServer struct {
-	proto.UnimplementedFrontUserServer
+type FrontServer struct {
+	proto.UnimplementedFrontServer
 	authServiceClient proto.AuthClient
 	userServiceClient proto.UserClient
 	logger            *loggers.OtelZapLoggerWithTraceID
@@ -21,11 +21,11 @@ type FrontUserServer struct {
 	backoffConfig     backoff.Config
 }
 
-func NewFrontUserServer(authServiceClient proto.AuthClient,
+func NewFrontServer(authServiceClient proto.AuthClient,
 	userServiceClient proto.UserClient, logger *loggers.OtelZapLoggerWithTraceID,
 	tracer trace.Tracer, backoffConfig backoff.Config,
-) FrontUserServer {
-	return FrontUserServer{
+) FrontServer {
+	return FrontServer{
 		authServiceClient: authServiceClient,
 		userServiceClient: userServiceClient,
 		logger:            logger,
@@ -34,7 +34,7 @@ func NewFrontUserServer(authServiceClient proto.AuthClient,
 	}
 }
 
-func (s *FrontUserServer) CreateUser(ctx context.Context, request *proto.CreateUserRequest) (
+func (s *FrontServer) CreateUser(ctx context.Context, request *proto.CreateUserRequest) (
 	_ *proto.UserID, err error,
 ) {
 	var span trace.Span
@@ -75,7 +75,7 @@ func (s *FrontUserServer) CreateUser(ctx context.Context, request *proto.CreateU
 	return userID, nil
 }
 
-func (s *FrontUserServer) GetToken(ctx context.Context, request *proto.Credential) (*proto.Token, error) {
+func (s *FrontServer) GetToken(ctx context.Context, request *proto.Credential) (*proto.Token, error) {
 	var span trace.Span
 	ctx, span = s.tracer.Start(ctx, "/GenerateTokenSpan")
 	defer span.End()
@@ -84,7 +84,7 @@ func (s *FrontUserServer) GetToken(ctx context.Context, request *proto.Credentia
 	return s.authServiceClient.GetToken(ctx, request)
 }
 
-func (s *FrontUserServer) GetUserByID(ctx context.Context, request *proto.UserID) (*proto.UserData, error) {
+func (s *FrontServer) GetUserByID(ctx context.Context, request *proto.UserID) (*proto.UserData, error) {
 	var span trace.Span
 	ctx, span = s.tracer.Start(ctx, "/GetUserByIDSpan")
 	defer span.End()
@@ -92,4 +92,10 @@ func (s *FrontUserServer) GetUserByID(ctx context.Context, request *proto.UserID
 	s.logger.DebugContextNoExport(ctx, "called GetUserByID endpoint")
 	grpcCtx := context.WithValue(ctx, interceptors.AuthorizationFieldContextKey, true)
 	return s.userServiceClient.GetUserByID(grpcCtx, request)
+}
+
+func (s *FrontServer) Ping(ctx context.Context, request *proto.Void) (*proto.Pong, error) {
+	return &proto.Pong{
+		Message: "pong",
+	}, nil
 }

@@ -5,17 +5,11 @@ import (
 
 	"github.com/YFatMR/go_messenger/auth_service/internal/auth"
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities"
+	"github.com/YFatMR/go_messenger/auth_service/internal/repositories"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"github.com/YFatMR/go_messenger/core/pkg/metrics/prometheus"
 	"go.opentelemetry.io/otel/trace"
 )
-
-type accountRepository interface {
-	CreateAccount(context.Context, *entities.Credential, entities.Role) (_ *entities.AccountID, err error)
-	GetTokenPayloadWithHashedPasswordByLogin(context.Context, string) (
-		_ *entities.TokenPayload, hashedPassword string, err error,
-	)
-}
 
 type authManager interface {
 	GenerateToken(ctx context.Context, payload *entities.TokenPayload) (*entities.Token, error)
@@ -23,13 +17,13 @@ type authManager interface {
 }
 
 type AccountService struct {
-	accountRepository accountRepository
+	accountRepository repositories.AccountRepository
 	authManager       authManager
 	logger            *loggers.OtelZapLoggerWithTraceID
 	tracer            trace.Tracer
 }
 
-func NewAccountService(repository accountRepository, authManager authManager,
+func NewAccountService(repository repositories.AccountRepository, authManager authManager,
 	logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer,
 ) *AccountService {
 	return &AccountService{

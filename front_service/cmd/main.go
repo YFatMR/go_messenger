@@ -13,7 +13,8 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/traces"
 	"github.com/YFatMR/go_messenger/front_server/internal/interceptors"
 	frontserver "github.com/YFatMR/go_messenger/front_server/internal/server"
-	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
+	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
+	middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -39,10 +40,10 @@ func main() {
 	// Init environment vars
 	logLevel := config.GetZapcoreLogLevelRequired("LOG_LEVEL")
 	logPath := config.GetStringRequired("LOG_PATH")
-	restFrontUserServerAddress := config.GetStringRequired("REST_SERVICE_ADDRESS")
-	grpcFrontUserServerAddress := config.GetStringRequired("GRPC_SERVICE_ADDRESS")
-	userServerAddress := config.GetStringRequired("USER_SERVICE_ADDRESS")
-	authServerAddress := config.GetStringRequired("AUTH_SERVICE_ADDRESS")
+	restFrontServiceAddress := config.GetStringRequired("REST_SERVICE_ADDRESS")
+	grpcFrontServiceAddress := config.GetStringRequired("GRPC_SERVICE_ADDRESS")
+	userServiceAddress := config.GetStringRequired("USER_SERVICE_ADDRESS")
+	authServiceAddress := config.GetStringRequired("AUTH_SERVICE_ADDRESS")
 	jaegerEndpoint := config.GetStringRequired("JAEGER_COLLECTOR_ENDPOINT")
 	serviceName := config.GetStringRequired("SERVICE_NAME")
 	restServiceReadTimeout := config.GetSecondsDurationRequired("REST_FRONT_SERVICE_READ_TIMEOUT_SECONDS")
@@ -57,7 +58,7 @@ func main() {
 	grpcAuthorizationAccountIDHeader := config.GetStringRequired("GRPC_AUTHORIZARION_ACCOUNT_ID_HEADER")
 	grpcAuthorizationUserRoleHeader := config.GetStringRequired("GRPC_AUTHORIZARION_USER_ROLE_HEADER")
 
-	grpcBackoffCongig := backoff.Config{
+	grpcBackoffConfig := backoff.Config{
 		BaseDelay:  config.GetMillisecondsDurationRequired("GRPC_CONNECTION_BACKOFF_DELAY_MILLISECONDS"),
 		Multiplier: config.GetFloat64Required("GRPC_CONNECTION_BACKOFF_MULTIPLIER"),
 		Jitter:     config.GetFloat64Required("GRPC_CONNECTION_BACKOFF_JITTER"),
@@ -113,17 +114,17 @@ func main() {
 			WriteTimeout:      restServiceWriteTimeout,
 			IdleTimeout:       restServiceIdleTimeout,
 			ReadHeaderTimeout: restServiceReadHeaderTimeout,
-			Addr:              restFrontUserServerAddress,
+			Addr:              restFrontServiceAddress,
 			Handler:           mux,
 		}
 		logger.Info(
 			"Starting to register REST user server",
-			zap.String("REST front server address", restFrontUserServerAddress),
-			zap.String("gRPC front service address", grpcFrontUserServerAddress),
+			zap.String("REST front server address", restFrontServiceAddress),
+			zap.String("gRPC front service address", grpcFrontServiceAddress),
 		)
 
 		opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-		if err := proto.RegisterFrontUserHandlerFromEndpoint(ctx, mux, grpcFrontUserServerAddress, opts); err != nil {
+		if err := proto.RegisterFrontHandlerFromEndpoint(ctx, mux, grpcFrontServiceAddress, opts); err != nil {
 			panic(err)
 		}
 
@@ -138,26 +139,36 @@ func main() {
 	func() {
 		grpcServer := grpc.NewServer()
 
-		listener, err := net.Listen("tcp", grpcFrontUserServerAddress)
+		listener, err := net.Listen("tcp", grpcFrontServiceAddress)
 		if err != nil {
 			panic(err)
 		}
 		logger.Info(
 			"Starting to register gRPC user server",
-			zap.String("grpc front server address", grpcFrontUserServerAddress),
-			zap.String("user server address", userServerAddress),
+			zap.String("grpc front server address", grpcFrontServiceAddress),
+			zap.String("user server address", userServiceAddress),
 		)
 
-		logger.Info("Connecting to auth service...", zap.String("address", authServerAddress))
+		logger.Info("Connecting to auth service...", zap.String("address", authServiceAddress))
+		authClientOpts := []grpc.DialOption{
+			grpc.WithKeepaliveParams(grpcKeepaliveParameters),
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+			grpc.WithConnectParams(
+				grpc.ConnectParams{
+					Backoff: grpcBackoffConfig,
+				},
+			),
+		}
 		authServiceClient, err := grpcclients.NewProtobufAuthClient(
-			ctx, authServerAddress, microservicesConnectionTimeout, grpcBackoffCongig, grpcKeepaliveParameters,
+			ctx, authServiceAddress, microservicesConnectionTimeout, authClientOpts,
 		)
 		if err != nil {
-			logger.Error("Server stopped! Can't connect to auth service", zap.String("address", authServerAddress))
+			logger.Error("Server stopped! Can't connect to auth service", zap.String("address", authServiceAddress))
 			panic(err)
 		}
 
-		logger.Info("Connecting to user service...", zap.String("address", userServerAddress))
+		logger.Info("Connecting to user service...", zap.String("address", userServiceAddress))
 
 		unaryInterceptors := []grpc.UnaryClientInterceptor{
 			otelgrpc.UnaryClientInterceptor(),
@@ -167,19 +178,32 @@ func main() {
 			),
 		}
 
+		userClientOpts := []grpc.DialOption{
+			grpc.WithKeepaliveParams(grpcKeepaliveParameters),
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithUnaryInterceptor(
+				middleware.ChainUnaryClient(
+					unaryInterceptors...,
+				),
+			),
+			grpc.WithConnectParams(
+				grpc.ConnectParams{
+					Backoff: grpcBackoffConfig,
+				},
+			),
+		}
 		userServiceClient, err := grpcclients.NewProtobufUserClient(
-			ctx, userServerAddress, microservicesConnectionTimeout, grpcBackoffCongig, grpcKeepaliveParameters,
-			unaryInterceptors,
+			ctx, userServiceAddress, microservicesConnectionTimeout, userClientOpts,
 		)
 		if err != nil {
-			logger.Error("Server stopped! Can't connect to user service", zap.String("address", userServerAddress))
+			logger.Error("Server stopped! Can't connect to user service", zap.String("address", userServiceAddress))
 			panic(err)
 		}
 
-		server := frontserver.NewFrontUserServer(
-			authServiceClient, userServiceClient, logger, tracer, grpcBackoffCongig,
+		server := frontserver.NewFrontServer(
+			authServiceClient, userServiceClient, logger, tracer, grpcBackoffConfig,
 		)
-		proto.RegisterFrontUserServer(grpcServer, &server)
+		proto.RegisterFrontServer(grpcServer, &server)
 
 		logger.Info("Starting serve gRPC front server")
 		if err := grpcServer.Serve(listener); err != nil {

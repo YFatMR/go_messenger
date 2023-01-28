@@ -23,9 +23,12 @@ build_docker_compose: build
 	sudo docker-compose build
 
 run: build_docker_compose
-	sudo docker-compose --env-file ${ROOT_PROJECT_DIRECTORY}/.env --verbose up
+	sudo docker-compose --env-file ${ROOT_PROJECT_DIRECTORY}/production.env --verbose up
 
 run-tests:
+	go test -v -race -o ${BINARY_DIRECTORY}/user_service_repository_tests ${ROOT_PROJECT_DIRECTORY}/user_service/internal/repositories/mongorepository/ -args -mongo_config_path="${ROOT_PROJECT_DIRECTORY}/core/pkg/recipes/go/mongo/.env"
+
+run-huge-tests:
 	go test -v -race -o ${BINARY_DIRECTORY}/user_service_repository_tests ${ROOT_PROJECT_DIRECTORY}/user_service/internal/repositories/mongorepository/ -args -mongo_config_path="${ROOT_PROJECT_DIRECTORY}/core/pkg/recipes/go/mongo/.env"
 
 lint:
@@ -36,3 +39,8 @@ fump-diff:
 
 fump-write:
 	${GOFUMP_BINATY} -w ${GO_SOURCES}
+
+# cover:
+# 	go test -short -count=1 -race -coverprofile=coverage.out ./...
+# 	go tool cover -html=coverage.out
+# 	rm coverage.out

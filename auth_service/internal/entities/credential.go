@@ -1,7 +1,7 @@
 package entities
 
 import (
-	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
+	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 )
 
 type (
@@ -21,7 +21,7 @@ type Credential struct {
 	verifier       verifier
 }
 
-func newCredential(login string, password string, hashedPassword string, verifier verifier) *Credential {
+func NewCredential(login string, password string, hashedPassword string, verifier verifier) *Credential {
 	return &Credential{
 		login:          login,
 		password:       password,
@@ -40,7 +40,7 @@ func NewCredentialFromProtobuf(credential *proto.Credential, validator passwordV
 	if err != nil {
 		return nil, err
 	}
-	return newCredential(credential.GetLogin(), credential.GetPassword(), hashedPassword, validator.GetVerifier()), nil
+	return NewCredential(credential.GetLogin(), credential.GetPassword(), hashedPassword, validator.GetVerifier()), nil
 }
 
 func (c *Credential) GetLogin() string {

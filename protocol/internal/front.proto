@@ -1,10 +1,11 @@
 syntax = "proto3";
 
-package go_proto;
-option go_package = "./go_proto";
+package proto;
+option go_package = "./proto";
 
 import "user.proto";
 import "auth.proto";
+import "common.proto";
 import "google/api/annotations.proto";
 
 message CreateUserRequest {
@@ -12,7 +13,7 @@ message CreateUserRequest {
   UserData userData = 2;
 }
 
-service FrontUser {
+service Front {
   rpc CreateUser(CreateUserRequest) returns (UserID) {
     option (google.api.http) = {
       post : "/users"
@@ -30,6 +31,12 @@ service FrontUser {
   rpc GetUserByID(UserID) returns (UserData) {
     option (google.api.http) = {
       get : "/users/{ID}"
+    };
+  }
+
+  rpc Ping(Void) returns (Pong) {
+    option (google.api.http) = {
+      get : "/ping"
     };
   }
 }

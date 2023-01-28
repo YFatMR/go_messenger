@@ -6,7 +6,7 @@
   },
   "tags": [
     {
-      "name": "FrontUser"
+      "name": "Front"
     }
   ],
   "consumes": [
@@ -16,14 +16,36 @@
     "application/json"
   ],
   "paths": {
-    "/token": {
-      "post": {
-        "operationId": "FrontUser_GetToken",
+    "/ping": {
+      "get": {
+        "operationId": "Front_Ping",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/go_protoToken"
+              "$ref": "#/definitions/protoPong"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Front"
+        ]
+      }
+    },
+    "/token": {
+      "post": {
+        "operationId": "Front_GetToken",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoToken"
             }
           },
           "default": {
@@ -39,23 +61,23 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/go_protoCredential"
+              "$ref": "#/definitions/protoCredential"
             }
           }
         ],
         "tags": [
-          "FrontUser"
+          "Front"
         ]
       }
     },
     "/users": {
       "post": {
-        "operationId": "FrontUser_CreateUser",
+        "operationId": "Front_CreateUser",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/go_protoUserID"
+              "$ref": "#/definitions/protoUserID"
             }
           },
           "default": {
@@ -71,23 +93,23 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/go_protoCreateUserRequest"
+              "$ref": "#/definitions/protoCreateUserRequest"
             }
           }
         ],
         "tags": [
-          "FrontUser"
+          "Front"
         ]
       }
     },
     "/users/{ID}": {
       "get": {
-        "operationId": "FrontUser_GetUserByID",
+        "operationId": "Front_GetUserByID",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/go_protoUserData"
+              "$ref": "#/definitions/protoUserData"
             }
           },
           "default": {
@@ -106,24 +128,24 @@
           }
         ],
         "tags": [
-          "FrontUser"
+          "Front"
         ]
       }
     }
   },
   "definitions": {
-    "go_protoCreateUserRequest": {
+    "protoCreateUserRequest": {
       "type": "object",
       "properties": {
         "credential": {
-          "$ref": "#/definitions/go_protoCredential"
+          "$ref": "#/definitions/protoCredential"
         },
         "userData": {
-          "$ref": "#/definitions/go_protoUserData"
+          "$ref": "#/definitions/protoUserData"
         }
       }
     },
-    "go_protoCredential": {
+    "protoCredential": {
       "type": "object",
       "properties": {
         "login": {
@@ -134,7 +156,15 @@
         }
       }
     },
-    "go_protoToken": {
+    "protoPong": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "protoToken": {
       "type": "object",
       "properties": {
         "accessToken": {
@@ -142,7 +172,7 @@
         }
       }
     },
-    "go_protoUserData": {
+    "protoUserData": {
       "type": "object",
       "properties": {
         "name": {
@@ -153,7 +183,7 @@
         }
       }
     },
-    "go_protoUserID": {
+    "protoUserID": {
       "type": "object",
       "properties": {
         "ID": {

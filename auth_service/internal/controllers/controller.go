@@ -5,7 +5,7 @@ import (
 
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
-	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
+	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -103,5 +103,11 @@ func (c *AccountController) GetTokenPayload(ctx context.Context, request *proto.
 	return &proto.TokenPayload{
 		AccountID: payload.GetAccountID(),
 		UserRole:  string(role),
+	}, nil
+}
+
+func (c *AccountController) Ping(ctx context.Context, request *proto.Void) (*proto.Pong, error) {
+	return &proto.Pong{
+		Message: "pong",
 	}, nil
 }

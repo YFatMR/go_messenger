@@ -54,7 +54,7 @@ func (r *AccountMongoRepository) CreateAccount(ctx context.Context, credential *
 		return nil, err
 	}
 
-	accountID := entities.NewAccountIDFromRawDatabaseDocument(insertResult.InsertedID.(primitive.ObjectID).Hex())
+	accountID := entities.NewAccountID(insertResult.InsertedID.(primitive.ObjectID).Hex())
 	r.logger.DebugContextNoExport(ctx, "Account created", zap.String("id", accountID.GetID()))
 	return accountID, nil
 }
@@ -70,7 +70,7 @@ func (r *AccountMongoRepository) GetTokenPayloadWithHashedPasswordByLogin(ctx co
 		{Key: "login", Value: login},
 	}).Decode(&document)
 	if err == nil {
-		tokenPayload := entities.NewTokenPayloadFromRawDatabaseDocument(document.ID.Hex(), document.UserRole)
+		tokenPayload := entities.NewTokenPayload(document.ID.Hex(), document.UserRole)
 		hashedPassword := document.HashedPassword
 		return tokenPayload, hashedPassword, nil
 	} else if errors.Is(err, mongo.ErrNoDocuments) {

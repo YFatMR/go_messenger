@@ -18,7 +18,7 @@ type TokenClaims struct {
 }
 
 func (c *TokenClaims) GetTokenPayload() *entities.TokenPayload {
-	return entities.NewTokenPayloadFromRawTokenClaims(c.AccountID, c.UserRole)
+	return entities.NewTokenPayload(c.AccountID, c.UserRole)
 }
 
 type JWTManager struct {
@@ -61,7 +61,7 @@ func (m *JWTManager) GenerateToken(ctx context.Context, payload *entities.TokenP
 		m.logger.ErrorContext(ctx, "can't generate signed string", zap.Error(err))
 		return nil, ErrTokenGenerationFailed
 	}
-	return entities.NewTokenFromRawTokenClaims(accessToken), nil
+	return entities.NewToken(accessToken), nil
 }
 
 // Check token expiration withount direct checks.

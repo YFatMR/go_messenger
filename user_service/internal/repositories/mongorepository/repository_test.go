@@ -73,13 +73,13 @@ func TestUserCreation(t *testing.T) {
 	ctx := context.Background()
 
 	// Initialize repository
-	randomCollection := testDatabase.Collection(uuid.New().String())
+	randomCollection := testDatabase.Collection(uuid.NewString())
 	defer dropCollection(ctx, t, randomCollection)
 	repository := newMockUserMongoRepository(randomCollection)
 
 	// Start test
-	userData := entities.NewMockUser("Ivan", "Petrov")
-	accountID := entities.NewMockAccountID("63c6f759bbe1022255a6b9b5")
+	userData := entities.NewUser("Ivan", "Petrov")
+	accountID := entities.NewAccountID("63c6f759bbe1022255a6b9b5")
 	_, err := repository.Create(context.Background(), userData, accountID)
 	if err != nil {
 		t.Fatalf("User creation failed with error: %s", err)
@@ -91,13 +91,13 @@ func TestFindCreatedUser(t *testing.T) {
 	ctx := context.Background()
 
 	// Initialize repository
-	randomCollection := testDatabase.Collection(uuid.New().String())
+	randomCollection := testDatabase.Collection(uuid.NewString())
 	defer dropCollection(ctx, t, randomCollection)
 	repository := newMockUserMongoRepository(randomCollection)
 
 	// Start test
-	userData := entities.NewMockUser("Ivan1", "Petrov1")
-	accountID := entities.NewMockAccountID("53c6f759bbe1022255a6b9b5")
+	userData := entities.NewUser("Ivan1", "Petrov1")
+	accountID := entities.NewAccountID("53c6f759bbe1022255a6b9b5")
 	userID, err := repository.Create(context.Background(), userData, accountID)
 	if err != nil {
 		t.Fatalf("User creation failed with error: %s", err)

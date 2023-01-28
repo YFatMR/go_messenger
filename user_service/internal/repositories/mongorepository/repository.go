@@ -58,7 +58,7 @@ func (r *UserMongoRepository) Create(ctx context.Context, user *entities.User, a
 		return nil, ErrUserCreation
 	}
 
-	userID := entities.NewUserIDFromRawDatabaseDocument(insertResult.InsertedID.(primitive.ObjectID).Hex())
+	userID := entities.NewUserID(insertResult.InsertedID.(primitive.ObjectID).Hex())
 	r.logger.DebugContextNoExport(ctx, "User id response created successfully", zap.String("id", userID.GetID()))
 	return userID, nil
 }
@@ -86,7 +86,7 @@ func (r *UserMongoRepository) GetByID(ctx context.Context, userID *entities.User
 	}
 	r.logger.DebugContextNoExport(ctx, "user found", zap.String("id", userID.GetID()))
 
-	user := entities.NewUserFromRawDatabaseDocument(document.Name, document.Surname)
+	user := entities.NewUser(document.Name, document.Surname)
 	return user, nil
 }
 

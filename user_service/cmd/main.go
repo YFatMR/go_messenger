@@ -3,22 +3,21 @@ package main
 import (
 	"context"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/metrics/prometheus"
 	"github.com/YFatMR/go_messenger/core/pkg/mongodb"
 	"github.com/YFatMR/go_messenger/core/pkg/traces"
-	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
+	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/YFatMR/go_messenger/user_service/internal/controllers"
 	"github.com/YFatMR/go_messenger/user_service/internal/repositories"
 	"github.com/YFatMR/go_messenger/user_service/internal/repositories/decorators"
 	"github.com/YFatMR/go_messenger/user_service/internal/repositories/mongorepository"
 	"github.com/YFatMR/go_messenger/user_service/internal/servers"
 	"github.com/YFatMR/go_messenger/user_service/internal/services"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
@@ -41,28 +40,15 @@ func main() {
 	logLevel := config.GetZapcoreLogLevelRequired("LOG_LEVEL")
 	logPath := config.GetStringRequired("LOG_PATH")
 
-	databaseURI := config.GetStringRequired("DATABASE_URI")
-	databaseName := config.GetStringRequired("DATABASE_NAME")
-	databaseCollectionName := config.GetStringRequired("DATABASE_COLLECTION_NAME")
-	databaseOperationTimeout := config.GetSecondsDurationRequired("DATABASE_OPERATION_TIMEOUT_MILLISECONDS")
-	databaseConnectionTimeout := config.GetMillisecondsDurationRequired("DATABASE_CONNECTION_TIMEOUT_MILLISECONDS")
-	databaseReconnectionCount := config.GetIntRequired("DATABASE_RECONNECTION_COUNT")
-	databaseReconnectionInterval := config.GetMillisecondsDurationRequired(
-		"DATABASE_RECONNECTIONION_INTERVAL_MILLISECONDS",
-	)
+	databaseSettings := cviper.NewDatabaseSettingsFromConfig(config)
+	metricServiceSettings := cviper.NewMetricMetricServiceSettingsFromConfig(config)
 
 	jaegerEndpoint := config.GetStringRequired("JAEGER_COLLECTOR_ENDPOINT")
 	serviceName := config.GetStringRequired("SERVICE_NAME")
 	serviceAddress := config.GetStringRequired("SERVICE_ADDRESS")
-	metricsServiceReadTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_READ_TIMEOUT_SECONDS")
-	metricsServiceWriteTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_WRITE_TIMEOUT_SECONDS")
-	metricsServiceIdleTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_IDLE_TIMEOUT_SECONDS")
-	metricsServiceReadHeaderTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_READ_HEADER_TIMEOUT_SECONDS")
-	metricsServiceListingSuffix := config.GetStringRequired("METRICS_SERVICE_LISTING_SUFFIX")
-	metricsServiceAddress := config.GetStringRequired("METRICS_SERVICE_ADDRESS")
 
-	collectDatabaseQueryMetrics := config.GetBoolRequired("COLLECT_DATABASE_QUERY_METRICS")
-	traceDatabaseQuery := config.GetBoolRequired("TRACE_DATABASE_QUERY")
+	collectDatabaseQueryMetrics := config.GetBoolRequired("ENABLE_DATABASE_QUERY_METRICS")
+	traceDatabaseQuery := config.GetBoolRequired("ENABLE_DATABASE_QUERY_TRACING")
 
 	// Init logger
 	zapLogger, err := loggers.NewBaseZapFileLogger(logLevel, logPath)
@@ -80,16 +66,11 @@ func main() {
 	defer logger.Sync()
 
 	// Init database
-	logger.Info("Connecting to database...")
-	mongoSettings := mongodb.NewMongoSettings(
-		databaseURI, databaseName, databaseCollectionName, databaseConnectionTimeout, logger,
-	)
-	mongoCollection, err := mongodb.Connect(ctx, databaseReconnectionCount, databaseReconnectionInterval, mongoSettings)
+	mongoCollection, err := mongodb.Connect(ctx, databaseSettings, logger)
 	if err != nil {
 		logger.Error("Can't establish connection with database", zap.Error(err))
 		panic(err)
 	}
-	logger.Info("Successfully connected to database")
 
 	// Init tracing
 	logger.Info("Init metrics")
@@ -112,30 +93,15 @@ func main() {
 	tracer := otel.Tracer(serviceName)
 
 	// Init metrics
-
-	go func(logger *loggers.OtelZapLoggerWithTraceID) {
-		server := &http.Server{
-			ReadTimeout:       metricsServiceReadTimeout,
-			WriteTimeout:      metricsServiceWriteTimeout,
-			IdleTimeout:       metricsServiceIdleTimeout,
-			ReadHeaderTimeout: metricsServiceReadHeaderTimeout,
-			Addr:              metricsServiceAddress,
-			Handler:           nil,
-		}
-		http.Handle(metricsServiceListingSuffix, promhttp.Handler())
-		//#nosec G114: Use of net/http serve function that has no support for setting timeouts
-		if err := server.ListenAndServe(); err != nil {
-			logger.Error("Can't up metrics server with endpoint" + metricsServiceAddress +
-				". Operation finished with error: " + err.Error())
-			panic(err)
-		}
-	}(logger)
+	if metricServiceSettings != nil {
+		go prometheus.ListenAndServeMetrcirService(metricServiceSettings, logger)
+	}
 
 	// Init Server
 	logger.Info("Init server")
 
 	var repository repositories.UserRepository
-	repository = mongorepository.NewUserMongoRepository(mongoCollection, databaseOperationTimeout, logger)
+	repository = mongorepository.NewUserMongoRepository(mongoCollection, databaseSettings.GetOperationTimeout(), logger)
 	if collectDatabaseQueryMetrics {
 		repository = decorators.NewMetricDecorator(repository)
 	}

@@ -27,6 +27,7 @@ protoc \
     --grpc-gateway_opt paths=source_relative \
     internal/front.proto \
     internal/user.proto \
+    internal/common.proto \
     internal/auth.proto
 
 # generate openapiv2 for REST endpoint

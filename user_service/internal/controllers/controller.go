@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
-	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
+	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -85,4 +85,10 @@ func (c *UserController) DeleteByID(ctx context.Context, request *proto.UserID) 
 
 	err = c.service.DeleteByID(ctx, userID)
 	return &proto.Void{}, err
+}
+
+func (c *UserController) Ping(ctx context.Context, request *proto.Void) (*proto.Pong, error) {
+	return &proto.Pong{
+		Message: "pong",
+	}, nil
 }

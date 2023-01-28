@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
-	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
+	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -12,6 +12,7 @@ type accountController interface {
 	CreateAccount(context.Context, *proto.Credential) (*proto.AccountID, error)
 	GetToken(context.Context, *proto.Credential) (*proto.Token, error)
 	GetTokenPayload(ctx context.Context, request *proto.Token) (*proto.TokenPayload, error)
+	Ping(ctx context.Context, request *proto.Void) (*proto.Pong, error)
 }
 
 type GRPCAuthServer struct {
@@ -55,4 +56,8 @@ func (s *GRPCAuthServer) GetTokenPayload(ctx context.Context, request *proto.Tok
 	defer span.End()
 
 	return s.accountController.GetTokenPayload(ctx, request)
+}
+
+func (s *GRPCAuthServer) Ping(ctx context.Context, request *proto.Void) (*proto.Pong, error) {
+	return s.accountController.Ping(ctx, request)
 }

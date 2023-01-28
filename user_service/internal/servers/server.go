@@ -2,7 +2,7 @@ package servers
 
 import (
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
-	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
+	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/net/context"
 )
@@ -11,6 +11,7 @@ type userController interface {
 	Create(ctx context.Context, request *proto.CreateUserDataRequest) (*proto.UserID, error)
 	GetByID(ctx context.Context, request *proto.UserID) (*proto.UserData, error)
 	DeleteByID(ctx context.Context, request *proto.UserID) (*proto.Void, error)
+	Ping(ctx context.Context, request *proto.Void) (*proto.Pong, error)
 }
 
 type GRPCUserServer struct {
@@ -52,4 +53,8 @@ func (s *GRPCUserServer) DeleteUserByID(ctx context.Context, request *proto.User
 	defer span.End()
 
 	return s.controller.DeleteByID(ctx, request)
+}
+
+func (s *GRPCUserServer) Ping(ctx context.Context, request *proto.Void) (*proto.Pong, error) {
+	return s.controller.Ping(ctx, request)
 }

@@ -5,19 +5,11 @@ type TokenPayload struct {
 	userRole  Role
 }
 
-func newTokenPayload(accountID string, userRole Role) *TokenPayload {
+func NewTokenPayload(accountID string, userRole Role) *TokenPayload {
 	return &TokenPayload{
 		accountID: accountID,
 		userRole:  userRole,
 	}
-}
-
-func NewTokenPayloadFromRawDatabaseDocument(accountID string, userRole Role) *TokenPayload {
-	return newTokenPayload(accountID, userRole)
-}
-
-func NewTokenPayloadFromRawTokenClaims(accountID string, userRole Role) *TokenPayload {
-	return newTokenPayload(accountID, userRole)
 }
 
 func (p *TokenPayload) GetAccountID() string {

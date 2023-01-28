@@ -4,63 +4,46 @@ import (
 	"context"
 	"time"
 
+	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 )
 
-type MongoSettings struct {
-	mongoURI          string
-	databaseName      string
-	collectionName    string
-	connectionTimeout time.Duration
-	logger            *loggers.OtelZapLoggerWithTraceID
-}
-
-func NewMongoSettings(mongoURI string, databaseName string, collectionName string,
-	connectionTimeout time.Duration, logger *loggers.OtelZapLoggerWithTraceID,
-) *MongoSettings {
-	return &MongoSettings{
-		mongoURI:          mongoURI,
-		databaseName:      databaseName,
-		collectionName:    collectionName,
-		connectionTimeout: connectionTimeout,
-		logger:            logger,
-	}
-}
-
-func Connect(ctx context.Context, reconnectionCount int, reconnectInterval time.Duration, settings *MongoSettings) (
+func Connect(ctx context.Context, settings *cviper.DatabaseSettings, logger *loggers.OtelZapLoggerWithTraceID) (
 	_ *mongo.Collection, err error,
 ) {
 	getCollection := func() (*mongo.Collection, error) {
 		client, err := mongo.Connect(
 			ctx,
-			options.Client().ApplyURI(settings.mongoURI),
-			options.Client().SetConnectTimeout(settings.connectionTimeout),
+			options.Client().ApplyURI(settings.GetURI()),
+			options.Client().SetConnectTimeout(settings.GetConnectionTimeout()),
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		settings.logger.Info("Starting Ping mongodb")
+		logger.Info("Starting Ping mongodb")
 		err = client.Ping(ctx, nil)
 		if err != nil {
-			settings.logger.Info("mongodb Ping failed", zap.Error(err))
+			logger.Info("mongodb Ping failed", zap.Error(err))
 			return nil, err
 		}
 
-		settings.logger.Info("mongodb Ping successfully finished")
-		collection := client.Database(settings.databaseName).Collection(settings.collectionName)
+		logger.Info("mongodb Ping successfully finished")
+		collection := client.Database(settings.GetDatabaseName()).Collection(settings.GetCollectionName())
 		return collection, nil
 	}
 
-	for i := 0; i < reconnectionCount; i++ {
+	logger.Info("Connecting to database...")
+	for i := 0; i < settings.GetStartupReconnectionCount(); i++ {
 		collection, err := getCollection()
 		if err == nil {
+			logger.Info("Successfully connected to database")
 			return collection, nil
 		}
-		time.Sleep(reconnectInterval)
+		time.Sleep(settings.GetSturtupReconnectionInterval())
 	}
 	return nil, err
 }

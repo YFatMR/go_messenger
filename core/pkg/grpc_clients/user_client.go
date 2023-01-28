@@ -4,36 +4,13 @@ import (
 	"context"
 	"time"
 
-	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
-	middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
+	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/backoff"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/keepalive"
 )
 
-type ProtobufUserClient struct {
-	proto.UserClient
-}
-
 func NewProtobufUserClient(ctx context.Context, serviceAddress string, connectionTimeout time.Duration,
-	backoffConfig backoff.Config, keepaliveParams keepalive.ClientParameters,
-	unaryInterceptors []grpc.UnaryClientInterceptor,
-) (*ProtobufUserClient, error) {
-	opts := []grpc.DialOption{
-		grpc.WithKeepaliveParams(keepaliveParams),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(
-			middleware.ChainUnaryClient(
-				unaryInterceptors...,
-			),
-		),
-		grpc.WithConnectParams(
-			grpc.ConnectParams{
-				Backoff: backoffConfig,
-			},
-		),
-	}
+	opts []grpc.DialOption,
+) (proto.UserClient, error) {
 
 	ctx, cancel := context.WithTimeout(ctx, connectionTimeout)
 	defer cancel()
@@ -42,11 +19,5 @@ func NewProtobufUserClient(ctx context.Context, serviceAddress string, connectio
 	if err != nil {
 		return nil, err
 	}
-
-	if err != nil {
-		return nil, err
-	}
-	return &ProtobufUserClient{
-		UserClient: proto.NewUserClient(conn),
-	}, nil
+	return proto.NewUserClient(conn), nil
 }
