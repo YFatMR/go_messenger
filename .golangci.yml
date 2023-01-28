@@ -30,6 +30,9 @@ issues:
     - path: interceptors/auth.go
       linters:
         - funlen
+    - path: test/main_test.go
+      linters:
+          - funlen
   max-issues-per-linter: 0
   max-same-issues: 0
 
