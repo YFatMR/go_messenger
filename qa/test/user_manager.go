@@ -8,8 +8,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-type UserManager struct {
-}
+type UserManager struct{}
 
 func (u *UserManager) NewUnauthorizedUser(ctx context.Context) (*proto.UserID, *proto.Credential, error) {
 	userCredential := &proto.Credential{

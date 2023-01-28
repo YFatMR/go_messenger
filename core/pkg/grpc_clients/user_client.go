@@ -9,9 +9,9 @@ import (
 )
 
 func NewProtobufUserClient(ctx context.Context, serviceAddress string, connectionTimeout time.Duration,
-	opts []grpc.DialOption,
-) (proto.UserClient, error) {
-
+	opts []grpc.DialOption) (
+	proto.UserClient, error,
+) {
 	ctx, cancel := context.WithTimeout(ctx, connectionTimeout)
 	defer cancel()
 

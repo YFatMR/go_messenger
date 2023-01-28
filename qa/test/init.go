@@ -55,13 +55,16 @@ func newProtobufFrontClient(ctx context.Context, serviceAddress string, response
 	return proto.NewFrontClient(conn), nil
 }
 
-func pingService(ctx context.Context, pingCallback func(context.Context) (*proto.Pong, error), serviceSetupRetryCount int, serviceSetupRetryInterval time.Duration) error {
+func pingService(ctx context.Context, pingCallback func(context.Context) (*proto.Pong, error),
+	serviceSetupRetryCount int, serviceSetupRetryInterval time.Duration,
+) error {
 	var err error
 	for i := 0; i < serviceSetupRetryCount; i++ {
 		_, err = pingCallback(ctx)
 		if err == nil {
 			return nil
 		}
+		time.Sleep(serviceSetupRetryInterval)
 	}
 	return err
 }

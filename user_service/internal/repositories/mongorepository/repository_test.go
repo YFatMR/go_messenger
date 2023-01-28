@@ -3,6 +3,7 @@ package mongorepository
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -33,6 +34,11 @@ func TestMain(m *testing.M) {
 
 	mongoConfig := cviper.New()
 	mongoConfig.SetConfigFile(mongoConfigPathFlag)
+	if err := mongoConfig.ReadInConfig(); err != nil {
+		fmt.Printf("Error reading config file, %s", err)
+		panic(err)
+	}
+
 	database, dockerContainerPurge := recipe.NewMongoTestDatabase(mongoConfig)
 
 	// Setup global variable

@@ -47,8 +47,8 @@ services:
         source: ${TEST_RESULT_PATH}/_log/front_service.log
         target: ${FRONT_SERVICE_LOG_PATH}
     ports:
-      - "8010:${FRONT_REST_SERVICE_PORT}"
-      - "8020:${FRONT_GRPC_SERVICE_PORT}"
+      - "${PUBLIC_REST_FRONT_SERVICE_PORT}:${FRONT_REST_SERVICE_PORT}"
+      - "${PUBLIC_GRPC_FRONT_SERVICE_PORT}:${FRONT_GRPC_SERVICE_PORT}"
     depends_on:
       - user_service
       - auth_service
@@ -89,8 +89,7 @@ services:
         source: ${TEST_RESULT_PATH}/_log/auth_service.log
         target: ${AUTH_SERVICE_LOG_PATH}
     ports:
-      - "9031:${AUTH_SERVICE_PORT}"
-      - "2113:${AUTH_SERVICE_METRICS_PORT}"
+      - "${PUBLIC_AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}"
     depends_on:
       - auth_service_mongodb
     networks:
@@ -105,8 +104,6 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=${AUTH_SERVICE_DATABASE_PASSWORD}
     # volumes:
     #   - ./mongodb:/usr/src/messenger
-    ports:
-      - "27018:${AUTH_SERVICE_DATABASE_PORT}"
     networks:
       - default
 
@@ -144,8 +141,7 @@ services:
         source: ${TEST_RESULT_PATH}/_log/user_service.log
         target: ${USER_SERVICE_LOG_PATH}
     ports:
-      - "9030:${USER_SERVICE_PORT}"
-      - "2112:${USER_SERVICE_METRICS_PORT}"
+      - "${PUBLIC_USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
     depends_on:
       - user_service_mongodb
     networks:
@@ -160,8 +156,6 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=${USER_SERVICE_DATABASE_PASSWORD}
     # volumes:
     #   - ./mongodb:/usr/src/messenger
-    ports:
-      - "27017:${USER_SERVICE_DATABASE_PORT}"
     networks:
       - default
 
@@ -169,9 +163,6 @@ services:
     image: jaegertracing/all-in-one:latest
     container_name: jaeger
     hostname: jaeger
-    ports:
-      - "14268:${JAEGER_COLLECTOR_PORT}/udp"
-      - "16686:${JAEGER_UI_PORT}"
     networks:
       - default
 

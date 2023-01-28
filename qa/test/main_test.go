@@ -2,7 +2,10 @@ package test
 
 import (
 	"context"
+	"flag"
+	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
 	"testing"
 
@@ -10,20 +13,45 @@ import (
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 )
 
+var (
+	dockerComposeFile string
+	envFile           string
+)
+
+func init() {
+	flag.StringVar(&dockerComposeFile, "docker-compose-file", "", "docker compose file path")
+	flag.StringVar(&envFile, "env-file", "", "docker compose --env-file flag and viper config")
+}
+
 func TestMain(m *testing.M) {
+	flag.Parse()
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
+	ctx, stopDocker := signal.NotifyContext(context.Background(), os.Interrupt)
 
+	// Run docker-compose
+	command := exec.CommandContext(
+		ctx, "docker-compose", "--file", dockerComposeFile, "--env-file", envFile, "up",
+	)
+	err := command.Start()
+	if err != nil {
+		panic(err)
+	}
+
+	// Setup tests
 	config := cviper.New()
-	config.AutomaticEnv()
+	config.SetConfigFile(envFile)
+	if err := config.ReadInConfig(); err != nil {
+		fmt.Printf("Error reading config file, %s", err)
+		panic(err)
+	}
 
 	grpcAuthorizationHeader = config.GetStringRequired("GRPC_AUTHORIZARION_HEADER")
+	qaHost := config.GetStringRequired("QA_HOST")
 
-	// restFrontServiceAddress := config.GetStringRequired("REST_FRONT_SERVICE_ADDRESS")
-	grpcFrontServiceAddress := config.GetStringRequired("GRPC_FRONT_SERVICE_ADDRESS")
-	userServiceAddress := config.GetStringRequired("USER_SERVICE_ADDRESS")
-	authServiceAddress := config.GetStringRequired("AUTH_SERVICE_ADDRESS")
+	// restFrontServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_REST_FRONT_SERVICE_PORT")
+	grpcFrontServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_GRPC_FRONT_SERVICE_PORT")
+	userServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_USER_SERVICE_PORT")
+	authServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_AUTH_SERVICE_PORT")
 
 	testResponseTimeout := config.GetMillisecondsDurationRequired("TEST_RESPONSE_TIMEOUT_MILLISECONDS")
 	testSetupTimeout := config.GetMillisecondsDurationRequired("TEST_SETUP_TIMEOUT_MILLISECONDS")
@@ -77,5 +105,6 @@ func TestMain(m *testing.M) {
 
 	exitCode := m.Run()
 
+	stopDocker()
 	os.Exit(exitCode)
 }
