@@ -5,8 +5,11 @@ import (
 	"errors"
 	"time"
 
+	"github.com/YFatMR/go_messenger/core/pkg/errors/cerrors"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
-	"github.com/YFatMR/go_messenger/user_service/internal/entities"
+	accountid "github.com/YFatMR/go_messenger/user_service/internal/entities/account_id"
+	"github.com/YFatMR/go_messenger/user_service/internal/entities/user"
+	userid "github.com/YFatMR/go_messenger/user_service/internal/entities/user_id"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -34,15 +37,15 @@ func NewUserMongoRepository(collection *mongo.Collection, operationTimeout time.
 		operationTimeout: operationTimeout,
 		logger:           logger,
 	}
+
 }
 
-func (r *UserMongoRepository) Create(ctx context.Context, user *entities.User, accountID *entities.AccountID) (
-	_ *entities.UserID, err error,
+func (r *UserMongoRepository) Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (
+	*userid.Entity, cerrors.Error,
 ) {
 	accountMongoID, err := primitive.ObjectIDFromHex(accountID.GetID())
 	if err != nil {
-		r.logger.ErrorContextNoExport(ctx, "Got wrong id format", zap.Error(err))
-		return nil, ErrUserCreation
+		return nil, cerrors.New("Got wrong id format", err, ErrUserCreation)
 	}
 
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
@@ -54,20 +57,17 @@ func (r *UserMongoRepository) Create(ctx context.Context, user *entities.User, a
 		AccountID: accountMongoID,
 	})
 	if err != nil {
-		r.logger.ErrorContext(ctx, "Can't insert new user", zap.Error(err))
-		return nil, ErrUserCreation
+		return nil, cerrors.New("Can't insert new user", err, ErrUserCreation)
 	}
 
-	userID := entities.NewUserID(insertResult.InsertedID.(primitive.ObjectID).Hex())
-	r.logger.DebugContextNoExport(ctx, "User id response created successfully", zap.String("id", userID.GetID()))
+	userID := userid.New(insertResult.InsertedID.(primitive.ObjectID).Hex())
 	return userID, nil
 }
 
-func (r *UserMongoRepository) GetByID(ctx context.Context, userID *entities.UserID) (_ *entities.User, err error) {
+func (r *UserMongoRepository) GetByID(ctx context.Context, userID *userid.Entity) (*user.Entity, cerrors.Error) {
 	objectID, err := primitive.ObjectIDFromHex(userID.GetID())
 	if err != nil {
-		r.logger.ErrorContextNoExport(ctx, "Got wrong id format", zap.Error(err))
-		return nil, ErrGetUser
+		return nil, cerrors.New("Got wrong id format", err, ErrUserCreation)
 	}
 
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
@@ -78,23 +78,18 @@ func (r *UserMongoRepository) GetByID(ctx context.Context, userID *entities.User
 		{Key: "_id", Value: objectID},
 	}).Decode(&document)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		r.logger.DebugContextNoExport(ctx, "User not found (by id)", zap.String("id", userID.GetID()))
-		return nil, ErrUserNotFound
+		return nil, cerrors.New("User not found by id", err, ErrUserNotFound)
 	} else if err != nil {
-		r.logger.ErrorContext(ctx, "Database connection error", zap.Error(err))
-		return nil, ErrInternalDatabase
+		return nil, cerrors.New("Database connection error", err, ErrUserNotFound)
 	}
-	r.logger.DebugContextNoExport(ctx, "user found", zap.String("id", userID.GetID()))
-
-	user := entities.NewUser(document.Name, document.Surname)
+	user := user.New(document.Name, document.Surname)
 	return user, nil
 }
 
-func (r *UserMongoRepository) DeleteByID(ctx context.Context, userID *entities.UserID) (err error) {
+func (r *UserMongoRepository) DeleteByID(ctx context.Context, userID *userid.Entity) cerrors.Error {
 	objectID, err := primitive.ObjectIDFromHex(userID.GetID())
 	if err != nil {
-		r.logger.ErrorContextNoExport(ctx, "Got wrong id format", zap.Error(err))
-		return ErrUserDeletion
+		return cerrors.New("Got wrong id format", err, ErrUserDeletion)
 	}
 
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
@@ -102,11 +97,9 @@ func (r *UserMongoRepository) DeleteByID(ctx context.Context, userID *entities.U
 
 	deleteResult, err := r.collection.DeleteOne(mongoOperationCtx, bson.M{"_id": objectID})
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		r.logger.InfoContextNoExport(ctx, "User not found (by id)", zap.String("id", userID.GetID()))
-		return ErrUserNotFound
+		return cerrors.New("User not found by id", err, ErrUserNotFound)
 	} else if err != nil {
-		r.logger.ErrorContext(ctx, "Database connection error", zap.Error(err))
-		return ErrInternalDatabase
+		return cerrors.New("Database connection error", err, ErrUserNotFound)
 	}
 	r.logger.InfoContextNoExport(
 		ctx,

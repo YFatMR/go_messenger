@@ -21,6 +21,12 @@ issues:
         - dupl
         - gocyclo
         - gosec
+    - path: .gen.go
+      linters:
+        - errcheck
+        - dupl
+        - gocyclo
+        - gosec
     - path: zap.go # core/pkg/loggers/zap.go
       linters:
         - typecheck # Problems with embedded structure from other package https://github.com/golangci/golangci-lint/issues/2286

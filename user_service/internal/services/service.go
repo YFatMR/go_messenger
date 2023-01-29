@@ -3,48 +3,16 @@ package services
 import (
 	"context"
 
-	"github.com/YFatMR/go_messenger/core/pkg/loggers"
-	"github.com/YFatMR/go_messenger/core/pkg/metrics/prometheus"
-	"github.com/YFatMR/go_messenger/user_service/internal/entities"
-	"github.com/YFatMR/go_messenger/user_service/internal/repositories"
-	"go.opentelemetry.io/otel/trace"
+	"github.com/YFatMR/go_messenger/core/pkg/errors/cerrors"
+	accountid "github.com/YFatMR/go_messenger/user_service/internal/entities/account_id"
+	"github.com/YFatMR/go_messenger/user_service/internal/entities/user"
+	userid "github.com/YFatMR/go_messenger/user_service/internal/entities/user_id"
 )
 
-type UserService struct {
-	userRepository repositories.UserRepository
-	logger         *loggers.OtelZapLoggerWithTraceID
-	tracer         trace.Tracer
-}
-
-func NewUserService(repository repositories.UserRepository, logger *loggers.OtelZapLoggerWithTraceID,
-	tracer trace.Tracer,
-) *UserService {
-	return &UserService{
-		userRepository: repository,
-		logger:         logger,
-		tracer:         tracer,
-	}
-}
-
-func (s *UserService) Create(ctx context.Context, user *entities.User, accountID *entities.AccountID) (
-	_ *entities.UserID, err error,
-) {
-	const endpointTag = "GetAccountByToken"
-	defer prometheus.CollectServiceRequestMetrics(endpointTag, err)
-
-	return s.userRepository.Create(ctx, user, accountID)
-}
-
-func (s *UserService) GetByID(ctx context.Context, userID *entities.UserID) (_ *entities.User, err error) {
-	const endpointTag = "GetUserByID"
-	defer prometheus.CollectServiceRequestMetrics(endpointTag, err)
-
-	return s.userRepository.GetByID(ctx, userID)
-}
-
-func (s *UserService) DeleteByID(ctx context.Context, userID *entities.UserID) (err error) {
-	const endpointTag = "DeleteUserByID"
-	defer prometheus.CollectServiceRequestMetrics(endpointTag, err)
-
-	return s.userRepository.DeleteByID(ctx, userID)
+type UserService interface {
+	Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (
+		userID *userid.Entity, cerr cerrors.Error,
+	)
+	GetByID(ctx context.Context, userID *userid.Entity) (user *user.Entity, cerr cerrors.Error)
+	DeleteByID(ctx context.Context, userID *userid.Entity) (cerr cerrors.Error)
 }

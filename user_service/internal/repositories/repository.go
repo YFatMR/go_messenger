@@ -3,11 +3,16 @@ package repositories
 import (
 	"context"
 
-	"github.com/YFatMR/go_messenger/user_service/internal/entities"
+	"github.com/YFatMR/go_messenger/core/pkg/errors/cerrors"
+	accountid "github.com/YFatMR/go_messenger/user_service/internal/entities/account_id"
+	"github.com/YFatMR/go_messenger/user_service/internal/entities/user"
+	userid "github.com/YFatMR/go_messenger/user_service/internal/entities/user_id"
 )
 
 type UserRepository interface {
-	Create(ctx context.Context, user *entities.User, accountID *entities.AccountID) (*entities.UserID, error)
-	GetByID(ctx context.Context, userID *entities.UserID) (*entities.User, error)
-	DeleteByID(ctx context.Context, userID *entities.UserID) error
+	Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (
+		userID *userid.Entity, cerr cerrors.Error,
+	)
+	GetByID(ctx context.Context, userID *userid.Entity) (user *user.Entity, cerr cerrors.Error)
+	DeleteByID(ctx context.Context, userID *userid.Entity) (cerr cerrors.Error)
 }

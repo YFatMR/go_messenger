@@ -17,7 +17,6 @@ func TestUserTestSuite(t *testing.T) {
 }
 
 func (s *UserTestSuite) TestUserCreation() {
-	// t.Parallel()
 	ctx := context.Background()
 	require := s.Require()
 
@@ -26,7 +25,6 @@ func (s *UserTestSuite) TestUserCreation() {
 }
 
 func (s *UserTestSuite) TestUserTokenGeneration() {
-	// t.Parallel()
 	ctx := context.Background()
 	require := s.Require()
 
@@ -35,7 +33,6 @@ func (s *UserTestSuite) TestUserTokenGeneration() {
 }
 
 func (s *UserTestSuite) TestGetUserInfoWithValidToken() {
-	// t.Parallel()
 	ctx := context.Background()
 	require := s.Require()
 
@@ -48,7 +45,6 @@ func (s *UserTestSuite) TestGetUserInfoWithValidToken() {
 }
 
 func (s *UserTestSuite) TestGetUserInfoWithoutToken() {
-	// t.Parallel()
 	ctx := context.Background()
 	require := s.Require()
 

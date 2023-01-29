@@ -13,11 +13,15 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/traces"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/YFatMR/go_messenger/user_service/internal/controllers"
+	cdecorators "github.com/YFatMR/go_messenger/user_service/internal/controllers/decorators"
+	usercontroller "github.com/YFatMR/go_messenger/user_service/internal/controllers/user_controller"
 	"github.com/YFatMR/go_messenger/user_service/internal/repositories"
-	"github.com/YFatMR/go_messenger/user_service/internal/repositories/decorators"
+	rdecorators "github.com/YFatMR/go_messenger/user_service/internal/repositories/decorators"
 	"github.com/YFatMR/go_messenger/user_service/internal/repositories/mongorepository"
-	"github.com/YFatMR/go_messenger/user_service/internal/servers"
+	"github.com/YFatMR/go_messenger/user_service/internal/servers/grpcserver"
 	"github.com/YFatMR/go_messenger/user_service/internal/services"
+	sdecorators "github.com/YFatMR/go_messenger/user_service/internal/services/decorators"
+	userservice "github.com/YFatMR/go_messenger/user_service/internal/services/user_service"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
@@ -102,18 +106,33 @@ func main() {
 
 	var repository repositories.UserRepository
 	repository = mongorepository.NewUserMongoRepository(mongoCollection, databaseSettings.GetOperationTimeout(), logger)
+	repository = rdecorators.NewLoggingUserRepositoryDecorator(repository, logger)
 	if collectDatabaseQueryMetrics {
-		repository = decorators.NewMetricDecorator(repository)
+		repository = rdecorators.NewPrometheusMetricsUserRepositoryDecorator(repository)
 	}
 	if traceDatabaseQuery {
 		// TODO: make as config option (?)
 		recordTraceErrors := true
-		repository = decorators.NewTracingRepositoryDecorator(repository, tracer, recordTraceErrors)
+		repository = rdecorators.NewOpentelemetryTracingUserRepositoryDecorator(repository, tracer, recordTraceErrors)
 	}
 
-	service := services.NewUserService(repository, logger, tracer)
-	controller := controllers.NewUserController(service, logger, tracer)
-	server := servers.NewGRPCUserServer(controller, logger, tracer)
+	var service services.UserService
+	service = userservice.New(repository)
+	if true {
+		service = sdecorators.NewLoggingUserServiceDecorator(service, logger)
+	}
+	if true {
+		recordTraceErrors := true
+		service = sdecorators.NewOpentelemetryTracingUserServiceDecorator(service, tracer, recordTraceErrors)
+	}
+
+	var controller controllers.UserController
+	controller = usercontroller.New(service)
+	if true {
+		controller = cdecorators.NewLoggingUserControllerDecorator(controller, logger)
+	}
+
+	server := grpcserver.New(controller)
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
 		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
