@@ -1,0 +1,64 @@
+package accountservice
+
+import (
+	"context"
+
+	"github.com/YFatMR/go_messenger/auth_service/internal/auth/jwtmanager"
+	"github.com/YFatMR/go_messenger/auth_service/internal/entities"
+	"github.com/YFatMR/go_messenger/auth_service/internal/entities/accountid"
+	"github.com/YFatMR/go_messenger/auth_service/internal/entities/credential"
+	"github.com/YFatMR/go_messenger/auth_service/internal/entities/token"
+	"github.com/YFatMR/go_messenger/auth_service/internal/entities/tokenpayload"
+	"github.com/YFatMR/go_messenger/auth_service/internal/repositories"
+	"github.com/YFatMR/go_messenger/auth_service/internal/services"
+	"github.com/YFatMR/go_messenger/core/pkg/errors/cerrors"
+)
+
+type AccountService struct {
+	accountRepository repositories.AccountRepository
+	authManager       jwtmanager.Manager
+}
+
+func New(repository repositories.AccountRepository, authManager jwtmanager.Manager) *AccountService {
+	return &AccountService{
+		accountRepository: repository,
+		authManager:       authManager,
+	}
+}
+
+func (s *AccountService) CreateAccount(ctx context.Context, credential *credential.Entity) (
+	*accountid.Entity, cerrors.Error,
+) {
+	return s.accountRepository.CreateAccount(ctx, credential, entities.UserRole)
+}
+
+func (s *AccountService) GetToken(ctx context.Context, credential *credential.Entity) (*token.Entity, cerrors.Error) {
+	tokenPayload, hashedPassword, cerr := s.accountRepository.GetTokenPayloadWithHashedPasswordByLogin(
+		ctx, credential.GetLogin(),
+	)
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	if err := credential.VerifyPassword(hashedPassword); err != nil {
+		return nil, cerrors.New("Can't verify password", err, services.ErrWrongCredential)
+	}
+
+	token, cerr := s.authManager.GenerateToken(ctx, tokenPayload)
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	return token, nil
+}
+
+func (s *AccountService) GetTokenPayload(ctx context.Context, token *token.Entity) (
+	*tokenpayload.Entity, cerrors.Error,
+) {
+	claims, err := s.authManager.VerifyToken(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+
+	return claims.GetTokenPayload(), nil
+}

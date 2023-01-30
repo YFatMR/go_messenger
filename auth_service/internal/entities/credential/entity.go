@@ -1,6 +1,7 @@
-package entities
+package credential
 
 import (
+	"github.com/YFatMR/go_messenger/auth_service/internal/entities"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 )
 
@@ -14,15 +15,15 @@ type passwordValidator interface {
 	GetVerifier() verifier
 }
 
-type Credential struct {
+type Entity struct {
 	login          string
 	password       string
 	hashedPassword string
 	verifier       verifier
 }
 
-func NewCredential(login string, password string, hashedPassword string, verifier verifier) *Credential {
-	return &Credential{
+func New(login string, password string, hashedPassword string, verifier verifier) *Entity {
+	return &Entity{
 		login:          login,
 		password:       password,
 		hashedPassword: hashedPassword,
@@ -30,27 +31,27 @@ func NewCredential(login string, password string, hashedPassword string, verifie
 	}
 }
 
-func NewCredentialFromProtobuf(credential *proto.Credential, validator passwordValidator) (
-	*Credential, error,
+func FromProtobuf(credential *proto.Credential, validator passwordValidator) (
+	*Entity, error,
 ) {
 	if credential == nil || credential.GetLogin() == "" || credential.GetPassword() == "" {
-		return nil, ErrWrongRequestFormat
+		return nil, entities.ErrWrongRequestFormat
 	}
 	hashedPassword, err := validator.GetHasher()(credential.GetPassword())
 	if err != nil {
 		return nil, err
 	}
-	return NewCredential(credential.GetLogin(), credential.GetPassword(), hashedPassword, validator.GetVerifier()), nil
+	return New(credential.GetLogin(), credential.GetPassword(), hashedPassword, validator.GetVerifier()), nil
 }
 
-func (c *Credential) GetLogin() string {
-	return c.login
+func (e *Entity) GetLogin() string {
+	return e.login
 }
 
-func (c *Credential) GetHashedPassword() string {
-	return c.hashedPassword
+func (e *Entity) GetHashedPassword() string {
+	return e.hashedPassword
 }
 
-func (c *Credential) VerifyPassword(hashedPassword string) error {
-	return c.verifier(hashedPassword, c.password)
+func (e *Entity) VerifyPassword(hashedPassword string) error {
+	return e.verifier(hashedPassword, e.password)
 }

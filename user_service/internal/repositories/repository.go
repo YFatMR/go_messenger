@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/YFatMR/go_messenger/core/pkg/errors/cerrors"
-	accountid "github.com/YFatMR/go_messenger/user_service/internal/entities/account_id"
+	"github.com/YFatMR/go_messenger/user_service/internal/entities/accountid"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/user"
-	userid "github.com/YFatMR/go_messenger/user_service/internal/entities/user_id"
+	"github.com/YFatMR/go_messenger/user_service/internal/entities/userid"
 )
 
 type UserRepository interface {

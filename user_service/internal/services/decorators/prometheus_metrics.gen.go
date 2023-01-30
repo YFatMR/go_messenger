@@ -4,7 +4,7 @@
 
 package decorators
 
-//go:generate gowrap gen -p github.com/YFatMR/go_messenger/user_service/internal/repositories -i UserRepository -t ../../../../core/pkg/decorators/templates/prometheus_metrics.go -o prometheus_metrics.gen.go -v metricPrefix=database_query -l ""
+//go:generate gowrap gen -p github.com/YFatMR/go_messenger/user_service/internal/services -i UserService -t ../../../../core/pkg/decorators/templates/prometheus_metrics.go -o prometheus_metrics.gen.go -v metricPrefix=service_request -l ""
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/accountid"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/user"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/userid"
-	"github.com/YFatMR/go_messenger/user_service/internal/repositories"
+	"github.com/YFatMR/go_messenger/user_service/internal/services"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -33,34 +33,34 @@ const (
 // Naming rule: https://prometheus.io/docs/practices/naming/
 var (
 	databaseQueryDurationSeconds = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "database_query_duration_seconds",
+		Name:    "service_request_duration_seconds",
 		Buckets: []float64{0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 4},
 		Help:    "Duration of one database query",
 	}, []string{"status", "operation"})
 	databaseQueryProcessedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "database_query_processed_total",
+		Name: "service_request_processed_total",
 		Help: "Count of query to database",
 	}, []string{"status", "operation"})
 	databaseQueryStartProcessTotal = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "database_query_start_process_total",
+		Name: "service_request_start_process_total",
 		Help: "Count of started queries",
 	})
 )
 
-// PrometheusMetricsUserRepositoryDecorator implements repositories.UserRepository that is instrumented with custom zap logger
-type PrometheusMetricsUserRepositoryDecorator struct {
-	base repositories.UserRepository
+// PrometheusMetricsUserServiceDecorator implements services.UserService that is instrumented with custom zap logger
+type PrometheusMetricsUserServiceDecorator struct {
+	base services.UserService
 }
 
-// NewPrometheusMetricsUserRepositoryDecorator instruments an implementation of the repositories.UserRepository with simple logging
-func NewPrometheusMetricsUserRepositoryDecorator(base repositories.UserRepository) *PrometheusMetricsUserRepositoryDecorator {
-	return &PrometheusMetricsUserRepositoryDecorator{
+// NewPrometheusMetricsUserServiceDecorator instruments an implementation of the services.UserService with simple logging
+func NewPrometheusMetricsUserServiceDecorator(base services.UserService) *PrometheusMetricsUserServiceDecorator {
+	return &PrometheusMetricsUserServiceDecorator{
 		base: base,
 	}
 }
 
-// Create implements repositories.UserRepository
-func (d *PrometheusMetricsUserRepositoryDecorator) Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (userID *userid.Entity, cerr cerrors.Error) {
+// Create implements services.UserService
+func (d *PrometheusMetricsUserServiceDecorator) Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (userID *userid.Entity, cerr cerrors.Error) {
 
 	startTime := time.Now()
 	databaseQueryStartProcessTotal.Inc()
@@ -76,8 +76,8 @@ func (d *PrometheusMetricsUserRepositoryDecorator) Create(ctx context.Context, u
 	return d.base.Create(ctx, user, accountID)
 }
 
-// DeleteByID implements repositories.UserRepository
-func (d *PrometheusMetricsUserRepositoryDecorator) DeleteByID(ctx context.Context, userID *userid.Entity) (cerr cerrors.Error) {
+// DeleteByID implements services.UserService
+func (d *PrometheusMetricsUserServiceDecorator) DeleteByID(ctx context.Context, userID *userid.Entity) (cerr cerrors.Error) {
 
 	startTime := time.Now()
 	databaseQueryStartProcessTotal.Inc()
@@ -93,8 +93,8 @@ func (d *PrometheusMetricsUserRepositoryDecorator) DeleteByID(ctx context.Contex
 	return d.base.DeleteByID(ctx, userID)
 }
 
-// GetByID implements repositories.UserRepository
-func (d *PrometheusMetricsUserRepositoryDecorator) GetByID(ctx context.Context, userID *userid.Entity) (user *user.Entity, cerr cerrors.Error) {
+// GetByID implements services.UserService
+func (d *PrometheusMetricsUserServiceDecorator) GetByID(ctx context.Context, userID *userid.Entity) (user *user.Entity, cerr cerrors.Error) {
 
 	startTime := time.Now()
 	databaseQueryStartProcessTotal.Inc()

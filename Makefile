@@ -4,7 +4,7 @@ GO_WORK_SUBDIRECTORIES=$(shell go work edit -json | jq -c -r '[.Use[].DiskPath] 
 GO_LINTER_BINARY=$(shell go env GOPATH)/bin/golangci-lint
 GO_WRAP_BINARY=$(shell go env GOPATH)/bin/gowrap
 GOFUMP_BINATY=$(shell go env GOPATH)/bin/gofumpt
-GO_DECORATORS_TEMPLATE_DIRECTORY=${ROOT_PROJECT_DIRECTORY}/core/pkg/decorators/templates/
+GO_DECORATORS_TEMPLATE_DIRECTORY=${ROOT_PROJECT_DIRECTORY}/core/pkg/decorators/templates
 GENERATED_DECORATORS_EXTENTION=".gen.go"
 GO_SOURCES=$(shell find . -type f \( -iname "*.go" ! -iname "*.pb.go" ! -iname "*.gw.go" \))
 
@@ -18,35 +18,42 @@ gen_interfaces:
 	${GO_WRAP_BINARY} gen \
 		-p github.com/YFatMR/go_messenger/user_service/internal/repositories \
 		-i UserRepository \
-		-t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/common/loggers.go \
+		-t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/loggers.go \
 		-o ${ROOT_PROJECT_DIRECTORY}/user_service/internal/repositories/decorators/loggers${GENERATED_DECORATORS_EXTENTION} \
 
 	${GO_WRAP_BINARY} gen \
 		-p github.com/YFatMR/go_messenger/user_service/internal/repositories \
 		-i UserRepository \
-		-t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/common/opentelemetry_tracing.go \
+		-t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/opentelemetry_tracing.go \
 		-o ${ROOT_PROJECT_DIRECTORY}/user_service/internal/repositories/decorators/opentelemetry_tracing${GENERATED_DECORATORS_EXTENTION}
 	${GO_WRAP_BINARY} gen \
+		-v metricPrefix=database_query \
 		-p github.com/YFatMR/go_messenger/user_service/internal/repositories \
 		-i UserRepository \
-		-t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/repositories/prometheus_metrics.go \
+		-t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/prometheus_metrics.go \
 		-o ${ROOT_PROJECT_DIRECTORY}/user_service/internal/repositories/decorators/prometheus_metrics${GENERATED_DECORATORS_EXTENTION}
 
 	${GO_WRAP_BINARY} gen \
 		-p github.com/YFatMR/go_messenger/user_service/internal/services \
 		-i UserService \
-		-t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/common/loggers.go \
+		-t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/loggers.go \
 		-o ${ROOT_PROJECT_DIRECTORY}/user_service/internal/services/decorators/loggers${GENERATED_DECORATORS_EXTENTION}
 	${GO_WRAP_BINARY} gen \
 		-p github.com/YFatMR/go_messenger/user_service/internal/services \
 		-i UserService \
-		-t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/common/opentelemetry_tracing.go \
+		-t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/opentelemetry_tracing.go \
 		-o ${ROOT_PROJECT_DIRECTORY}/user_service/internal/services/decorators/opentelemetry_tracing${GENERATED_DECORATORS_EXTENTION}
+	${GO_WRAP_BINARY} gen \
+		-v metricPrefix=service_request \
+		-p github.com/YFatMR/go_messenger/user_service/internal/services \
+		-i UserService \
+		-t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/prometheus_metrics.go \
+		-o ${ROOT_PROJECT_DIRECTORY}/user_service/internal/services/decorators/prometheus_metrics${GENERATED_DECORATORS_EXTENTION}
 
 	${GO_WRAP_BINARY} gen \
 		-p github.com/YFatMR/go_messenger/user_service/internal/controllers \
 		-i UserController \
-		-t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/common/loggers.go \
+		-t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/loggers.go \
 		-o ${ROOT_PROJECT_DIRECTORY}/user_service/internal/controllers/decorators/loggers${GENERATED_DECORATORS_EXTENTION}
 
 raw_build:

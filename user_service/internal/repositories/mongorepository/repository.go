@@ -7,9 +7,9 @@ import (
 
 	"github.com/YFatMR/go_messenger/core/pkg/errors/cerrors"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
-	accountid "github.com/YFatMR/go_messenger/user_service/internal/entities/account_id"
+	"github.com/YFatMR/go_messenger/user_service/internal/entities/accountid"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/user"
-	userid "github.com/YFatMR/go_messenger/user_service/internal/entities/user_id"
+	"github.com/YFatMR/go_messenger/user_service/internal/entities/userid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
