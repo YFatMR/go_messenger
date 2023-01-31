@@ -4,12 +4,11 @@ import (
 	"context"
 
 	"github.com/YFatMR/go_messenger/auth_service/internal/controllers"
-	"github.com/YFatMR/go_messenger/auth_service/internal/entities"
-	"github.com/YFatMR/go_messenger/auth_service/internal/entities/accountid"
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/credential"
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/token"
-	"github.com/YFatMR/go_messenger/auth_service/internal/entities/tokenpayload"
-	"github.com/YFatMR/go_messenger/core/pkg/errors/cerrors"
+	"github.com/YFatMR/go_messenger/auth_service/internal/services"
+
+	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 )
 
@@ -23,18 +22,12 @@ type passwordValidator interface {
 	GetVerifier() verifier
 }
 
-type accountService interface {
-	CreateAccount(context.Context, *credential.Entity) (*accountid.Entity, error)
-	GetToken(context.Context, *credential.Entity) (*token.Entity, error)
-	GetTokenPayload(context.Context, *token.Entity) (*tokenpayload.Entity, error)
-}
-
 type AccountController struct {
-	accountService    accountService
+	accountService    services.AccountService
 	passwordValidator passwordValidator
 }
 
-func New(accountService accountService, passwordValidator passwordValidator) *AccountController {
+func New(accountService services.AccountService, passwordValidator passwordValidator) *AccountController {
 	return &AccountController{
 		accountService:    accountService,
 		passwordValidator: passwordValidator,
@@ -42,16 +35,16 @@ func New(accountService accountService, passwordValidator passwordValidator) *Ac
 }
 
 func (c *AccountController) CreateAccount(ctx context.Context, request *proto.Credential) (
-	*proto.AccountID, cerrors.Error,
+	*proto.AccountID, logerr.Error,
 ) {
-	credential, err := entities.NewCredentialFromProtobuf(request, c.passwordValidator)
+	credential, err := credential.FromProtobuf(request, c.passwordValidator)
 	if err != nil {
-		return nil, cerrors.New("Can't parse credential", err, controllers.ErrWrongRequestFormat)
+		return nil, logerr.NewError(controllers.ErrWrongRequestFormat, "Can't parse credential", logerr.Err(err))
 	}
 
-	accountID, err := c.accountService.CreateAccount(ctx, credential)
-	if err != nil {
-		return nil, cerrors.New("Can't create account", err, err)
+	accountID, lerr := c.accountService.CreateAccount(ctx, credential)
+	if lerr != nil {
+		return nil, lerr
 	}
 
 	return &proto.AccountID{
@@ -60,16 +53,16 @@ func (c *AccountController) CreateAccount(ctx context.Context, request *proto.Cr
 }
 
 func (c *AccountController) GetToken(ctx context.Context, request *proto.Credential) (
-	*proto.Token, cerrors.Error,
+	*proto.Token, logerr.Error,
 ) {
-	credential, err := entities.NewCredentialFromProtobuf(request, c.passwordValidator)
+	credential, err := credential.FromProtobuf(request, c.passwordValidator)
 	if err != nil {
-		return nil, cerrors.New("Can't parse credential", err, controllers.ErrWrongRequestFormat)
+		return nil, logerr.NewError(controllers.ErrWrongRequestFormat, "Can't parse credential", logerr.Err(err))
 	}
 
-	token, err := c.accountService.GetToken(ctx, credential)
-	if err != nil {
-		return nil, cerrors.New("Can't get token", err, err)
+	token, lerr := c.accountService.GetToken(ctx, credential)
+	if lerr != nil {
+		return nil, lerr
 	}
 
 	return &proto.Token{
@@ -78,16 +71,16 @@ func (c *AccountController) GetToken(ctx context.Context, request *proto.Credent
 }
 
 func (c *AccountController) GetTokenPayload(ctx context.Context, request *proto.Token) (
-	*proto.TokenPayload, cerrors.Error,
+	*proto.TokenPayload, logerr.Error,
 ) {
-	token, err := entities.NewTokenFromProtobuf(request)
+	token, err := token.FromProtobuf(request)
 	if err != nil {
-		return nil, cerrors.New("Can't parse token", err, controllers.ErrWrongRequestFormat)
+		return nil, logerr.NewError(controllers.ErrWrongRequestFormat, "Can't parse token", logerr.Err(err))
 	}
 
-	payload, err := c.accountService.GetTokenPayload(ctx, token)
-	if err != nil {
-		return nil, cerrors.New("Can't get token payload", err, err)
+	payload, lerr := c.accountService.GetTokenPayload(ctx, token)
+	if lerr != nil {
+		return nil, lerr
 	}
 
 	role := payload.GetUserRole()
@@ -97,7 +90,7 @@ func (c *AccountController) GetTokenPayload(ctx context.Context, request *proto.
 	}, nil
 }
 
-func (c *AccountController) Ping(ctx context.Context, request *proto.Void) (*proto.Pong, cerrors.Error) {
+func (c *AccountController) Ping(ctx context.Context, request *proto.Void) (*proto.Pong, logerr.Error) {
 	return &proto.Pong{
 		Message: "pong",
 	}, nil

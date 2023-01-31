@@ -1,11 +1,12 @@
 import (
 	"context"
 
-	"github.com/YFatMR/go_messenger/core/pkg/errors/cerrors"
+	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"go.uber.org/zap"
 )
 
+{{ $errorType := "logerr.Error" }}
 {{ $decorator := (or .Vars.DecoratorName (printf "Logging%sDecorator" .Interface.Name)) }}
 
 // {{$decorator}} implements {{.Interface.Type}} that is instrumented with custom zap logger
@@ -16,6 +17,12 @@ type {{$decorator}} struct {
 
 // New{{$decorator}} instruments an implementation of the {{.Interface.Type}} with simple logging
 func New{{$decorator}}(base {{.Interface.Type}}, logger *loggers.OtelZapLoggerWithTraceID) *{{$decorator}} {
+	if base == nil {
+		panic("{{$decorator}} got empty base")
+	}
+	if logger == nil {
+		panic("{{$decorator}} got empty logger")
+	}
 	return &{{$decorator}}{
 		base: base,
 		logger: logger,
@@ -25,42 +32,48 @@ func New{{$decorator}}(base {{.Interface.Type}}, logger *loggers.OtelZapLoggerWi
 {{ range $method := .Interface.Methods }}
 	// {{$method.Name}} implements {{$.Interface.Type}}
 	func (d *{{$decorator}}) {{$method.Declaration}} {
+
 	{{ if not ($method.AcceptsContext) }}
 		panic("Expected context variable")
 		{{ break }}
 	{{ end }}
 	{{ if not ($method.HasResults) }}
-		panic("Expected return type from method. cerrors.Error at least")
+		panic("Expected return type from method. {{ $errorType }} at least")
 		{{ break }}
 	{{ end }}
 
 	{{ $errorsResultCount := 0}}
 	{{ range $result := $method.Results }}
-		{{ if eq $result.Type "cerrors.Error" }}
+		{{ if eq $result.Type $errorType }}
 			{{ $errorsResultCount = add $errorsResultCount 1 }}
 		{{ end }}
 	{{ end }}
 
 	{{ if ne $errorsResultCount 1 }}
-		panic("Expected exact one cerrors.Error type as last argument")
+		panic("Expected exact one {{ $errorType }} type as last argument")
 		{{ break }}
 	{{ end }}
 
 	{{ $errorResult := last $method.Results }}
-	{{ if not (eq $errorResult.Type "cerrors.Error") }}
-		panic("Expected exact one cerrors.Error type as last argument")
+	{{ if not (eq $errorResult.Type $errorType) }}
+		panic("Expected exact one {{ $errorType }} type as last argument")
 		{{ break }}
 	{{ end }}
-		d.logger.DebugContextNoExport(ctx, "{{$decorator}}: calling {{$method.Name}}")
+		d.logger.DebugContextNoExport(ctx, "{{ $decorator }}: calling {{ $method.Name }}")
 		defer func() {
-			if {{ $errorResult.Name }} != nil {
-				d.logger.ErrorContext(
-					ctx, {{ $errorResult.Name }}.GetInternalErrorMessage(), zap.Error({{ $errorResult.Name }}.GetInternalError()),
-				)
-			} else {
-				d.logger.DebugContextNoExport(ctx, "{{$decorator}}: {{$method.Name}} finished")
+			defer d.logger.DebugContextNoExport(ctx, "{{$decorator}}: {{$method.Name}} finished")
+			if {{ $errorResult.Name }} == nil {
+				return
 			}
-			d.logger.DebugContextNoExport(ctx, "{{$decorator}}: {{$method.Name}} finished")
+			if {{ $errorResult.Name }}.IsLogMessage() {
+				// TODO: create special template for nil error logick
+				// If we have no error, make error nil to prevent logging the same message many times
+				d.logger.LogContextLogerror(ctx, {{ $errorResult.Name }})
+				{{ $errorResult.Name }}.StopLogMessage()
+			}
+			if !{{ $errorResult.Name }}.HasError() {
+				{{ $errorResult.Name }} = nil
+			}
 		}()
 		{{ $method.Pass "d.base." -}}
 	}

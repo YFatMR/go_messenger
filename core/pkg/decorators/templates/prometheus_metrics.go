@@ -2,7 +2,7 @@ import (
 		"context"
 		"time"
 
-		"github.com/YFatMR/go_messenger/core/pkg/errors/cerrors"
+		 
 )
 
 type databaseOperatinTag string
@@ -16,6 +16,7 @@ const (
 // database_query: for database
 // service_request: for seervices
 
+{{ $errorType := "logerr.Error" }}
 {{ $metricPrefix := .Vars.metricPrefix }}
 
 // Naming rule: https://prometheus.io/docs/practices/naming/
@@ -44,6 +45,9 @@ type {{$decorator}} struct {
 
 // New{{$decorator}} instruments an implementation of the {{.Interface.Type}} with simple logging
 func New{{$decorator}}(base {{.Interface.Type}}) *{{$decorator}} {
+	if base == nil {
+		panic("{{$decorator}} got empty base")
+	}
 	return &{{$decorator}}{
 		base: base,
 	}
@@ -57,34 +61,34 @@ func New{{$decorator}}(base {{.Interface.Type}}) *{{$decorator}} {
 		{{ break }}
 	{{ end }}
 	{{ if not ($method.HasResults) }}
-		panic("Expected return type from method. cerrors.Error at least")
+		panic("Expected return type from method. {{ $errorType }}  at least")
 		{{ break }}
 	{{ end }}
 
 	{{ $errorsResultCount := 0}}
 	{{ range $result := $method.Results }}
-		{{ if eq $result.Type "cerrors.Error" }}
+		{{ if eq $result.Type $errorType }}
 			{{ $errorsResultCount = add $errorsResultCount 1 }}
 		{{ end }}
 	{{ end }}
 
 	{{ if ne $errorsResultCount 1 }}
-		panic("Expected exact one cerrors.Error type as last argument")
+		panic("Expected exact one {{ $errorType }} type as last argument")
 		{{ break }}
 	{{ end }}
 
 	{{ $errorResult := last $method.Results }}
-	{{ if not (eq $errorResult.Type "cerrors.Error") }}
-		panic("Expected exact one cerrors.Error type as last argument")
+	{{ if not (eq $errorResult.Type $errorType) }}
+		panic("Expected exact one {{ $errorType }} type as last argument")
 		{{ break }}
 	{{ end }}
 		startTime := time.Now()
 		databaseQueryStartProcessTotal.Inc()
 		defer func () {
 			functionDuration := time.Since(startTime).Seconds()
-			statusTag := errorStatusTag
-			if {{ $errorResult.Name }} == nil {
-				statusTag = okStatusTag
+			statusTag := okStatusTag 
+			if {{ $errorResult.Name }} != nil && {{ $errorResult.Name }}.HasError() {
+				statusTag = errorStatusTag
 			}
 			databaseQueryDurationSeconds.WithLabelValues(statusTag, "{{ snakecase $method.Name }}").Observe(functionDuration)
 			databaseQueryProcessedTotal.WithLabelValues(statusTag, "{{ snakecase $method.Name }}").Inc()

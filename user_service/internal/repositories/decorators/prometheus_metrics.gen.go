@@ -10,7 +10,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/YFatMR/go_messenger/core/pkg/errors/cerrors"
+	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/accountid"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/user"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/userid"
@@ -54,21 +54,24 @@ type PrometheusMetricsUserRepositoryDecorator struct {
 
 // NewPrometheusMetricsUserRepositoryDecorator instruments an implementation of the repositories.UserRepository with simple logging
 func NewPrometheusMetricsUserRepositoryDecorator(base repositories.UserRepository) *PrometheusMetricsUserRepositoryDecorator {
+	if base == nil {
+		panic("PrometheusMetricsUserRepositoryDecorator got empty base")
+	}
 	return &PrometheusMetricsUserRepositoryDecorator{
 		base: base,
 	}
 }
 
 // Create implements repositories.UserRepository
-func (d *PrometheusMetricsUserRepositoryDecorator) Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (userID *userid.Entity, cerr cerrors.Error) {
+func (d *PrometheusMetricsUserRepositoryDecorator) Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (userID *userid.Entity, lerr logerr.Error) {
 
 	startTime := time.Now()
 	databaseQueryStartProcessTotal.Inc()
 	defer func() {
 		functionDuration := time.Since(startTime).Seconds()
-		statusTag := errorStatusTag
-		if cerr == nil {
-			statusTag = okStatusTag
+		statusTag := okStatusTag
+		if lerr != nil && lerr.HasError() {
+			statusTag = errorStatusTag
 		}
 		databaseQueryDurationSeconds.WithLabelValues(statusTag, "create").Observe(functionDuration)
 		databaseQueryProcessedTotal.WithLabelValues(statusTag, "create").Inc()
@@ -77,15 +80,15 @@ func (d *PrometheusMetricsUserRepositoryDecorator) Create(ctx context.Context, u
 }
 
 // DeleteByID implements repositories.UserRepository
-func (d *PrometheusMetricsUserRepositoryDecorator) DeleteByID(ctx context.Context, userID *userid.Entity) (cerr cerrors.Error) {
+func (d *PrometheusMetricsUserRepositoryDecorator) DeleteByID(ctx context.Context, userID *userid.Entity) (lerr logerr.Error) {
 
 	startTime := time.Now()
 	databaseQueryStartProcessTotal.Inc()
 	defer func() {
 		functionDuration := time.Since(startTime).Seconds()
-		statusTag := errorStatusTag
-		if cerr == nil {
-			statusTag = okStatusTag
+		statusTag := okStatusTag
+		if lerr != nil && lerr.HasError() {
+			statusTag = errorStatusTag
 		}
 		databaseQueryDurationSeconds.WithLabelValues(statusTag, "delete_by_id").Observe(functionDuration)
 		databaseQueryProcessedTotal.WithLabelValues(statusTag, "delete_by_id").Inc()
@@ -94,15 +97,15 @@ func (d *PrometheusMetricsUserRepositoryDecorator) DeleteByID(ctx context.Contex
 }
 
 // GetByID implements repositories.UserRepository
-func (d *PrometheusMetricsUserRepositoryDecorator) GetByID(ctx context.Context, userID *userid.Entity) (user *user.Entity, cerr cerrors.Error) {
+func (d *PrometheusMetricsUserRepositoryDecorator) GetByID(ctx context.Context, userID *userid.Entity) (user *user.Entity, lerr logerr.Error) {
 
 	startTime := time.Now()
 	databaseQueryStartProcessTotal.Inc()
 	defer func() {
 		functionDuration := time.Since(startTime).Seconds()
-		statusTag := errorStatusTag
-		if cerr == nil {
-			statusTag = okStatusTag
+		statusTag := okStatusTag
+		if lerr != nil && lerr.HasError() {
+			statusTag = errorStatusTag
 		}
 		databaseQueryDurationSeconds.WithLabelValues(statusTag, "get_by_id").Observe(functionDuration)
 		databaseQueryProcessedTotal.WithLabelValues(statusTag, "get_by_id").Inc()

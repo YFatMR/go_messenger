@@ -3,61 +3,39 @@ package servers
 import (
 	"context"
 
-	"github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/auth_service/internal/controllers"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
-	"go.opentelemetry.io/otel/trace"
 )
-
-type accountController interface {
-	CreateAccount(context.Context, *proto.Credential) (*proto.AccountID, error)
-	GetToken(context.Context, *proto.Credential) (*proto.Token, error)
-	GetTokenPayload(ctx context.Context, request *proto.Token) (*proto.TokenPayload, error)
-	Ping(ctx context.Context, request *proto.Void) (*proto.Pong, error)
-}
 
 type GRPCAuthServer struct {
 	proto.UnimplementedAuthServer
-	accountController accountController
-	logger            *loggers.OtelZapLoggerWithTraceID
-	tracer            trace.Tracer
+	accountController controllers.AccountController
 }
 
-func NewGRPCAuthServer(accountController accountController, logger *loggers.OtelZapLoggerWithTraceID,
-	tracer trace.Tracer,
-) GRPCAuthServer {
+func NewGRPCAuthServer(accountController controllers.AccountController) GRPCAuthServer {
 	return GRPCAuthServer{
 		accountController: accountController,
-		logger:            logger,
-		tracer:            tracer,
 	}
 }
 
 func (s *GRPCAuthServer) CreateAccount(ctx context.Context, request *proto.Credential) (
 	*proto.AccountID, error,
 ) {
-	var span trace.Span
-	ctx, span = s.tracer.Start(ctx, "/ServerCreateAccountSpan")
-	defer span.End()
-
-	return s.accountController.CreateAccount(ctx, request)
+	accountID, lerr := s.accountController.CreateAccount(ctx, request)
+	return accountID, lerr.GetAPIError()
 }
 
 func (s *GRPCAuthServer) GetToken(ctx context.Context, request *proto.Credential) (*proto.Token, error) {
-	var span trace.Span
-	ctx, span = s.tracer.Start(ctx, "/ServerCreateTokenSpan")
-	defer span.End()
-
-	return s.accountController.GetToken(ctx, request)
+	token, lerr := s.accountController.GetToken(ctx, request)
+	return token, lerr.GetAPIError()
 }
 
 func (s *GRPCAuthServer) GetTokenPayload(ctx context.Context, request *proto.Token) (*proto.TokenPayload, error) {
-	var span trace.Span
-	ctx, span = s.tracer.Start(ctx, "/ServerGetAccountByTokenSpan")
-	defer span.End()
-
-	return s.accountController.GetTokenPayload(ctx, request)
+	tokenPayload, lerr := s.accountController.GetTokenPayload(ctx, request)
+	return tokenPayload, lerr.GetAPIError()
 }
 
 func (s *GRPCAuthServer) Ping(ctx context.Context, request *proto.Void) (*proto.Pong, error) {
-	return s.accountController.Ping(ctx, request)
+	pong, lerr := s.accountController.Ping(ctx, request)
+	return pong, lerr.GetAPIError()
 }

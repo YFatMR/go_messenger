@@ -8,7 +8,8 @@ import (
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities"
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/token"
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/tokenpayload"
-	"github.com/YFatMR/go_messenger/core/pkg/errors/cerrors"
+
+	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -22,23 +23,28 @@ func (c *TokenClaims) GetTokenPayload() *tokenpayload.Entity {
 	return tokenpayload.New(c.AccountID, c.UserRole)
 }
 
-type Manager struct {
+type Manager interface {
+	GenerateToken(ctx context.Context, payload *tokenpayload.Entity) (token1 *token.Entity, lerr logerr.Error)
+	VerifyToken(ctx context.Context, accessToken *token.Entity) (tokenClaims *TokenClaims, lerr logerr.Error)
+}
+
+type JWTManager struct {
 	secretKey               string
 	tokenExpirationDuration time.Duration
 	signingMethod           jwt.SigningMethod
 }
 
-func New(secretKey string, tokenExpirationDuration time.Duration) *Manager {
-	return &Manager{
+func New(secretKey string, tokenExpirationDuration time.Duration) *JWTManager {
+	return &JWTManager{
 		secretKey:               secretKey,
 		tokenExpirationDuration: tokenExpirationDuration,
 		signingMethod:           jwt.SigningMethodHS256,
 	}
 }
 
-func (m *Manager) GenerateToken(ctx context.Context, payload *tokenpayload.Entity) (*token.Entity, cerrors.Error) {
+func (m *JWTManager) GenerateToken(ctx context.Context, payload *tokenpayload.Entity) (*token.Entity, logerr.Error) {
 	if payload == nil {
-		return nil, cerrors.New("null payload got", auth.ErrTokenGenerationFailed, auth.ErrTokenGenerationFailed)
+		return nil, logerr.NewError(auth.ErrTokenGenerationFailed, "null payload got")
 	}
 	claims := TokenClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -51,15 +57,15 @@ func (m *Manager) GenerateToken(ctx context.Context, payload *tokenpayload.Entit
 	resultToken := jwt.NewWithClaims(m.signingMethod, claims)
 	accessToken, err := resultToken.SignedString([]byte(m.secretKey))
 	if err != nil {
-		return nil, cerrors.New("can't generate signed string", err, auth.ErrTokenGenerationFailed)
+		return nil, logerr.NewError(auth.ErrTokenGenerationFailed, "can't generate signed string", logerr.Err(err))
 	}
 	return token.New(accessToken), nil
 }
 
 // Check token expiration withount direct checks.
-func (m *Manager) VerifyToken(ctx context.Context, accessToken *token.Entity) (*TokenClaims, cerrors.Error) {
+func (m *JWTManager) VerifyToken(ctx context.Context, accessToken *token.Entity) (*TokenClaims, logerr.Error) {
 	if accessToken == nil {
-		return nil, cerrors.New("null accessToken got", auth.ErrInvalidAccessToken, auth.ErrInvalidAccessToken)
+		return nil, logerr.NewError(auth.ErrInvalidAccessToken, "null accessToken got")
 	}
 	token, err := jwt.ParseWithClaims(
 		accessToken.GetAccessToken(),
@@ -73,12 +79,12 @@ func (m *Manager) VerifyToken(ctx context.Context, accessToken *token.Entity) (*
 		},
 	)
 	if err != nil {
-		return nil, cerrors.New("invalid access token got", err, auth.ErrInvalidAccessToken)
+		return nil, logerr.NewError(auth.ErrInvalidAccessToken, "invalid access token got", logerr.Err(err))
 	}
 
 	claims, ok := token.Claims.(*TokenClaims)
 	if !ok {
-		return nil, cerrors.New("invalid token claims", auth.ErrInvalidAccessToken, auth.ErrInvalidAccessToken)
+		return nil, logerr.NewError(auth.ErrInvalidAccessToken, "invalid token claims")
 	}
 	return claims, nil
 }

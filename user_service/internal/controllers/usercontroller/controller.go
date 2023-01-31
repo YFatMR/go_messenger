@@ -3,7 +3,7 @@ package usercontroller
 import (
 	"context"
 
-	"github.com/YFatMR/go_messenger/core/pkg/errors/cerrors"
+	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/accountid"
@@ -22,20 +22,20 @@ func New(service services.UserService) *UserController {
 	}
 }
 
-func (c *UserController) Create(ctx context.Context, request *proto.CreateUserDataRequest) (*proto.UserID, cerrors.Error) {
+func (c *UserController) Create(ctx context.Context, request *proto.CreateUserDataRequest) (*proto.UserID, logerr.Error) {
 	user, err := user.FromProtobuf(request.GetUserData())
 	if err != nil {
-		return nil, cerrors.New("Wrong format for user data", err, entities.ErrWrongRequestFormat)
+		return nil, logerr.NewError(entities.ErrWrongRequestFormat, "Wrong format for user data", logerr.Err(err))
 	}
 
 	accountID, err := accountid.FromProtobuf(request.GetAccountID())
 	if err != nil {
-		return nil, cerrors.New("Wrong format for account id", err, entities.ErrWrongRequestFormat)
+		return nil, logerr.NewError(entities.ErrWrongRequestFormat, "Wrong format for account id", logerr.Err(err))
 	}
 
-	insertedID, cerr := c.service.Create(ctx, user, accountID)
-	if cerr != nil {
-		return nil, cerr
+	insertedID, lerr := c.service.Create(ctx, user, accountID)
+	if lerr != nil {
+		return nil, lerr
 	}
 
 	return &proto.UserID{
@@ -43,15 +43,15 @@ func (c *UserController) Create(ctx context.Context, request *proto.CreateUserDa
 	}, nil
 }
 
-func (c *UserController) GetByID(ctx context.Context, request *proto.UserID) (*proto.UserData, cerrors.Error) {
+func (c *UserController) GetByID(ctx context.Context, request *proto.UserID) (*proto.UserData, logerr.Error) {
 	userID, err := userid.FromProtobuf(request)
 	if err != nil {
-		return nil, cerrors.New("Wrong format for userID data", err, entities.ErrWrongRequestFormat)
+		return nil, logerr.NewError(entities.ErrWrongRequestFormat, "Wrong format for userID data", logerr.Err(err))
 	}
 
-	userData, cerr := c.service.GetByID(ctx, userID)
-	if err != nil {
-		return nil, cerr
+	userData, lerr := c.service.GetByID(ctx, userID)
+	if lerr != nil {
+		return nil, lerr
 	}
 
 	return &proto.UserData{
@@ -60,17 +60,17 @@ func (c *UserController) GetByID(ctx context.Context, request *proto.UserID) (*p
 	}, nil
 }
 
-func (c *UserController) DeleteByID(ctx context.Context, request *proto.UserID) (*proto.Void, cerrors.Error) {
+func (c *UserController) DeleteByID(ctx context.Context, request *proto.UserID) (*proto.Void, logerr.Error) {
 	userID, err := userid.FromProtobuf(request)
 	if err != nil {
-		return nil, cerrors.New("Wrong format for userID data", err, entities.ErrWrongRequestFormat)
+		return nil, logerr.NewError(entities.ErrWrongRequestFormat, "Wrong format for userID data", logerr.Err(err))
 	}
 
-	cerr := c.service.DeleteByID(ctx, userID)
-	return &proto.Void{}, cerr
+	lerr := c.service.DeleteByID(ctx, userID)
+	return &proto.Void{}, lerr
 }
 
-func (c *UserController) Ping(ctx context.Context, request *proto.Void) (*proto.Pong, cerrors.Error) {
+func (c *UserController) Ping(ctx context.Context, request *proto.Void) (*proto.Pong, logerr.Error) {
 	return &proto.Pong{
 		Message: "pong",
 	}, nil

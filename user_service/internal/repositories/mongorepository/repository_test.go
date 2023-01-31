@@ -79,9 +79,8 @@ func (s *MongoRepositoryTestSuite) TestUserCreation() {
 	// Start test
 	userData := user.New("Ivan", "Petrov")
 	accountID := accountid.New("63c6f759bbe1022255a6b9b5")
-	_, cerr := repository.Create(context.Background(), userData, accountID)
-	require.NoError(cerr.GetAPIError())
-	require.NoError(cerr.GetInternalError())
+	_, lerr := repository.Create(context.Background(), userData, accountID)
+	require.NoError(lerr.GetAPIError())
 }
 
 func (s *MongoRepositoryTestSuite) TestFindCreatedUser() {
@@ -96,13 +95,11 @@ func (s *MongoRepositoryTestSuite) TestFindCreatedUser() {
 	// Start test
 	userData := user.New("Ivan", "Petrov")
 	accountID := accountid.New("63c6f759bbe1022255a6b9b5")
-	userID, cerr := repository.Create(context.Background(), userData, accountID)
-	require.NoError(cerr.GetAPIError(), "Can't create user")
-	require.NoError(cerr.GetInternalError(), "Can't create user")
+	userID, lerr := repository.Create(context.Background(), userData, accountID)
+	require.NoError(lerr.GetAPIError(), "Can't create user")
 
-	responseUserData, cerr := repository.GetByID(context.Background(), userID)
-	require.NoError(cerr.GetAPIError())
-	require.NoError(cerr.GetInternalError())
+	responseUserData, lerr := repository.GetByID(context.Background(), userID)
+	require.NoError(lerr.GetAPIError())
 	require.NotNil(responseUserData)
 
 	usersSame := userData.GetName() != responseUserData.GetName() ||

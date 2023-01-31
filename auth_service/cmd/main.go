@@ -7,12 +7,17 @@ import (
 	"os/signal"
 
 	"github.com/YFatMR/go_messenger/auth_service/internal/auth"
+	"github.com/YFatMR/go_messenger/auth_service/internal/auth/jwtmanager"
 	"github.com/YFatMR/go_messenger/auth_service/internal/controllers"
+	"github.com/YFatMR/go_messenger/auth_service/internal/controllers/accountcontroller"
+	cdecorators "github.com/YFatMR/go_messenger/auth_service/internal/controllers/decorators"
 	"github.com/YFatMR/go_messenger/auth_service/internal/repositories"
-	"github.com/YFatMR/go_messenger/auth_service/internal/repositories/decorators"
+	rdecorators "github.com/YFatMR/go_messenger/auth_service/internal/repositories/decorators"
 	"github.com/YFatMR/go_messenger/auth_service/internal/repositories/mongorepository"
 	"github.com/YFatMR/go_messenger/auth_service/internal/servers"
 	"github.com/YFatMR/go_messenger/auth_service/internal/services"
+	"github.com/YFatMR/go_messenger/auth_service/internal/services/accountservice"
+	sdecorators "github.com/YFatMR/go_messenger/auth_service/internal/services/decorators"
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"github.com/YFatMR/go_messenger/core/pkg/metrics/prometheus"
@@ -102,20 +107,38 @@ func main() {
 
 	// Init Server
 	logger.Info("Init server")
-	authManager := auth.NewJWTManager(authTokenSecretKey, authTokenExpirationDuration, logger, tracer)
+	var authManager jwtmanager.Manager
+	// TODO: add decorators?
+	authManager = jwtmanager.New(authTokenSecretKey, authTokenExpirationDuration)
 	passwordValidator := auth.NewDefaultPasswordValidator()
 
 	var repository repositories.AccountRepository
-	repository = mongorepository.NewAccountMongoRepository(
-		mongoCollection, databaseSettings.GetOperationTimeout(), logger,
-	)
+	repository = mongorepository.New(mongoCollection, databaseSettings.GetOperationTimeout())
+	repository = rdecorators.NewLoggingAccountRepositoryDecorator(repository, logger)
 	if collectDatabaseQueryMetrics {
-		repository = decorators.NewMetricDecorator(repository)
+		repository = rdecorators.NewPrometheusMetricsAccountRepositoryDecorator(repository)
+	}
+	if true {
+		recordErrors := true
+		repository = rdecorators.NewOpentelemetryTracingAccountRepositoryDecorator(repository, tracer, recordErrors)
 	}
 
-	service := services.NewAccountService(repository, authManager, logger, tracer)
-	controller := controllers.NewAccountController(service, passwordValidator, logger, tracer)
-	server := servers.NewGRPCAuthServer(controller, logger, tracer)
+	var service services.AccountService
+	service = accountservice.New(repository, authManager)
+	service = sdecorators.NewLoggingAccountServiceDecorator(service, logger)
+	if true {
+		service = sdecorators.NewPrometheusMetricsAccountServiceDecorator(service)
+	}
+	if true {
+		recordErrors := true
+		service = sdecorators.NewOpentelemetryTracingAccountServiceDecorator(service, tracer, recordErrors)
+	}
+
+	var controller controllers.AccountController
+	controller = accountcontroller.New(service, passwordValidator)
+	controller = cdecorators.NewLoggingAccountControllerDecorator(controller, logger)
+
+	server := servers.NewGRPCAuthServer(controller)
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
 		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),

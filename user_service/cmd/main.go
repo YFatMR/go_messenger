@@ -21,6 +21,7 @@ import (
 	"github.com/YFatMR/go_messenger/user_service/internal/servers/grpcserver"
 	"github.com/YFatMR/go_messenger/user_service/internal/services"
 	sdecorators "github.com/YFatMR/go_messenger/user_service/internal/services/decorators"
+	"github.com/YFatMR/go_messenger/user_service/internal/services/userservice"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
@@ -117,8 +118,12 @@ func main() {
 
 	var service services.UserService
 	service = userservice.New(repository)
+	// TODO: make config options
 	if true {
 		service = sdecorators.NewLoggingUserServiceDecorator(service, logger)
+	}
+	if true {
+		repository = sdecorators.NewPrometheusMetricsUserServiceDecorator(service)
 	}
 	if true {
 		recordTraceErrors := true
@@ -127,6 +132,7 @@ func main() {
 
 	var controller controllers.UserController
 	controller = usercontroller.New(service)
+	// TODO: make config options
 	if true {
 		controller = cdecorators.NewLoggingUserControllerDecorator(controller, logger)
 	}

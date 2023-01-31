@@ -18,21 +18,21 @@ func New(controller controllers.UserController) GRPCServer {
 }
 
 func (s *GRPCServer) CreateUser(ctx context.Context, request *proto.CreateUserDataRequest) (*proto.UserID, error) {
-	userID, cerr := s.controller.Create(ctx, request)
-	return userID, cerr.GetAPIError()
+	userID, lerr := s.controller.Create(ctx, request)
+	return userID, lerr.GetAPIError()
 }
 
 func (s *GRPCServer) GetUserByID(ctx context.Context, request *proto.UserID) (*proto.UserData, error) {
-	userData, cerr := s.controller.GetByID(ctx, request)
-	return userData, cerr.GetAPIError()
+	userData, lerr := s.controller.GetByID(ctx, request)
+	return userData, lerr.GetAPIError()
 }
 
 func (s *GRPCServer) DeleteUserByID(ctx context.Context, request *proto.UserID) (*proto.Void, error) {
-	void, cerr := s.controller.DeleteByID(ctx, request)
-	return void, cerr.GetAPIError()
+	void, lerr := s.controller.DeleteByID(ctx, request)
+	return void, lerr.GetAPIError()
 }
 
 func (s *GRPCServer) Ping(ctx context.Context, request *proto.Void) (*proto.Pong, error) {
-	pong, cerr := s.controller.Ping(ctx, request)
-	return pong, cerr.GetAPIError()
+	pong, lerr := s.controller.Ping(ctx, request)
+	return pong, lerr.GetAPIError()
 }

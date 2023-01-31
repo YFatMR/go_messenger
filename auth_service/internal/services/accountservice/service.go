@@ -11,7 +11,8 @@ import (
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/tokenpayload"
 	"github.com/YFatMR/go_messenger/auth_service/internal/repositories"
 	"github.com/YFatMR/go_messenger/auth_service/internal/services"
-	"github.com/YFatMR/go_messenger/core/pkg/errors/cerrors"
+
+	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
 )
 
 type AccountService struct {
@@ -27,33 +28,33 @@ func New(repository repositories.AccountRepository, authManager jwtmanager.Manag
 }
 
 func (s *AccountService) CreateAccount(ctx context.Context, credential *credential.Entity) (
-	*accountid.Entity, cerrors.Error,
+	*accountid.Entity, logerr.Error,
 ) {
 	return s.accountRepository.CreateAccount(ctx, credential, entities.UserRole)
 }
 
-func (s *AccountService) GetToken(ctx context.Context, credential *credential.Entity) (*token.Entity, cerrors.Error) {
-	tokenPayload, hashedPassword, cerr := s.accountRepository.GetTokenPayloadWithHashedPasswordByLogin(
+func (s *AccountService) GetToken(ctx context.Context, credential *credential.Entity) (*token.Entity, logerr.Error) {
+	tokenPayload, hashedPassword, lerr := s.accountRepository.GetTokenPayloadWithHashedPasswordByLogin(
 		ctx, credential.GetLogin(),
 	)
-	if cerr != nil {
-		return nil, cerr
+	if lerr != nil {
+		return nil, lerr
 	}
 
 	if err := credential.VerifyPassword(hashedPassword); err != nil {
-		return nil, cerrors.New("Can't verify password", err, services.ErrWrongCredential)
+		return nil, logerr.NewError(services.ErrWrongCredential, "Can't verify password", logerr.Err(err))
 	}
 
-	token, cerr := s.authManager.GenerateToken(ctx, tokenPayload)
-	if cerr != nil {
-		return nil, cerr
+	token, lerr := s.authManager.GenerateToken(ctx, tokenPayload)
+	if lerr != nil {
+		return nil, lerr
 	}
 
 	return token, nil
 }
 
 func (s *AccountService) GetTokenPayload(ctx context.Context, token *token.Entity) (
-	*tokenpayload.Entity, cerrors.Error,
+	*tokenpayload.Entity, logerr.Error,
 ) {
 	claims, err := s.authManager.VerifyToken(ctx, token)
 	if err != nil {

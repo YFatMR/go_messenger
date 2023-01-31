@@ -10,7 +10,8 @@ import (
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/credential"
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/tokenpayload"
 	"github.com/YFatMR/go_messenger/auth_service/internal/repositories"
-	"github.com/YFatMR/go_messenger/core/pkg/errors/cerrors"
+
+	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -30,6 +31,9 @@ type AccountMongoRepository struct {
 }
 
 func New(collection *mongo.Collection, operationTimeout time.Duration) *AccountMongoRepository {
+	if collection == nil {
+		panic("Got empty collection")
+	}
 	return &AccountMongoRepository{
 		collection:       collection,
 		operationTimeout: operationTimeout,
@@ -38,7 +42,7 @@ func New(collection *mongo.Collection, operationTimeout time.Duration) *AccountM
 
 func (r *AccountMongoRepository) CreateAccount(ctx context.Context, credential *credential.Entity,
 	userRole entities.Role) (
-	*accountid.Entity, cerrors.Error,
+	*accountid.Entity, logerr.Error,
 ) {
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
 	defer cancel()
@@ -49,7 +53,7 @@ func (r *AccountMongoRepository) CreateAccount(ctx context.Context, credential *
 		UserRole:       userRole,
 	})
 	if err != nil {
-		return nil, cerrors.New("can't create account", err, repositories.ErrAccountCreation)
+		return nil, logerr.NewError(repositories.ErrAccountCreation, "can't create account", logerr.Err(err))
 	}
 
 	accountID := accountid.New(insertResult.InsertedID.(primitive.ObjectID).Hex())
@@ -57,7 +61,7 @@ func (r *AccountMongoRepository) CreateAccount(ctx context.Context, credential *
 }
 
 func (r *AccountMongoRepository) GetTokenPayloadWithHashedPasswordByLogin(ctx context.Context, login string) (
-	*tokenpayload.Entity, string, cerrors.Error,
+	*tokenpayload.Entity, string, logerr.Error,
 ) {
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
 	defer cancel()
@@ -67,9 +71,12 @@ func (r *AccountMongoRepository) GetTokenPayloadWithHashedPasswordByLogin(ctx co
 		{Key: "login", Value: login},
 	}).Decode(&document)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return nil, "", cerrors.New("user credential not found by login: "+login, err, repositories.ErrAccountNotFound)
+		return nil, "", logerr.NewError(
+			repositories.ErrAccountNotFound,
+			"user credential not found", logerr.String("login", login), logerr.Err(err),
+		)
 	} else if err != nil {
-		return nil, "", cerrors.New("database connection error", err, repositories.ErrGetToken)
+		return nil, "", logerr.NewError(repositories.ErrGetToken, "database connection error", logerr.Err(err))
 	}
 	tokenPayload := tokenpayload.New(document.ID.Hex(), document.UserRole)
 	hashedPassword := document.HashedPassword
