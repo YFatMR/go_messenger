@@ -45,13 +45,8 @@ func (d *LoggingUserControllerDecorator) Create(ctx context.Context, request *pr
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.Create(ctx, request)
@@ -67,13 +62,8 @@ func (d *LoggingUserControllerDecorator) DeleteByID(ctx context.Context, request
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.DeleteByID(ctx, request)
@@ -89,13 +79,8 @@ func (d *LoggingUserControllerDecorator) GetByID(ctx context.Context, request *p
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.GetByID(ctx, request)
@@ -111,13 +96,8 @@ func (d *LoggingUserControllerDecorator) Ping(ctx context.Context, request *prot
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.Ping(ctx, request)

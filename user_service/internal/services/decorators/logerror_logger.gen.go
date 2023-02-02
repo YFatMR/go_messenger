@@ -47,13 +47,8 @@ func (d *LoggingUserServiceDecorator) Create(ctx context.Context, user *user.Ent
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.Create(ctx, user, accountID)
@@ -69,13 +64,8 @@ func (d *LoggingUserServiceDecorator) DeleteByID(ctx context.Context, userID *us
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.DeleteByID(ctx, userID)
@@ -91,13 +81,8 @@ func (d *LoggingUserServiceDecorator) GetByID(ctx context.Context, userID *useri
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.GetByID(ctx, userID)

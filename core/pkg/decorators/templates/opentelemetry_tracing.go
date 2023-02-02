@@ -38,7 +38,7 @@ func New{{$decorator}}(base {{.Interface.Type}}, tracer trace.Tracer, recordErro
 		{{ break }}
 	{{ end }}
 
-	{{ if not ($method.HasResults) }}
+	{{ if or (not $method.HasResults) (not $method.ReturnsError) }}
 		var span trace.Span
 		ctx, span = d.tracer.Start(ctx, "/{{$method.Name}}")
 		defer span.End()
@@ -46,33 +46,13 @@ func New{{$decorator}}(base {{.Interface.Type}}, tracer trace.Tracer, recordErro
 		{{ break }}
 	{{ end }}
 
-	{{ $errorsResultCount := 0}}
-	{{ range $result := $method.Results }}
-		{{ if eq $result.Type $errorType }}
-			{{ $errorsResultCount = add $errorsResultCount 1 }}
-		{{ end }}
-	{{ end }}
-
-	{{ if ne $errorsResultCount 1 }}
-		panic("Expected exact one {{ $errorType }} type as last argument")
-		{{ break }}
-	{{ end }}
-
-	{{ $errorResult := last $method.Results }}
-	{{ if not (eq $errorResult.Type $errorType) }}
-		panic("Expected exact one {{ $errorType }} type as last argument")
-		{{ break }}
-	{{ end }}
 		var span trace.Span
 		ctx, span = d.tracer.Start(ctx, "/{{$method.Name}}")
 		defer func() {
-			defer span.End()
-			if {{ $errorResult.Name }} == nil {
-				return
+			if err != nil && d.recordErrors {
+				span.RecordError(err)
 			}
-			if {{ $errorResult.Name }}.HasError() && d.recordErrors {
-				span.RecordError({{ $errorResult.Name }}.GetAPIError())
-			}
+			span.End()
 		}()
 		{{ $method.Pass "d.base." -}}
 	}

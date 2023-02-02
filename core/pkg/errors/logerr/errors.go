@@ -7,17 +7,17 @@ import (
 type Error interface {
 	// public error
 	GetAPIError() error
-	// message for logging
-	GetLogMessage() string
-	// get log level
-	GetLogLevel() Loglevel
-	// logging fields
-	GetFields() []logerrcore.Field
 	// check error
 	HasError() bool
-	//
+	// Call for library integration: message for logging
+	GetLogMessage() string
+	// Call for library integration: get log level
+	GetLogLevel() Loglevel
+	// Call for library integration: logging fields
+	GetFields() []logerrcore.Field
+	// Call for library integration:
 	StopLogMessage()
-	//
+	// Call for library integration:
 	IsLogMessage() bool
 }
 

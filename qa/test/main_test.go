@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"os/signal"
 	"testing"
 
@@ -13,29 +12,16 @@ import (
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 )
 
-var (
-	dockerComposeFile string
-	envFile           string
-)
+var envFile string
 
 func init() {
-	flag.StringVar(&dockerComposeFile, "docker-compose-file", "", "docker compose file path")
-	flag.StringVar(&envFile, "env-file", "", "docker compose --env-file flag and viper config")
+	flag.StringVar(&envFile, "env-file", "", "configuration file")
 }
 
 func TestMain(m *testing.M) {
 	flag.Parse()
 
-	ctx, stopDocker := signal.NotifyContext(context.Background(), os.Interrupt)
-
-	// Run docker-compose
-	command := exec.CommandContext(
-		ctx, "docker-compose", "--file", dockerComposeFile, "--env-file", envFile, "up",
-	)
-	err := command.Start()
-	if err != nil {
-		panic(err)
-	}
+	ctx, stopTests := signal.NotifyContext(context.Background(), os.Interrupt)
 
 	// Setup tests
 	config := cviper.New()
@@ -105,6 +91,6 @@ func TestMain(m *testing.M) {
 
 	exitCode := m.Run()
 
-	stopDocker()
+	stopTests()
 	os.Exit(exitCode)
 }

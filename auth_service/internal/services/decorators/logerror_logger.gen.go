@@ -48,13 +48,8 @@ func (d *LoggingAccountServiceDecorator) CreateAccount(ctx context.Context, cred
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.CreateAccount(ctx, credential)
@@ -70,13 +65,8 @@ func (d *LoggingAccountServiceDecorator) GetToken(ctx context.Context, credentia
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.GetToken(ctx, credential)
@@ -92,13 +82,8 @@ func (d *LoggingAccountServiceDecorator) GetTokenPayload(ctx context.Context, to
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.GetTokenPayload(ctx, token)

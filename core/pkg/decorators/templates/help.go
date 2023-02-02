@@ -66,13 +66,8 @@ func New{{$decorator}}(base {{.Interface.Type}}, logger *loggers.OtelZapLoggerWi
 				return
 			}
 			if {{ $errorResult.Name }}.IsLogMessage() {
-				// TODO: create special template for nil error logick
-				// If we have no error, make error nil to prevent logging the same message many times
 				d.logger.LogContextLogerror(ctx, {{ $errorResult.Name }})
 				{{ $errorResult.Name }}.StopLogMessage()
-			}
-			if !{{ $errorResult.Name }}.HasError() {
-				{{ $errorResult.Name }} = nil
 			}
 		}()
 		{{ $method.Pass "d.base." -}}

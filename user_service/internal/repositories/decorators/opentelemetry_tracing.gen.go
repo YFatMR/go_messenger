@@ -9,7 +9,7 @@ package decorators
 import (
 	"context"
 
-	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/accountid"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/user"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/userid"
@@ -40,52 +40,43 @@ func NewOpentelemetryTracingUserRepositoryDecorator(base repositories.UserReposi
 }
 
 // Create implements repositories.UserRepository
-func (d *OpentelemetryTracingUserRepositoryDecorator) Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (userID *userid.Entity, lerr logerr.Error) {
+func (d *OpentelemetryTracingUserRepositoryDecorator) Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (userID *userid.Entity, logstash ulo.LogStash, err error) {
 
 	var span trace.Span
 	ctx, span = d.tracer.Start(ctx, "/Create")
 	defer func() {
-		defer span.End()
-		if lerr == nil {
-			return
+		if err != nil && d.recordErrors {
+			span.RecordError(err)
 		}
-		if lerr.HasError() && d.recordErrors {
-			span.RecordError(lerr.GetAPIError())
-		}
+		span.End()
 	}()
 	return d.base.Create(ctx, user, accountID)
 }
 
 // DeleteByID implements repositories.UserRepository
-func (d *OpentelemetryTracingUserRepositoryDecorator) DeleteByID(ctx context.Context, userID *userid.Entity) (lerr logerr.Error) {
+func (d *OpentelemetryTracingUserRepositoryDecorator) DeleteByID(ctx context.Context, userID *userid.Entity) (logstash ulo.LogStash, err error) {
 
 	var span trace.Span
 	ctx, span = d.tracer.Start(ctx, "/DeleteByID")
 	defer func() {
-		defer span.End()
-		if lerr == nil {
-			return
+		if err != nil && d.recordErrors {
+			span.RecordError(err)
 		}
-		if lerr.HasError() && d.recordErrors {
-			span.RecordError(lerr.GetAPIError())
-		}
+		span.End()
 	}()
 	return d.base.DeleteByID(ctx, userID)
 }
 
 // GetByID implements repositories.UserRepository
-func (d *OpentelemetryTracingUserRepositoryDecorator) GetByID(ctx context.Context, userID *userid.Entity) (user *user.Entity, lerr logerr.Error) {
+func (d *OpentelemetryTracingUserRepositoryDecorator) GetByID(ctx context.Context, userID *userid.Entity) (user *user.Entity, logstash ulo.LogStash, err error) {
 
 	var span trace.Span
 	ctx, span = d.tracer.Start(ctx, "/GetByID")
 	defer func() {
-		defer span.End()
-		if lerr == nil {
-			return
+		if err != nil && d.recordErrors {
+			span.RecordError(err)
 		}
-		if lerr.HasError() && d.recordErrors {
-			span.RecordError(lerr.GetAPIError())
-		}
+		span.End()
 	}()
 	return d.base.GetByID(ctx, userID)
 }

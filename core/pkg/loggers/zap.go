@@ -4,8 +4,9 @@ import (
 	"context"
 	"os"
 
-	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
-	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr/logerrcore"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo/ulocore"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo/zapfields"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -74,74 +75,36 @@ func (l *OtelZapLoggerWithTraceID) FatalContextNoExport(ctx context.Context, msg
 	l.LogContextNoExport(ctx, zapcore.FatalLevel, msg, fields...)
 }
 
-func toZapField(f logerrcore.Field) zap.Field {
-	switch f.Type {
-	case logerrcore.StringType:
-		return zap.String(f.Key, f.String)
-	case logerrcore.Int64Type:
-		return zap.Int64(f.Key, f.Integer)
-	case logerrcore.ErrorType:
-		return zap.NamedError(f.Key, f.Error)
-	case logerrcore.BoolType:
-		val := f.Integer == 1
-		return zap.Bool(f.Key, val)
-	case logerrcore.SkipType:
-	case logerrcore.UnknownType:
-	default:
-	}
-	return zap.Skip()
-}
-
-func toZapLogLevel(lvl logerr.Loglevel) zapcore.Level {
-	switch lvl {
-	case logerr.DebugLevel:
-		return zap.DebugLevel
-	case logerr.InfoLevel:
-		return zap.InfoLevel
-	case logerr.ErrorLevel:
-	default:
-	}
-	return zap.ErrorLevel
-}
-
-func getZapFormatFields(logerr logerr.Error) []zap.Field {
-	if logerr == nil {
-		return []zap.Field{}
-	}
-	result := make([]zap.Field, 0, len(logerr.GetFields()))
-	for _, field := range logerr.GetFields() {
-		result = append(result, toZapField(field))
-	}
-	return result
-}
-
-func (l *OtelZapLoggerWithTraceID) LogLogerror(lerr logerr.Error) {
-	if lerr == nil || !lerr.IsLogMessage() {
+func (l *OtelZapLoggerWithTraceID) LogContextULO(ctx context.Context, logstash ulo.LogStash) {
+	if logstash == nil {
 		return
 	}
-	fields := append(getZapFormatFields(lerr), zap.NamedError("api error", lerr.GetAPIError()))
-	l.Log(toZapLogLevel(lerr.GetLogLevel()), lerr.GetLogMessage(), fields...)
+	for _, message := range logstash.GetMessages() {
+		fields := zapfields.FromMessage(message)
+		switch message.GetLogLevel() {
+		case ulocore.DebugLevel:
+			l.DebugContext(ctx, "", fields...)
+		case ulocore.InfoLevel:
+			l.InfoContext(ctx, "", fields...)
+		case ulocore.ErrorLevel:
+			l.ErrorContext(ctx, "", fields...)
+		}
+	}
 }
 
-func (l *OtelZapLoggerWithTraceID) LogContextNoExportLogerror(ctx context.Context, lerr logerr.Error) {
-	if lerr == nil || !lerr.IsLogMessage() {
+func (l *OtelZapLoggerWithTraceID) LogContextNoExportULO(ctx context.Context, logstash ulo.LogStash) {
+	if logstash == nil {
 		return
 	}
-	fields := append(getZapFormatFields(lerr), zap.NamedError("api error", lerr.GetAPIError()))
-	l.LogContextNoExport(ctx, toZapLogLevel(lerr.GetLogLevel()), lerr.GetLogMessage(), fields...)
-}
-
-func (l *OtelZapLoggerWithTraceID) LogContextLogerror(ctx context.Context, lerr logerr.Error) {
-	if lerr == nil || !lerr.IsLogMessage() {
-		return
-	}
-	fields := append(getZapFormatFields(lerr), zap.NamedError("api error", lerr.GetAPIError()))
-	switch lerr.GetLogLevel() {
-	case logerr.DebugLevel:
-		l.DebugContext(ctx, lerr.GetLogMessage(), fields...)
-	case logerr.InfoLevel:
-		l.InfoContext(ctx, lerr.GetLogMessage(), fields...)
-	case logerr.ErrorLevel:
-		l.ErrorContext(ctx, lerr.GetLogMessage(), fields...)
+	for _, message := range logstash.GetMessages() {
+		fields := zapfields.FromMessage(message)
+		switch message.GetLogLevel() {
+		case ulocore.DebugLevel:
+			l.DebugContextNoExport(ctx, "", fields...)
+		case ulocore.InfoLevel:
+			l.InfoContextNoExport(ctx, "", fields...)
+		case ulocore.ErrorLevel:
+			l.ErrorContextNoExport(ctx, "", fields...)
+		}
 	}
 }

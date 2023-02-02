@@ -45,13 +45,8 @@ func (d *LoggingAccountControllerDecorator) CreateAccount(ctx context.Context, r
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.CreateAccount(ctx, request)
@@ -67,13 +62,8 @@ func (d *LoggingAccountControllerDecorator) GetToken(ctx context.Context, reques
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.GetToken(ctx, request)
@@ -89,13 +79,8 @@ func (d *LoggingAccountControllerDecorator) GetTokenPayload(ctx context.Context,
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.GetTokenPayload(ctx, request)
@@ -111,13 +96,8 @@ func (d *LoggingAccountControllerDecorator) Ping(ctx context.Context, request *p
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.Ping(ctx, request)

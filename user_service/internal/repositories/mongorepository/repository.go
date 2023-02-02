@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/accountid"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/user"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/userid"
@@ -41,11 +41,11 @@ func NewUserMongoRepository(collection *mongo.Collection, operationTimeout time.
 }
 
 func (r *UserMongoRepository) Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (
-	*userid.Entity, logerr.Error,
+	*userid.Entity, ulo.LogStash, error,
 ) {
 	accountMongoID, err := primitive.ObjectIDFromHex(accountID.GetID())
 	if err != nil {
-		return nil, logerr.NewError(ErrUserCreation, "Got wrong id format", logerr.Err(err))
+		return nil, ulo.ErrorMsg(ulo.Message("Got wrong id format"), ulo.Error(err)), ErrUserCreation
 	}
 
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
@@ -57,17 +57,19 @@ func (r *UserMongoRepository) Create(ctx context.Context, user *user.Entity, acc
 		AccountID: accountMongoID,
 	})
 	if err != nil {
-		return nil, logerr.NewError(ErrUserCreation, "Can't insert new user", logerr.Err(err))
+		return nil, ulo.ErrorMsg(ulo.Message("Can't insert new user"), ulo.Error(err)), err
 	}
 
 	userID := userid.New(insertResult.InsertedID.(primitive.ObjectID).Hex())
-	return userID, nil
+	return userID, nil, nil
 }
 
-func (r *UserMongoRepository) GetByID(ctx context.Context, userID *userid.Entity) (*user.Entity, logerr.Error) {
+func (r *UserMongoRepository) GetByID(ctx context.Context, userID *userid.Entity) (
+	*user.Entity, ulo.LogStash, error,
+) {
 	objectID, err := primitive.ObjectIDFromHex(userID.GetID())
 	if err != nil {
-		return nil, logerr.NewError(ErrGetUser, "Got wrong id format", logerr.Err(err))
+		return nil, ulo.ErrorMsg(ulo.Message("Got wrong id format"), ulo.Error(err)), ErrGetUser
 	}
 
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
@@ -78,18 +80,20 @@ func (r *UserMongoRepository) GetByID(ctx context.Context, userID *userid.Entity
 		{Key: "_id", Value: objectID},
 	}).Decode(&document)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return nil, logerr.NewError(ErrUserNotFound, "User not found by id", logerr.Err(err))
+		return nil, ulo.ErrorMsg(ulo.Message("User not found by id"), ulo.Error(err)), ErrUserNotFound
 	} else if err != nil {
-		return nil, logerr.NewError(ErrUserNotFound, "Database connection error", logerr.Err(err))
+		return nil, ulo.ErrorMsg(ulo.Message("Database connection error"), ulo.Error(err)), ErrUserNotFound
 	}
 	user := user.New(document.Name, document.Surname)
-	return user, nil
+	return user, nil, nil
 }
 
-func (r *UserMongoRepository) DeleteByID(ctx context.Context, userID *userid.Entity) logerr.Error {
+func (r *UserMongoRepository) DeleteByID(ctx context.Context, userID *userid.Entity) (
+	logstash ulo.LogStash, err error,
+) {
 	objectID, err := primitive.ObjectIDFromHex(userID.GetID())
 	if err != nil {
-		return logerr.NewError(ErrUserDeletion, "Got wrong id format", logerr.Err(err))
+		return ulo.ErrorMsg(ulo.Message("Got wrong id format"), ulo.Error(err)), ErrUserDeletion
 	}
 
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
@@ -97,15 +101,14 @@ func (r *UserMongoRepository) DeleteByID(ctx context.Context, userID *userid.Ent
 
 	deleteResult, err := r.collection.DeleteOne(mongoOperationCtx, bson.M{"_id": objectID})
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return logerr.NewError(ErrUserNotFound, "User not found by id", logerr.Err(err))
+		return ulo.ErrorMsg(ulo.Message("User not found by id"), ulo.Error(err)), ErrUserNotFound
 	} else if err != nil {
-		return logerr.NewError(ErrUserNotFound, "Database connection error", logerr.Err(err))
+		return ulo.ErrorMsg(ulo.Message("Database connection error"), ulo.Error(err)), ErrUserNotFound
 	}
 	r.logger.InfoContextNoExport(
 		ctx,
 		"Deleted user", zap.String("id", userID.GetID()),
 		zap.Int64("deleted count", deleteResult.DeletedCount),
 	)
-
-	return nil
+	return nil, nil
 }

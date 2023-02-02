@@ -34,8 +34,11 @@ run: build_docker_compose
 run-tests:
 	go test -v -race -o ${BINARY_DIRECTORY}/user_service_repository_tests ${ROOT_PROJECT_DIRECTORY}/user_service/internal/repositories/mongorepository/ -args -mongo_config_path="${ROOT_PROJECT_DIRECTORY}/core/pkg/recipes/go/mongo/.env"
 
+# up compose first:
+# sudo docker-compose --file ./docker-compose-test.yml --env-file ./test.env build
+# sudo docker-compose --file ./docker-compose-test.yml --env-file ./test.env up
 run-huge-tests:
-	go test -v -race ${ROOT_PROJECT_DIRECTORY}/qa/test/ -args -docker-compose-file="${ROOT_PROJECT_DIRECTORY}/docker-compose-test.yml" -env-file="${ROOT_PROJECT_DIRECTORY}/test.env"
+	go test -v -race ${ROOT_PROJECT_DIRECTORY}/qa/test/ -args -env-file="${ROOT_PROJECT_DIRECTORY}/test.env"
 
 lint:
 	${GO_LINTER_BINARY} run -v --config ${ROOT_PROJECT_DIRECTORY}/.golangci.yml -- ${GO_WORK_SUBDIRECTORIES}

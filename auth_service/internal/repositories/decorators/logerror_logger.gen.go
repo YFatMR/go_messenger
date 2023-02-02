@@ -48,13 +48,8 @@ func (d *LoggingAccountRepositoryDecorator) CreateAccount(ctx context.Context, c
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.CreateAccount(ctx, credential, role)
@@ -70,13 +65,8 @@ func (d *LoggingAccountRepositoryDecorator) GetTokenPayloadWithHashedPasswordByL
 			return
 		}
 		if lerr.IsLogMessage() {
-			// TODO: create special template for nil error logick
-			// If we have no error, make error nil to prevent logging the same message many times
 			d.logger.LogContextLogerror(ctx, lerr)
 			lerr.StopLogMessage()
-		}
-		if !lerr.HasError() {
-			lerr = nil
 		}
 	}()
 	return d.base.GetTokenPayloadWithHashedPasswordByLogin(ctx, login)
