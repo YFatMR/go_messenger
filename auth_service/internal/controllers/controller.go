@@ -3,19 +3,21 @@ package controllers
 import (
 	"context"
 
-	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 )
 
 type AccountController interface {
 	CreateAccount(ctx context.Context, request *proto.Credential) (
-		accountID *proto.AccountID, lerr logerr.Error,
+		accountID *proto.AccountID, logstash ulo.LogStash, err error,
 	)
 	GetToken(ctx context.Context, request *proto.Credential) (
-		token *proto.Token, lerr logerr.Error,
+		token *proto.Token, logstash ulo.LogStash, err error,
 	)
 	GetTokenPayload(ctx context.Context, request *proto.Token) (
-		tokenPayload *proto.TokenPayload, lerr logerr.Error,
+		tokenPayload *proto.TokenPayload, logstash ulo.LogStash, err error,
 	)
-	Ping(ctx context.Context, request *proto.Void) (pong *proto.Pong, lerr logerr.Error)
+	Ping(ctx context.Context, request *proto.Void) (
+		pong *proto.Pong, logstash ulo.LogStash, err error,
+	)
 }

@@ -64,7 +64,6 @@ func NewPrometheusMetricsUserRepositoryDecorator(base repositories.UserRepositor
 
 // Create implements repositories.UserRepository
 func (d *PrometheusMetricsUserRepositoryDecorator) Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (userID *userid.Entity, logstash ulo.LogStash, err error) {
-
 	startTime := time.Now()
 	startProcessTotal.Inc()
 	defer func() {
@@ -83,7 +82,6 @@ func (d *PrometheusMetricsUserRepositoryDecorator) Create(ctx context.Context, u
 
 // DeleteByID implements repositories.UserRepository
 func (d *PrometheusMetricsUserRepositoryDecorator) DeleteByID(ctx context.Context, userID *userid.Entity) (logstash ulo.LogStash, err error) {
-
 	startTime := time.Now()
 	startProcessTotal.Inc()
 	defer func() {
@@ -102,7 +100,6 @@ func (d *PrometheusMetricsUserRepositoryDecorator) DeleteByID(ctx context.Contex
 
 // GetByID implements repositories.UserRepository
 func (d *PrometheusMetricsUserRepositoryDecorator) GetByID(ctx context.Context, userID *userid.Entity) (user *user.Entity, logstash ulo.LogStash, err error) {
-
 	startTime := time.Now()
 	startProcessTotal.Inc()
 	defer func() {

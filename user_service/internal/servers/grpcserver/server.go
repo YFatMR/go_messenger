@@ -17,34 +17,24 @@ func New(controller controllers.UserController) GRPCServer {
 	}
 }
 
-func (s *GRPCServer) CreateUser(ctx context.Context, request *proto.CreateUserDataRequest) (*proto.UserID, error) {
-	userID, lerr := s.controller.Create(ctx, request)
-	if lerr == nil {
-		return userID, nil
-	}
-	return userID, lerr.GetAPIError()
+func (s *GRPCServer) CreateUser(ctx context.Context, request *proto.CreateUserDataRequest) (
+	*proto.UserID, error,
+) {
+	userID, _, err := s.controller.Create(ctx, request)
+	return userID, err
 }
 
 func (s *GRPCServer) GetUserByID(ctx context.Context, request *proto.UserID) (*proto.UserData, error) {
-	userData, lerr := s.controller.GetByID(ctx, request)
-	if lerr == nil {
-		return userData, nil
-	}
-	return userData, lerr.GetAPIError()
+	userData, _, err := s.controller.GetByID(ctx, request)
+	return userData, err
 }
 
 func (s *GRPCServer) DeleteUserByID(ctx context.Context, request *proto.UserID) (*proto.Void, error) {
-	void, lerr := s.controller.DeleteByID(ctx, request)
-	if lerr == nil {
-		return void, nil
-	}
-	return void, lerr.GetAPIError()
+	void, _, err := s.controller.DeleteByID(ctx, request)
+	return void, err
 }
 
 func (s *GRPCServer) Ping(ctx context.Context, request *proto.Void) (*proto.Pong, error) {
-	pong, lerr := s.controller.Ping(ctx, request)
-	if lerr == nil {
-		return pong, nil
-	}
-	return pong, lerr.GetAPIError()
+	pong, _, err := s.controller.Ping(ctx, request)
+	return pong, err
 }

@@ -15,7 +15,7 @@ import (
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/credential"
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/tokenpayload"
 	"github.com/YFatMR/go_messenger/auth_service/internal/repositories"
-	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -33,16 +33,16 @@ const (
 
 // Naming rule: https://prometheus.io/docs/practices/naming/
 var (
-	databaseQueryDurationSeconds = promauto.NewHistogramVec(prometheus.HistogramOpts{
+	durationSeconds = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "database_query_duration_seconds",
 		Buckets: []float64{0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 4},
 		Help:    "Duration of one database query",
 	}, []string{"status", "operation"})
-	databaseQueryProcessedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+	processedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "database_query_processed_total",
 		Help: "Count of query to database",
 	}, []string{"status", "operation"})
-	databaseQueryStartProcessTotal = promauto.NewCounter(prometheus.CounterOpts{
+	startProcessTotal = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "database_query_start_process_total",
 		Help: "Count of started queries",
 	})
@@ -64,35 +64,37 @@ func NewPrometheusMetricsAccountRepositoryDecorator(base repositories.AccountRep
 }
 
 // CreateAccount implements repositories.AccountRepository
-func (d *PrometheusMetricsAccountRepositoryDecorator) CreateAccount(ctx context.Context, credential *credential.Entity, role entities.Role) (accountID *accountid.Entity, lerr logerr.Error) {
-
+func (d *PrometheusMetricsAccountRepositoryDecorator) CreateAccount(ctx context.Context, credential *credential.Entity, role entities.Role) (accountID *accountid.Entity, logtash ulo.LogStash, err error) {
 	startTime := time.Now()
-	databaseQueryStartProcessTotal.Inc()
+	startProcessTotal.Inc()
 	defer func() {
 		functionDuration := time.Since(startTime).Seconds()
 		statusTag := okStatusTag
-		if lerr != nil && lerr.HasError() {
+
+		if err != nil {
 			statusTag = errorStatusTag
 		}
-		databaseQueryDurationSeconds.WithLabelValues(statusTag, "create_account").Observe(functionDuration)
-		databaseQueryProcessedTotal.WithLabelValues(statusTag, "create_account").Inc()
+
+		durationSeconds.WithLabelValues(statusTag, "create_account").Observe(functionDuration)
+		processedTotal.WithLabelValues(statusTag, "create_account").Inc()
 	}()
 	return d.base.CreateAccount(ctx, credential, role)
 }
 
 // GetTokenPayloadWithHashedPasswordByLogin implements repositories.AccountRepository
-func (d *PrometheusMetricsAccountRepositoryDecorator) GetTokenPayloadWithHashedPasswordByLogin(ctx context.Context, login string) (tokenPayload *tokenpayload.Entity, hashedPassword string, lerr logerr.Error) {
-
+func (d *PrometheusMetricsAccountRepositoryDecorator) GetTokenPayloadWithHashedPasswordByLogin(ctx context.Context, login string) (tokenPayload *tokenpayload.Entity, hashedPassword string, logtash ulo.LogStash, err error) {
 	startTime := time.Now()
-	databaseQueryStartProcessTotal.Inc()
+	startProcessTotal.Inc()
 	defer func() {
 		functionDuration := time.Since(startTime).Seconds()
 		statusTag := okStatusTag
-		if lerr != nil && lerr.HasError() {
+
+		if err != nil {
 			statusTag = errorStatusTag
 		}
-		databaseQueryDurationSeconds.WithLabelValues(statusTag, "get_token_payload_with_hashed_password_by_login").Observe(functionDuration)
-		databaseQueryProcessedTotal.WithLabelValues(statusTag, "get_token_payload_with_hashed_password_by_login").Inc()
+
+		durationSeconds.WithLabelValues(statusTag, "get_token_payload_with_hashed_password_by_login").Observe(functionDuration)
+		processedTotal.WithLabelValues(statusTag, "get_token_payload_with_hashed_password_by_login").Inc()
 	}()
 	return d.base.GetTokenPayloadWithHashedPasswordByLogin(ctx, login)
 }

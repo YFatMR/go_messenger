@@ -14,7 +14,7 @@ import (
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/credential"
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/tokenpayload"
 	"github.com/YFatMR/go_messenger/auth_service/internal/repositories"
-	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -41,35 +41,27 @@ func NewOpentelemetryTracingAccountRepositoryDecorator(base repositories.Account
 }
 
 // CreateAccount implements repositories.AccountRepository
-func (d *OpentelemetryTracingAccountRepositoryDecorator) CreateAccount(ctx context.Context, credential *credential.Entity, role entities.Role) (accountID *accountid.Entity, lerr logerr.Error) {
-
+func (d *OpentelemetryTracingAccountRepositoryDecorator) CreateAccount(ctx context.Context, credential *credential.Entity, role entities.Role) (accountID *accountid.Entity, logtash ulo.LogStash, err error) {
 	var span trace.Span
 	ctx, span = d.tracer.Start(ctx, "/CreateAccount")
 	defer func() {
-		defer span.End()
-		if lerr == nil {
-			return
+		if err != nil && d.recordErrors {
+			span.RecordError(err)
 		}
-		if lerr.HasError() && d.recordErrors {
-			span.RecordError(lerr.GetAPIError())
-		}
+		span.End()
 	}()
 	return d.base.CreateAccount(ctx, credential, role)
 }
 
 // GetTokenPayloadWithHashedPasswordByLogin implements repositories.AccountRepository
-func (d *OpentelemetryTracingAccountRepositoryDecorator) GetTokenPayloadWithHashedPasswordByLogin(ctx context.Context, login string) (tokenPayload *tokenpayload.Entity, hashedPassword string, lerr logerr.Error) {
-
+func (d *OpentelemetryTracingAccountRepositoryDecorator) GetTokenPayloadWithHashedPasswordByLogin(ctx context.Context, login string) (tokenPayload *tokenpayload.Entity, hashedPassword string, logtash ulo.LogStash, err error) {
 	var span trace.Span
 	ctx, span = d.tracer.Start(ctx, "/GetTokenPayloadWithHashedPasswordByLogin")
 	defer func() {
-		defer span.End()
-		if lerr == nil {
-			return
+		if err != nil && d.recordErrors {
+			span.RecordError(err)
 		}
-		if lerr.HasError() && d.recordErrors {
-			span.RecordError(lerr.GetAPIError())
-		}
+		span.End()
 	}()
 	return d.base.GetTokenPayloadWithHashedPasswordByLogin(ctx, login)
 }

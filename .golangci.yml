@@ -3,6 +3,8 @@ run:
   build-tags:
     - bench
     - !bench
+  skip-files:
+    - .template.go
 
 linters-settings:
   funlen:
@@ -33,6 +35,7 @@ issues:
     - path: main.go
       linters:
         - funlen
+        - gocyclo
     - path: interceptors/auth.go
       linters:
         - funlen

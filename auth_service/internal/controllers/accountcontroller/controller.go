@@ -7,8 +7,7 @@ import (
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/credential"
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/token"
 	"github.com/YFatMR/go_messenger/auth_service/internal/services"
-
-	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 )
 
@@ -35,63 +34,68 @@ func New(accountService services.AccountService, passwordValidator passwordValid
 }
 
 func (c *AccountController) CreateAccount(ctx context.Context, request *proto.Credential) (
-	*proto.AccountID, logerr.Error,
+	*proto.AccountID, ulo.LogStash, error,
 ) {
 	credential, err := credential.FromProtobuf(request, c.passwordValidator)
 	if err != nil {
-		return nil, logerr.NewError(controllers.ErrWrongRequestFormat, "Can't parse credential", logerr.Err(err))
+		logstash := ulo.FromErrorWithMsg("Can't parse credential", err)
+		return nil, logstash, controllers.ErrWrongRequestFormat
 	}
 
-	accountID, lerr := c.accountService.CreateAccount(ctx, credential)
-	if lerr != nil {
-		return nil, lerr
+	accountID, _, err := c.accountService.CreateAccount(ctx, credential)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return &proto.AccountID{
 		ID: accountID.GetID(),
-	}, nil
+	}, nil, nil
 }
 
 func (c *AccountController) GetToken(ctx context.Context, request *proto.Credential) (
-	*proto.Token, logerr.Error,
+	*proto.Token, ulo.LogStash, error,
 ) {
 	credential, err := credential.FromProtobuf(request, c.passwordValidator)
 	if err != nil {
-		return nil, logerr.NewError(controllers.ErrWrongRequestFormat, "Can't parse credential", logerr.Err(err))
+		logstash := ulo.FromErrorWithMsg("Can't parse credential", err)
+		return nil, logstash, controllers.ErrWrongRequestFormat
 	}
 
-	token, lerr := c.accountService.GetToken(ctx, credential)
-	if lerr != nil {
-		return nil, lerr
+	token, _, err := c.accountService.GetToken(ctx, credential)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return &proto.Token{
 		AccessToken: token.GetAccessToken(),
-	}, nil
+	}, nil, nil
 }
 
 func (c *AccountController) GetTokenPayload(ctx context.Context, request *proto.Token) (
-	*proto.TokenPayload, logerr.Error,
+	*proto.TokenPayload, ulo.LogStash, error,
 ) {
 	token, err := token.FromProtobuf(request)
 	if err != nil {
-		return nil, logerr.NewError(controllers.ErrWrongRequestFormat, "Can't parse token", logerr.Err(err))
+		logstash := ulo.FromErrorWithMsg("Can't parse token", err)
+		return nil, logstash, controllers.ErrWrongRequestFormat
 	}
 
-	payload, lerr := c.accountService.GetTokenPayload(ctx, token)
-	if lerr != nil {
-		return nil, lerr
+	payload, _, err := c.accountService.GetTokenPayload(ctx, token)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	role := payload.GetUserRole()
 	return &proto.TokenPayload{
 		AccountID: payload.GetAccountID(),
 		UserRole:  string(role),
-	}, nil
+	}, nil, nil
 }
 
-func (c *AccountController) Ping(ctx context.Context, request *proto.Void) (*proto.Pong, logerr.Error) {
+func (c *AccountController) Ping(ctx context.Context, request *proto.Void) (
+	*proto.Pong, ulo.LogStash, error,
+) {
 	return &proto.Pong{
 		Message: "pong",
-	}, nil
+	}, nil, nil
 }

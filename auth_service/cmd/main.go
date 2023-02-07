@@ -107,9 +107,7 @@ func main() {
 
 	// Init Server
 	logger.Info("Init server")
-	var authManager jwtmanager.Manager
-	// TODO: add decorators?
-	authManager = jwtmanager.New(authTokenSecretKey, authTokenExpirationDuration)
+	var authManager jwtmanager.Manager = jwtmanager.New(authTokenSecretKey, authTokenExpirationDuration)
 	passwordValidator := auth.NewDefaultPasswordValidator()
 
 	var repository repositories.AccountRepository
@@ -122,7 +120,6 @@ func main() {
 		recordErrors := true
 		repository = rdecorators.NewOpentelemetryTracingAccountRepositoryDecorator(repository, tracer, recordErrors)
 	}
-	repository = rdecorators.NewLogerrCleanerAccountRepositoryDecorator(repository)
 
 	var service services.AccountService
 	service = accountservice.New(repository, authManager)
@@ -134,12 +131,10 @@ func main() {
 		recordErrors := true
 		service = sdecorators.NewOpentelemetryTracingAccountServiceDecorator(service, tracer, recordErrors)
 	}
-	service = sdecorators.NewLogerrCleanerAccountServiceDecorator(service)
 
 	var controller controllers.AccountController
 	controller = accountcontroller.New(service, passwordValidator)
 	controller = cdecorators.NewLoggingAccountControllerDecorator(controller, logger)
-	controller = cdecorators.NewLogerrCleanerAccountControllerDecorator(controller)
 
 	server := servers.NewGRPCAuthServer(controller)
 	s := grpc.NewServer(

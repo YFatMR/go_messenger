@@ -41,7 +41,6 @@ func NewOpentelemetryTracingUserRepositoryDecorator(base repositories.UserReposi
 
 // Create implements repositories.UserRepository
 func (d *OpentelemetryTracingUserRepositoryDecorator) Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (userID *userid.Entity, logstash ulo.LogStash, err error) {
-
 	var span trace.Span
 	ctx, span = d.tracer.Start(ctx, "/Create")
 	defer func() {
@@ -55,7 +54,6 @@ func (d *OpentelemetryTracingUserRepositoryDecorator) Create(ctx context.Context
 
 // DeleteByID implements repositories.UserRepository
 func (d *OpentelemetryTracingUserRepositoryDecorator) DeleteByID(ctx context.Context, userID *userid.Entity) (logstash ulo.LogStash, err error) {
-
 	var span trace.Span
 	ctx, span = d.tracer.Start(ctx, "/DeleteByID")
 	defer func() {
@@ -69,7 +67,6 @@ func (d *OpentelemetryTracingUserRepositoryDecorator) DeleteByID(ctx context.Con
 
 // GetByID implements repositories.UserRepository
 func (d *OpentelemetryTracingUserRepositoryDecorator) GetByID(ctx context.Context, userID *userid.Entity) (user *user.Entity, logstash ulo.LogStash, err error) {
-
 	var span trace.Span
 	ctx, span = d.tracer.Start(ctx, "/GetByID")
 	defer func() {

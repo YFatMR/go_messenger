@@ -11,8 +11,7 @@ import (
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/tokenpayload"
 	"github.com/YFatMR/go_messenger/auth_service/internal/repositories"
 	"github.com/YFatMR/go_messenger/auth_service/internal/services"
-
-	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo"
 )
 
 type AccountService struct {
@@ -28,38 +27,39 @@ func New(repository repositories.AccountRepository, authManager jwtmanager.Manag
 }
 
 func (s *AccountService) CreateAccount(ctx context.Context, credential *credential.Entity) (
-	*accountid.Entity, logerr.Error,
+	*accountid.Entity, ulo.LogStash, error,
 ) {
 	return s.accountRepository.CreateAccount(ctx, credential, entities.UserRole)
 }
 
-func (s *AccountService) GetToken(ctx context.Context, credential *credential.Entity) (*token.Entity, logerr.Error) {
-	tokenPayload, hashedPassword, lerr := s.accountRepository.GetTokenPayloadWithHashedPasswordByLogin(
+func (s *AccountService) GetToken(ctx context.Context, credential *credential.Entity) (
+	*token.Entity, ulo.LogStash, error,
+) {
+	tokenPayload, hashedPassword, _, err := s.accountRepository.GetTokenPayloadWithHashedPasswordByLogin(
 		ctx, credential.GetLogin(),
 	)
-	if lerr != nil {
-		return nil, lerr
+	if err != nil {
+		return nil, nil, err
 	}
-
 	if err := credential.VerifyPassword(hashedPassword); err != nil {
-		return nil, logerr.NewError(services.ErrWrongCredential, "Can't verify password", logerr.Err(err))
+		return nil, ulo.FromErrorWithMsg("Can't verify password", err), services.ErrWrongCredential
 	}
 
-	token, lerr := s.authManager.GenerateToken(ctx, tokenPayload)
-	if lerr != nil {
-		return nil, lerr
+	token, _, err := s.authManager.GenerateToken(ctx, tokenPayload)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return token, nil
+	return token, nil, nil
 }
 
 func (s *AccountService) GetTokenPayload(ctx context.Context, token *token.Entity) (
-	*tokenpayload.Entity, logerr.Error,
+	*tokenpayload.Entity, ulo.LogStash, error,
 ) {
-	claims, err := s.authManager.VerifyToken(ctx, token)
+	claims, _, err := s.authManager.VerifyToken(ctx, token)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return claims.GetTokenPayload(), nil
+	return claims.GetTokenPayload(), nil, nil
 }

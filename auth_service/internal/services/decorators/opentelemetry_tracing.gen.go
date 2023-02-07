@@ -14,7 +14,7 @@ import (
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/token"
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/tokenpayload"
 	"github.com/YFatMR/go_messenger/auth_service/internal/services"
-	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -41,52 +41,40 @@ func NewOpentelemetryTracingAccountServiceDecorator(base services.AccountService
 }
 
 // CreateAccount implements services.AccountService
-func (d *OpentelemetryTracingAccountServiceDecorator) CreateAccount(ctx context.Context, credential *credential.Entity) (accountID *accountid.Entity, lerr logerr.Error) {
-
+func (d *OpentelemetryTracingAccountServiceDecorator) CreateAccount(ctx context.Context, credential *credential.Entity) (accountID *accountid.Entity, logStash ulo.LogStash, err error) {
 	var span trace.Span
 	ctx, span = d.tracer.Start(ctx, "/CreateAccount")
 	defer func() {
-		defer span.End()
-		if lerr == nil {
-			return
+		if err != nil && d.recordErrors {
+			span.RecordError(err)
 		}
-		if lerr.HasError() && d.recordErrors {
-			span.RecordError(lerr.GetAPIError())
-		}
+		span.End()
 	}()
 	return d.base.CreateAccount(ctx, credential)
 }
 
 // GetToken implements services.AccountService
-func (d *OpentelemetryTracingAccountServiceDecorator) GetToken(ctx context.Context, credential *credential.Entity) (token *token.Entity, lerr logerr.Error) {
-
+func (d *OpentelemetryTracingAccountServiceDecorator) GetToken(ctx context.Context, credential *credential.Entity) (token *token.Entity, logStash ulo.LogStash, err error) {
 	var span trace.Span
 	ctx, span = d.tracer.Start(ctx, "/GetToken")
 	defer func() {
-		defer span.End()
-		if lerr == nil {
-			return
+		if err != nil && d.recordErrors {
+			span.RecordError(err)
 		}
-		if lerr.HasError() && d.recordErrors {
-			span.RecordError(lerr.GetAPIError())
-		}
+		span.End()
 	}()
 	return d.base.GetToken(ctx, credential)
 }
 
 // GetTokenPayload implements services.AccountService
-func (d *OpentelemetryTracingAccountServiceDecorator) GetTokenPayload(ctx context.Context, token *token.Entity) (tokenPayload *tokenpayload.Entity, lerr logerr.Error) {
-
+func (d *OpentelemetryTracingAccountServiceDecorator) GetTokenPayload(ctx context.Context, token *token.Entity) (tokenPayload *tokenpayload.Entity, logStash ulo.LogStash, err error) {
 	var span trace.Span
 	ctx, span = d.tracer.Start(ctx, "/GetTokenPayload")
 	defer func() {
-		defer span.End()
-		if lerr == nil {
-			return
+		if err != nil && d.recordErrors {
+			span.RecordError(err)
 		}
-		if lerr.HasError() && d.recordErrors {
-			span.RecordError(lerr.GetAPIError())
-		}
+		span.End()
 	}()
 	return d.base.GetTokenPayload(ctx, token)
 }

@@ -40,7 +40,6 @@ func NewLoggingUserRepositoryDecorator(base repositories.UserRepository, logger 
 
 // Create implements repositories.UserRepository
 func (d *LoggingUserRepositoryDecorator) Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (userID *userid.Entity, logstash ulo.LogStash, err error) {
-
 	d.logger.DebugContextNoExport(ctx, "LoggingUserRepositoryDecorator: calling Create")
 	defer func() {
 		d.logger.LogContextNoExportULO(ctx, logstash)
@@ -54,7 +53,6 @@ func (d *LoggingUserRepositoryDecorator) Create(ctx context.Context, user *user.
 
 // DeleteByID implements repositories.UserRepository
 func (d *LoggingUserRepositoryDecorator) DeleteByID(ctx context.Context, userID *userid.Entity) (logstash ulo.LogStash, err error) {
-
 	d.logger.DebugContextNoExport(ctx, "LoggingUserRepositoryDecorator: calling DeleteByID")
 	defer func() {
 		d.logger.LogContextNoExportULO(ctx, logstash)
@@ -68,7 +66,6 @@ func (d *LoggingUserRepositoryDecorator) DeleteByID(ctx context.Context, userID 
 
 // GetByID implements repositories.UserRepository
 func (d *LoggingUserRepositoryDecorator) GetByID(ctx context.Context, userID *userid.Entity) (user *user.Entity, logstash ulo.LogStash, err error) {
-
 	d.logger.DebugContextNoExport(ctx, "LoggingUserRepositoryDecorator: calling GetByID")
 	defer func() {
 		d.logger.LogContextNoExportULO(ctx, logstash)

@@ -5,7 +5,7 @@ GO_LINTER_BINARY=$(shell go env GOPATH)/bin/golangci-lint
 GO_WRAP_BINARY=$(shell go env GOPATH)/bin/gowrap
 GOFUMP_BINATY=$(shell go env GOPATH)/bin/gofumpt
 GENERATED_DECORATORS_EXTENTION=.gen.go
-GO_SOURCES=$(shell find . -type f \( -iname "*.go" ! -iname "*.pb.go" ! -iname "*.gw.go" \))
+GO_SOURCES=$(shell find . -type f \( -iname "*.go" ! -iname "*.pb.go" ! -iname "*.gw.go" ! -iname "*.gen.go" ! -iname "*.template.go" \))
 
 create_binary_directory:
 	mkdir -p ${BINARY_DIRECTORY}

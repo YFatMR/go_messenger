@@ -86,6 +86,8 @@ func (l *OtelZapLoggerWithTraceID) LogContextULO(ctx context.Context, logstash u
 			l.DebugContext(ctx, "", fields...)
 		case ulocore.InfoLevel:
 			l.InfoContext(ctx, "", fields...)
+		case ulocore.WarningLevel:
+			l.WarnContext(ctx, "", fields...)
 		case ulocore.ErrorLevel:
 			l.ErrorContext(ctx, "", fields...)
 		}
@@ -98,13 +100,7 @@ func (l *OtelZapLoggerWithTraceID) LogContextNoExportULO(ctx context.Context, lo
 	}
 	for _, message := range logstash.GetMessages() {
 		fields := zapfields.FromMessage(message)
-		switch message.GetLogLevel() {
-		case ulocore.DebugLevel:
-			l.DebugContextNoExport(ctx, "", fields...)
-		case ulocore.InfoLevel:
-			l.InfoContextNoExport(ctx, "", fields...)
-		case ulocore.ErrorLevel:
-			l.ErrorContextNoExport(ctx, "", fields...)
-		}
+		zapLogLevel := zapfields.ToZapLogLevel(message.GetLogLevel())
+		l.LogContextNoExport(ctx, zapLogLevel, "", fields...)
 	}
 }

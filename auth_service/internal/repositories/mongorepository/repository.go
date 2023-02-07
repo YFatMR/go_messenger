@@ -10,8 +10,7 @@ import (
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/credential"
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/tokenpayload"
 	"github.com/YFatMR/go_messenger/auth_service/internal/repositories"
-
-	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -42,7 +41,7 @@ func New(collection *mongo.Collection, operationTimeout time.Duration) *AccountM
 
 func (r *AccountMongoRepository) CreateAccount(ctx context.Context, credential *credential.Entity,
 	userRole entities.Role) (
-	*accountid.Entity, logerr.Error,
+	*accountid.Entity, ulo.LogStash, error,
 ) {
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
 	defer cancel()
@@ -53,15 +52,15 @@ func (r *AccountMongoRepository) CreateAccount(ctx context.Context, credential *
 		UserRole:       userRole,
 	})
 	if err != nil {
-		return nil, logerr.NewError(repositories.ErrAccountCreation, "can't create account", logerr.Err(err))
+		return nil, ulo.FromErrorWithMsg("can't create account", err), repositories.ErrAccountCreation
 	}
 
 	accountID := accountid.New(insertResult.InsertedID.(primitive.ObjectID).Hex())
-	return accountID, nil
+	return accountID, nil, nil
 }
 
 func (r *AccountMongoRepository) GetTokenPayloadWithHashedPasswordByLogin(ctx context.Context, login string) (
-	*tokenpayload.Entity, string, logerr.Error,
+	*tokenpayload.Entity, string, ulo.LogStash, error,
 ) {
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
 	defer cancel()
@@ -71,14 +70,12 @@ func (r *AccountMongoRepository) GetTokenPayloadWithHashedPasswordByLogin(ctx co
 		{Key: "login", Value: login},
 	}).Decode(&document)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return nil, "", logerr.NewError(
-			repositories.ErrAccountNotFound,
-			"user credential not found", logerr.String("login", login), logerr.Err(err),
-		)
+		logStash := ulo.FromErrorWithMsg("user credential not found", err, ulo.String("login", login))
+		return nil, "", logStash, repositories.ErrAccountNotFound
 	} else if err != nil {
-		return nil, "", logerr.NewError(repositories.ErrGetToken, "database connection error", logerr.Err(err))
+		return nil, "", ulo.FromErrorWithMsg("database connection error", err), repositories.ErrGetToken
 	}
 	tokenPayload := tokenpayload.New(document.ID.Hex(), document.UserRole)
 	hashedPassword := document.HashedPassword
-	return tokenPayload, hashedPassword, nil
+	return tokenPayload, hashedPassword, nil, nil
 }

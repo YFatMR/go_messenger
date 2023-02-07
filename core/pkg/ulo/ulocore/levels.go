@@ -15,8 +15,7 @@ const (
 type LogLevel uint8
 
 const (
-	UnknownLevel LogLevel = iota
-	DebugLevel
+	DebugLevel LogLevel = iota
 	InfoLevel
 	WarningLevel
 	ErrorLevel

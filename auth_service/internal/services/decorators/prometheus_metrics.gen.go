@@ -15,7 +15,7 @@ import (
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/token"
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities/tokenpayload"
 	"github.com/YFatMR/go_messenger/auth_service/internal/services"
-	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -33,16 +33,16 @@ const (
 
 // Naming rule: https://prometheus.io/docs/practices/naming/
 var (
-	databaseQueryDurationSeconds = promauto.NewHistogramVec(prometheus.HistogramOpts{
+	durationSeconds = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "service_request_duration_seconds",
 		Buckets: []float64{0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 4},
 		Help:    "Duration of one database query",
 	}, []string{"status", "operation"})
-	databaseQueryProcessedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+	processedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "service_request_processed_total",
 		Help: "Count of query to database",
 	}, []string{"status", "operation"})
-	databaseQueryStartProcessTotal = promauto.NewCounter(prometheus.CounterOpts{
+	startProcessTotal = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "service_request_start_process_total",
 		Help: "Count of started queries",
 	})
@@ -64,52 +64,55 @@ func NewPrometheusMetricsAccountServiceDecorator(base services.AccountService) *
 }
 
 // CreateAccount implements services.AccountService
-func (d *PrometheusMetricsAccountServiceDecorator) CreateAccount(ctx context.Context, credential *credential.Entity) (accountID *accountid.Entity, lerr logerr.Error) {
-
+func (d *PrometheusMetricsAccountServiceDecorator) CreateAccount(ctx context.Context, credential *credential.Entity) (accountID *accountid.Entity, logStash ulo.LogStash, err error) {
 	startTime := time.Now()
-	databaseQueryStartProcessTotal.Inc()
+	startProcessTotal.Inc()
 	defer func() {
 		functionDuration := time.Since(startTime).Seconds()
 		statusTag := okStatusTag
-		if lerr != nil && lerr.HasError() {
+
+		if err != nil {
 			statusTag = errorStatusTag
 		}
-		databaseQueryDurationSeconds.WithLabelValues(statusTag, "create_account").Observe(functionDuration)
-		databaseQueryProcessedTotal.WithLabelValues(statusTag, "create_account").Inc()
+
+		durationSeconds.WithLabelValues(statusTag, "create_account").Observe(functionDuration)
+		processedTotal.WithLabelValues(statusTag, "create_account").Inc()
 	}()
 	return d.base.CreateAccount(ctx, credential)
 }
 
 // GetToken implements services.AccountService
-func (d *PrometheusMetricsAccountServiceDecorator) GetToken(ctx context.Context, credential *credential.Entity) (token *token.Entity, lerr logerr.Error) {
-
+func (d *PrometheusMetricsAccountServiceDecorator) GetToken(ctx context.Context, credential *credential.Entity) (token *token.Entity, logStash ulo.LogStash, err error) {
 	startTime := time.Now()
-	databaseQueryStartProcessTotal.Inc()
+	startProcessTotal.Inc()
 	defer func() {
 		functionDuration := time.Since(startTime).Seconds()
 		statusTag := okStatusTag
-		if lerr != nil && lerr.HasError() {
+
+		if err != nil {
 			statusTag = errorStatusTag
 		}
-		databaseQueryDurationSeconds.WithLabelValues(statusTag, "get_token").Observe(functionDuration)
-		databaseQueryProcessedTotal.WithLabelValues(statusTag, "get_token").Inc()
+
+		durationSeconds.WithLabelValues(statusTag, "get_token").Observe(functionDuration)
+		processedTotal.WithLabelValues(statusTag, "get_token").Inc()
 	}()
 	return d.base.GetToken(ctx, credential)
 }
 
 // GetTokenPayload implements services.AccountService
-func (d *PrometheusMetricsAccountServiceDecorator) GetTokenPayload(ctx context.Context, token *token.Entity) (tokenPayload *tokenpayload.Entity, lerr logerr.Error) {
-
+func (d *PrometheusMetricsAccountServiceDecorator) GetTokenPayload(ctx context.Context, token *token.Entity) (tokenPayload *tokenpayload.Entity, logStash ulo.LogStash, err error) {
 	startTime := time.Now()
-	databaseQueryStartProcessTotal.Inc()
+	startProcessTotal.Inc()
 	defer func() {
 		functionDuration := time.Since(startTime).Seconds()
 		statusTag := okStatusTag
-		if lerr != nil && lerr.HasError() {
+
+		if err != nil {
 			statusTag = errorStatusTag
 		}
-		databaseQueryDurationSeconds.WithLabelValues(statusTag, "get_token_payload").Observe(functionDuration)
-		databaseQueryProcessedTotal.WithLabelValues(statusTag, "get_token_payload").Inc()
+
+		durationSeconds.WithLabelValues(statusTag, "get_token_payload").Observe(functionDuration)
+		processedTotal.WithLabelValues(statusTag, "get_token_payload").Inc()
 	}()
 	return d.base.GetTokenPayload(ctx, token)
 }

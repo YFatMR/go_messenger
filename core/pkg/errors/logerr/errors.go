@@ -38,7 +38,7 @@ type customError struct {
 	fields         []logerrcore.Field
 }
 
-func NewError(apiErr error, logMessage string, fields ...logerrcore.Field) *customError {
+func NewError(apiErr error, logMessage string, fields ...logerrcore.Field) Error {
 	return &customError{
 		loggingMessage: true,
 		apiErr:         apiErr,
@@ -48,7 +48,7 @@ func NewError(apiErr error, logMessage string, fields ...logerrcore.Field) *cust
 	}
 }
 
-func NewInfo(logMessage string, fields ...logerrcore.Field) *customError {
+func NewInfo(logMessage string, fields ...logerrcore.Field) Error {
 	return &customError{
 		loggingMessage: true,
 		logMessage:     logMessage,
@@ -57,7 +57,7 @@ func NewInfo(logMessage string, fields ...logerrcore.Field) *customError {
 	}
 }
 
-func NewDebug(logMessage string, fields ...logerrcore.Field) *customError {
+func NewDebug(logMessage string, fields ...logerrcore.Field) Error {
 	return &customError{
 		loggingMessage: true,
 		logMessage:     logMessage,

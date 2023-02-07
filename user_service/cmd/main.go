@@ -115,7 +115,6 @@ func main() {
 		recordTraceErrors := true
 		repository = rdecorators.NewOpentelemetryTracingUserRepositoryDecorator(repository, tracer, recordTraceErrors)
 	}
-	repository = rdecorators.NewLogerrCleanerUserRepositoryDecorator(repository)
 
 	var service services.UserService
 	service = userservice.New(repository)
@@ -124,13 +123,12 @@ func main() {
 		service = sdecorators.NewLoggingUserServiceDecorator(service, logger)
 	}
 	if true {
-		repository = sdecorators.NewPrometheusMetricsUserServiceDecorator(service)
+		service = sdecorators.NewPrometheusMetricsUserServiceDecorator(service)
 	}
 	if true {
 		recordTraceErrors := true
 		service = sdecorators.NewOpentelemetryTracingUserServiceDecorator(service, tracer, recordTraceErrors)
 	}
-	service = sdecorators.NewLogerrCleanerUserServiceDecorator(service)
 
 	var controller controllers.UserController
 	controller = usercontroller.New(service)
@@ -138,7 +136,6 @@ func main() {
 	if true {
 		controller = cdecorators.NewLoggingUserControllerDecorator(controller, logger)
 	}
-	controller = cdecorators.NewLogerrCleanerUserControllerDecorator(controller)
 
 	server := grpcserver.New(controller)
 	s := grpc.NewServer(

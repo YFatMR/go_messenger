@@ -37,7 +37,6 @@ func NewUserMongoRepository(collection *mongo.Collection, operationTimeout time.
 		operationTimeout: operationTimeout,
 		logger:           logger,
 	}
-
 }
 
 func (r *UserMongoRepository) Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (
@@ -45,7 +44,7 @@ func (r *UserMongoRepository) Create(ctx context.Context, user *user.Entity, acc
 ) {
 	accountMongoID, err := primitive.ObjectIDFromHex(accountID.GetID())
 	if err != nil {
-		return nil, ulo.ErrorMsg(ulo.Message("Got wrong id format"), ulo.Error(err)), ErrUserCreation
+		return nil, ulo.FromErrorWithMsg("Got wrong id format", err), ErrUserCreation
 	}
 
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
@@ -57,7 +56,7 @@ func (r *UserMongoRepository) Create(ctx context.Context, user *user.Entity, acc
 		AccountID: accountMongoID,
 	})
 	if err != nil {
-		return nil, ulo.ErrorMsg(ulo.Message("Can't insert new user"), ulo.Error(err)), err
+		return nil, ulo.FromErrorWithMsg("Can't insert new user", err), ErrUserCreation
 	}
 
 	userID := userid.New(insertResult.InsertedID.(primitive.ObjectID).Hex())
@@ -69,7 +68,7 @@ func (r *UserMongoRepository) GetByID(ctx context.Context, userID *userid.Entity
 ) {
 	objectID, err := primitive.ObjectIDFromHex(userID.GetID())
 	if err != nil {
-		return nil, ulo.ErrorMsg(ulo.Message("Got wrong id format"), ulo.Error(err)), ErrGetUser
+		return nil, ulo.FromErrorWithMsg("Got wrong id format", err), ErrGetUser
 	}
 
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
@@ -80,9 +79,9 @@ func (r *UserMongoRepository) GetByID(ctx context.Context, userID *userid.Entity
 		{Key: "_id", Value: objectID},
 	}).Decode(&document)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return nil, ulo.ErrorMsg(ulo.Message("User not found by id"), ulo.Error(err)), ErrUserNotFound
+		return nil, ulo.FromErrorWithMsg("User not found by id", err), ErrUserNotFound
 	} else if err != nil {
-		return nil, ulo.ErrorMsg(ulo.Message("Database connection error"), ulo.Error(err)), ErrUserNotFound
+		return nil, ulo.FromErrorWithMsg("Database connection error", err), ErrUserNotFound
 	}
 	user := user.New(document.Name, document.Surname)
 	return user, nil, nil
@@ -93,7 +92,7 @@ func (r *UserMongoRepository) DeleteByID(ctx context.Context, userID *userid.Ent
 ) {
 	objectID, err := primitive.ObjectIDFromHex(userID.GetID())
 	if err != nil {
-		return ulo.ErrorMsg(ulo.Message("Got wrong id format"), ulo.Error(err)), ErrUserDeletion
+		return ulo.FromErrorWithMsg("Got wrong id format", err), ErrUserDeletion
 	}
 
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
@@ -101,9 +100,9 @@ func (r *UserMongoRepository) DeleteByID(ctx context.Context, userID *userid.Ent
 
 	deleteResult, err := r.collection.DeleteOne(mongoOperationCtx, bson.M{"_id": objectID})
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return ulo.ErrorMsg(ulo.Message("User not found by id"), ulo.Error(err)), ErrUserNotFound
+		return ulo.FromErrorWithMsg("User not found by id", err), ErrUserNotFound
 	} else if err != nil {
-		return ulo.ErrorMsg(ulo.Message("Database connection error"), ulo.Error(err)), ErrUserNotFound
+		return ulo.FromErrorWithMsg("Database connection error", err), ErrUserNotFound
 	}
 	r.logger.InfoContextNoExport(
 		ctx,

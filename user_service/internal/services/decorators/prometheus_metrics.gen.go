@@ -10,7 +10,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/YFatMR/go_messenger/core/pkg/errors/logerr"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/accountid"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/user"
 	"github.com/YFatMR/go_messenger/user_service/internal/entities/userid"
@@ -32,16 +32,16 @@ const (
 
 // Naming rule: https://prometheus.io/docs/practices/naming/
 var (
-	databaseQueryDurationSeconds = promauto.NewHistogramVec(prometheus.HistogramOpts{
+	durationSeconds = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "service_request_duration_seconds",
 		Buckets: []float64{0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 4},
 		Help:    "Duration of one database query",
 	}, []string{"status", "operation"})
-	databaseQueryProcessedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+	processedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "service_request_processed_total",
 		Help: "Count of query to database",
 	}, []string{"status", "operation"})
-	databaseQueryStartProcessTotal = promauto.NewCounter(prometheus.CounterOpts{
+	startProcessTotal = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "service_request_start_process_total",
 		Help: "Count of started queries",
 	})
@@ -63,52 +63,55 @@ func NewPrometheusMetricsUserServiceDecorator(base services.UserService) *Promet
 }
 
 // Create implements services.UserService
-func (d *PrometheusMetricsUserServiceDecorator) Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (userID *userid.Entity, lerr logerr.Error) {
-
+func (d *PrometheusMetricsUserServiceDecorator) Create(ctx context.Context, user *user.Entity, accountID *accountid.Entity) (userID *userid.Entity, logstash ulo.LogStash, err error) {
 	startTime := time.Now()
-	databaseQueryStartProcessTotal.Inc()
+	startProcessTotal.Inc()
 	defer func() {
 		functionDuration := time.Since(startTime).Seconds()
 		statusTag := okStatusTag
-		if lerr != nil && lerr.HasError() {
+
+		if err != nil {
 			statusTag = errorStatusTag
 		}
-		databaseQueryDurationSeconds.WithLabelValues(statusTag, "create").Observe(functionDuration)
-		databaseQueryProcessedTotal.WithLabelValues(statusTag, "create").Inc()
+
+		durationSeconds.WithLabelValues(statusTag, "create").Observe(functionDuration)
+		processedTotal.WithLabelValues(statusTag, "create").Inc()
 	}()
 	return d.base.Create(ctx, user, accountID)
 }
 
 // DeleteByID implements services.UserService
-func (d *PrometheusMetricsUserServiceDecorator) DeleteByID(ctx context.Context, userID *userid.Entity) (lerr logerr.Error) {
-
+func (d *PrometheusMetricsUserServiceDecorator) DeleteByID(ctx context.Context, userID *userid.Entity) (logstash ulo.LogStash, err error) {
 	startTime := time.Now()
-	databaseQueryStartProcessTotal.Inc()
+	startProcessTotal.Inc()
 	defer func() {
 		functionDuration := time.Since(startTime).Seconds()
 		statusTag := okStatusTag
-		if lerr != nil && lerr.HasError() {
+
+		if err != nil {
 			statusTag = errorStatusTag
 		}
-		databaseQueryDurationSeconds.WithLabelValues(statusTag, "delete_by_id").Observe(functionDuration)
-		databaseQueryProcessedTotal.WithLabelValues(statusTag, "delete_by_id").Inc()
+
+		durationSeconds.WithLabelValues(statusTag, "delete_by_id").Observe(functionDuration)
+		processedTotal.WithLabelValues(statusTag, "delete_by_id").Inc()
 	}()
 	return d.base.DeleteByID(ctx, userID)
 }
 
 // GetByID implements services.UserService
-func (d *PrometheusMetricsUserServiceDecorator) GetByID(ctx context.Context, userID *userid.Entity) (user *user.Entity, lerr logerr.Error) {
-
+func (d *PrometheusMetricsUserServiceDecorator) GetByID(ctx context.Context, userID *userid.Entity) (user *user.Entity, logstash ulo.LogStash, err error) {
 	startTime := time.Now()
-	databaseQueryStartProcessTotal.Inc()
+	startProcessTotal.Inc()
 	defer func() {
 		functionDuration := time.Since(startTime).Seconds()
 		statusTag := okStatusTag
-		if lerr != nil && lerr.HasError() {
+
+		if err != nil {
 			statusTag = errorStatusTag
 		}
-		databaseQueryDurationSeconds.WithLabelValues(statusTag, "get_by_id").Observe(functionDuration)
-		databaseQueryProcessedTotal.WithLabelValues(statusTag, "get_by_id").Inc()
+
+		durationSeconds.WithLabelValues(statusTag, "get_by_id").Observe(functionDuration)
+		processedTotal.WithLabelValues(statusTag, "get_by_id").Inc()
 	}()
 	return d.base.GetByID(ctx, userID)
 }

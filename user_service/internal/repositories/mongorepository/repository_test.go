@@ -20,9 +20,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	mongoConfigPathFlag string
-)
+var mongoConfigPathFlag string
 
 func init() {
 	flag.StringVar(&mongoConfigPathFlag, "mongo_config_path", "", "Path to mongodb configuration")
@@ -79,8 +77,9 @@ func (s *MongoRepositoryTestSuite) TestUserCreation() {
 	// Start test
 	userData := user.New("Ivan", "Petrov")
 	accountID := accountid.New("63c6f759bbe1022255a6b9b5")
-	_, lerr := repository.Create(context.Background(), userData, accountID)
-	require.NoError(lerr.GetAPIError())
+	userID, _, err := repository.Create(context.Background(), userData, accountID)
+	require.NoError(err)
+	require.NotNil(userID)
 }
 
 func (s *MongoRepositoryTestSuite) TestFindCreatedUser() {
@@ -95,14 +94,15 @@ func (s *MongoRepositoryTestSuite) TestFindCreatedUser() {
 	// Start test
 	userData := user.New("Ivan", "Petrov")
 	accountID := accountid.New("63c6f759bbe1022255a6b9b5")
-	userID, lerr := repository.Create(context.Background(), userData, accountID)
-	require.NoError(lerr.GetAPIError(), "Can't create user")
+	userID, _, err := repository.Create(context.Background(), userData, accountID)
+	require.NoError(err, "Can't create user")
+	require.NotNil(userID)
 
-	responseUserData, lerr := repository.GetByID(context.Background(), userID)
-	require.NoError(lerr.GetAPIError())
+	responseUserData, _, err := repository.GetByID(context.Background(), userID)
+	require.NoError(err)
 	require.NotNil(responseUserData)
 
-	usersSame := userData.GetName() != responseUserData.GetName() ||
-		userData.GetSurname() != responseUserData.GetSurname()
+	usersSame := userData.GetName() == responseUserData.GetName() &&
+		userData.GetSurname() == responseUserData.GetSurname()
 	require.True(usersSame, "Created and found users are different")
 }
