@@ -6,13 +6,14 @@ import (
 	"time"
 
 	"github.com/YFatMR/go_messenger/auth_service/internal/entities"
-	"github.com/YFatMR/go_messenger/core/pkg/loggers"
-	"github.com/YFatMR/go_messenger/core/pkg/metrics/prometheus"
+	"github.com/YFatMR/go_messenger/auth_service/internal/entities/accountid"
+	"github.com/YFatMR/go_messenger/auth_service/internal/entities/credential"
+	"github.com/YFatMR/go_messenger/auth_service/internal/entities/tokenpayload"
+	"github.com/YFatMR/go_messenger/auth_service/internal/repositories"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 // TODO: Distinct Login.
@@ -26,30 +27,22 @@ type accountDocument struct {
 type AccountMongoRepository struct {
 	collection       *mongo.Collection
 	operationTimeout time.Duration
-	logger           *loggers.OtelZapLoggerWithTraceID
-	tracer           trace.Tracer
 }
 
-func NewAccountMongoRepository(collection *mongo.Collection, operationTimeout time.Duration,
-	logger *loggers.OtelZapLoggerWithTraceID, tracer trace.Tracer,
-) *AccountMongoRepository {
+func New(collection *mongo.Collection, operationTimeout time.Duration) *AccountMongoRepository {
+	if collection == nil {
+		panic("Got empty collection")
+	}
 	return &AccountMongoRepository{
 		collection:       collection,
 		operationTimeout: operationTimeout,
-		logger:           logger,
-		tracer:           tracer,
 	}
 }
 
-func (r *AccountMongoRepository) CreateAccount(ctx context.Context, credential *entities.Credential,
+func (r *AccountMongoRepository) CreateAccount(ctx context.Context, credential *credential.Entity,
 	userRole entities.Role) (
-	_ *entities.AccountID, err error,
+	*accountid.Entity, ulo.LogStash, error,
 ) {
-	// metrics
-	startTime := time.Now()
-	defer prometheus.CollectDatabaseQueryMetrics(startTime, prometheus.InsertOperationTag, err)
-
-	// process database insertion
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
 	defer cancel()
 
@@ -59,38 +52,30 @@ func (r *AccountMongoRepository) CreateAccount(ctx context.Context, credential *
 		UserRole:       userRole,
 	})
 	if err != nil {
-		r.logger.ErrorContext(ctx, "can't create account", zap.Error(err))
-		return nil, err
+		return nil, ulo.FromErrorWithMsg("can't create account", err), repositories.ErrAccountCreation
 	}
 
-	accountID := entities.NewAccountIDFromRawDatabaseDocument(insertResult.InsertedID.(primitive.ObjectID).Hex())
-	r.logger.DebugContextNoExport(ctx, "Account created", zap.String("id", accountID.GetID()))
-	return accountID, nil
+	accountID := accountid.New(insertResult.InsertedID.(primitive.ObjectID).Hex())
+	return accountID, nil, nil
 }
 
 func (r *AccountMongoRepository) GetTokenPayloadWithHashedPasswordByLogin(ctx context.Context, login string) (
-	_ *entities.TokenPayload, _ string, err error,
+	*tokenpayload.Entity, string, ulo.LogStash, error,
 ) {
-	// metrics
-	startTime := time.Now()
-	defer prometheus.CollectDatabaseQueryMetrics(startTime, prometheus.FindOperationTag, err)
-
-	// process database search
 	mongoOperationCtx, cancel := context.WithTimeout(ctx, r.operationTimeout)
 	defer cancel()
 
 	var document accountDocument
-	err = r.collection.FindOne(mongoOperationCtx, bson.D{
+	err := r.collection.FindOne(mongoOperationCtx, bson.D{
 		{Key: "login", Value: login},
 	}).Decode(&document)
-	if err == nil {
-		tokenPayload := entities.NewTokenPayloadFromRawDatabaseDocument(document.ID.Hex(), document.UserRole)
-		hashedPassword := document.HashedPassword
-		return tokenPayload, hashedPassword, nil
-	} else if errors.Is(err, mongo.ErrNoDocuments) {
-		r.logger.DebugContextNoExport(ctx, "User credential not found (by login)", zap.String("login", login))
-		return nil, "", ErrAccountNotFound
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		logStash := ulo.FromErrorWithMsg("user credential not found", err, ulo.String("login", login))
+		return nil, "", logStash, repositories.ErrAccountNotFound
+	} else if err != nil {
+		return nil, "", ulo.FromErrorWithMsg("database connection error", err), repositories.ErrGetToken
 	}
-	r.logger.ErrorContext(ctx, "Database connection error", zap.Error(err))
-	return nil, "", err
+	tokenPayload := tokenpayload.New(document.ID.Hex(), document.UserRole)
+	hashedPassword := document.HashedPassword
+	return tokenPayload, hashedPassword, nil, nil
 }

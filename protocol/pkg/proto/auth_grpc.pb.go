@@ -4,7 +4,7 @@
 // - protoc             v3.12.4
 // source: auth.proto
 
-package go_proto
+package proto
 
 import (
 	context "context"
@@ -25,6 +25,7 @@ type AuthClient interface {
 	CreateAccount(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*AccountID, error)
 	GetToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error)
 	GetTokenPayload(ctx context.Context, in *Token, opts ...grpc.CallOption) (*TokenPayload, error)
+	Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error)
 }
 
 type authClient struct {
@@ -37,7 +38,7 @@ func NewAuthClient(cc grpc.ClientConnInterface) AuthClient {
 
 func (c *authClient) CreateAccount(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*AccountID, error) {
 	out := new(AccountID)
-	err := c.cc.Invoke(ctx, "/go_proto.Auth/CreateAccount", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.Auth/CreateAccount", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +47,7 @@ func (c *authClient) CreateAccount(ctx context.Context, in *Credential, opts ...
 
 func (c *authClient) GetToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error) {
 	out := new(Token)
-	err := c.cc.Invoke(ctx, "/go_proto.Auth/GetToken", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.Auth/GetToken", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +56,16 @@ func (c *authClient) GetToken(ctx context.Context, in *Credential, opts ...grpc.
 
 func (c *authClient) GetTokenPayload(ctx context.Context, in *Token, opts ...grpc.CallOption) (*TokenPayload, error) {
 	out := new(TokenPayload)
-	err := c.cc.Invoke(ctx, "/go_proto.Auth/GetTokenPayload", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.Auth/GetTokenPayload", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error) {
+	out := new(Pong)
+	err := c.cc.Invoke(ctx, "/proto.Auth/Ping", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +79,7 @@ type AuthServer interface {
 	CreateAccount(context.Context, *Credential) (*AccountID, error)
 	GetToken(context.Context, *Credential) (*Token, error)
 	GetTokenPayload(context.Context, *Token) (*TokenPayload, error)
+	Ping(context.Context, *Void) (*Pong, error)
 	mustEmbedUnimplementedAuthServer()
 }
 
@@ -84,6 +95,9 @@ func (UnimplementedAuthServer) GetToken(context.Context, *Credential) (*Token, e
 }
 func (UnimplementedAuthServer) GetTokenPayload(context.Context, *Token) (*TokenPayload, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTokenPayload not implemented")
+}
+func (UnimplementedAuthServer) Ping(context.Context, *Void) (*Pong, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
 func (UnimplementedAuthServer) mustEmbedUnimplementedAuthServer() {}
 
@@ -108,7 +122,7 @@ func _Auth_CreateAccount_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/go_proto.Auth/CreateAccount",
+		FullMethod: "/proto.Auth/CreateAccount",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServer).CreateAccount(ctx, req.(*Credential))
@@ -126,7 +140,7 @@ func _Auth_GetToken_Handler(srv interface{}, ctx context.Context, dec func(inter
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/go_proto.Auth/GetToken",
+		FullMethod: "/proto.Auth/GetToken",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServer).GetToken(ctx, req.(*Credential))
@@ -144,10 +158,28 @@ func _Auth_GetTokenPayload_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/go_proto.Auth/GetTokenPayload",
+		FullMethod: "/proto.Auth/GetTokenPayload",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServer).GetTokenPayload(ctx, req.(*Token))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Void)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Auth/Ping",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).Ping(ctx, req.(*Void))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -156,7 +188,7 @@ func _Auth_GetTokenPayload_Handler(srv interface{}, ctx context.Context, dec fun
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Auth_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "go_proto.Auth",
+	ServiceName: "proto.Auth",
 	HandlerType: (*AuthServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -170,6 +202,10 @@ var Auth_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTokenPayload",
 			Handler:    _Auth_GetTokenPayload_Handler,
+		},
+		{
+			MethodName: "Ping",
+			Handler:    _Auth_Ping_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

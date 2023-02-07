@@ -2,11 +2,11 @@
 // source: front.proto
 
 /*
-Package go_proto is a reverse proxy.
+Package proto is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
-package go_proto
+package proto
 
 import (
 	"context"
@@ -33,7 +33,7 @@ var _ = utilities.NewDoubleArray
 var _ = descriptor.ForMessage
 var _ = metadata.Join
 
-func request_FrontUser_CreateUser_0(ctx context.Context, marshaler runtime.Marshaler, client FrontUserClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Front_CreateUser_0(ctx context.Context, marshaler runtime.Marshaler, client FrontClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CreateUserRequest
 	var metadata runtime.ServerMetadata
 
@@ -50,7 +50,7 @@ func request_FrontUser_CreateUser_0(ctx context.Context, marshaler runtime.Marsh
 
 }
 
-func local_request_FrontUser_CreateUser_0(ctx context.Context, marshaler runtime.Marshaler, server FrontUserServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_Front_CreateUser_0(ctx context.Context, marshaler runtime.Marshaler, server FrontServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CreateUserRequest
 	var metadata runtime.ServerMetadata
 
@@ -67,7 +67,7 @@ func local_request_FrontUser_CreateUser_0(ctx context.Context, marshaler runtime
 
 }
 
-func request_FrontUser_GetToken_0(ctx context.Context, marshaler runtime.Marshaler, client FrontUserClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Front_GetToken_0(ctx context.Context, marshaler runtime.Marshaler, client FrontClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq Credential
 	var metadata runtime.ServerMetadata
 
@@ -84,7 +84,7 @@ func request_FrontUser_GetToken_0(ctx context.Context, marshaler runtime.Marshal
 
 }
 
-func local_request_FrontUser_GetToken_0(ctx context.Context, marshaler runtime.Marshaler, server FrontUserServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_Front_GetToken_0(ctx context.Context, marshaler runtime.Marshaler, server FrontServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq Credential
 	var metadata runtime.ServerMetadata
 
@@ -101,7 +101,7 @@ func local_request_FrontUser_GetToken_0(ctx context.Context, marshaler runtime.M
 
 }
 
-func request_FrontUser_GetUserByID_0(ctx context.Context, marshaler runtime.Marshaler, client FrontUserClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Front_GetUserByID_0(ctx context.Context, marshaler runtime.Marshaler, client FrontClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq UserID
 	var metadata runtime.ServerMetadata
 
@@ -128,7 +128,7 @@ func request_FrontUser_GetUserByID_0(ctx context.Context, marshaler runtime.Mars
 
 }
 
-func local_request_FrontUser_GetUserByID_0(ctx context.Context, marshaler runtime.Marshaler, server FrontUserServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_Front_GetUserByID_0(ctx context.Context, marshaler runtime.Marshaler, server FrontServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq UserID
 	var metadata runtime.ServerMetadata
 
@@ -155,13 +155,31 @@ func local_request_FrontUser_GetUserByID_0(ctx context.Context, marshaler runtim
 
 }
 
-// RegisterFrontUserHandlerServer registers the http handlers for service FrontUser to "mux".
-// UnaryRPC     :call FrontUserServer directly.
+func request_Front_Ping_0(ctx context.Context, marshaler runtime.Marshaler, client FrontClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq Void
+	var metadata runtime.ServerMetadata
+
+	msg, err := client.Ping(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Front_Ping_0(ctx context.Context, marshaler runtime.Marshaler, server FrontServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq Void
+	var metadata runtime.ServerMetadata
+
+	msg, err := server.Ping(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+// RegisterFrontHandlerServer registers the http handlers for service Front to "mux".
+// UnaryRPC     :call FrontServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
-// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterFrontUserHandlerFromEndpoint instead.
-func RegisterFrontUserHandlerServer(ctx context.Context, mux *runtime.ServeMux, server FrontUserServer) error {
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterFrontHandlerFromEndpoint instead.
+func RegisterFrontHandlerServer(ctx context.Context, mux *runtime.ServeMux, server FrontServer) error {
 
-	mux.Handle("POST", pattern_FrontUser_CreateUser_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Front_CreateUser_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -172,7 +190,7 @@ func RegisterFrontUserHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_FrontUser_CreateUser_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Front_CreateUser_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -180,11 +198,11 @@ func RegisterFrontUserHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 			return
 		}
 
-		forward_FrontUser_CreateUser_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Front_CreateUser_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_FrontUser_GetToken_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Front_GetToken_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -195,7 +213,7 @@ func RegisterFrontUserHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_FrontUser_GetToken_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Front_GetToken_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -203,11 +221,11 @@ func RegisterFrontUserHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 			return
 		}
 
-		forward_FrontUser_GetToken_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Front_GetToken_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_FrontUser_GetUserByID_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Front_GetUserByID_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -218,7 +236,7 @@ func RegisterFrontUserHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_FrontUser_GetUserByID_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Front_GetUserByID_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -226,16 +244,39 @@ func RegisterFrontUserHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 			return
 		}
 
-		forward_FrontUser_GetUserByID_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Front_GetUserByID_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Front_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Front_Ping_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Front_Ping_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
 	return nil
 }
 
-// RegisterFrontUserHandlerFromEndpoint is same as RegisterFrontUserHandler but
+// RegisterFrontHandlerFromEndpoint is same as RegisterFrontHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func RegisterFrontUserHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+func RegisterFrontHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
 	conn, err := grpc.Dial(endpoint, opts...)
 	if err != nil {
 		return err
@@ -255,23 +296,23 @@ func RegisterFrontUserHandlerFromEndpoint(ctx context.Context, mux *runtime.Serv
 		}()
 	}()
 
-	return RegisterFrontUserHandler(ctx, mux, conn)
+	return RegisterFrontHandler(ctx, mux, conn)
 }
 
-// RegisterFrontUserHandler registers the http handlers for service FrontUser to "mux".
+// RegisterFrontHandler registers the http handlers for service Front to "mux".
 // The handlers forward requests to the grpc endpoint over "conn".
-func RegisterFrontUserHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return RegisterFrontUserHandlerClient(ctx, mux, NewFrontUserClient(conn))
+func RegisterFrontHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	return RegisterFrontHandlerClient(ctx, mux, NewFrontClient(conn))
 }
 
-// RegisterFrontUserHandlerClient registers the http handlers for service FrontUser
-// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "FrontUserClient".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "FrontUserClient"
+// RegisterFrontHandlerClient registers the http handlers for service Front
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "FrontClient".
+// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "FrontClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "FrontUserClient" to call the correct interceptors.
-func RegisterFrontUserHandlerClient(ctx context.Context, mux *runtime.ServeMux, client FrontUserClient) error {
+// "FrontClient" to call the correct interceptors.
+func RegisterFrontHandlerClient(ctx context.Context, mux *runtime.ServeMux, client FrontClient) error {
 
-	mux.Handle("POST", pattern_FrontUser_CreateUser_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Front_CreateUser_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -280,18 +321,18 @@ func RegisterFrontUserHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_FrontUser_CreateUser_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Front_CreateUser_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_FrontUser_CreateUser_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Front_CreateUser_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_FrontUser_GetToken_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Front_GetToken_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -300,18 +341,18 @@ func RegisterFrontUserHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_FrontUser_GetToken_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Front_GetToken_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_FrontUser_GetToken_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Front_GetToken_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_FrontUser_GetUserByID_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Front_GetUserByID_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -320,14 +361,34 @@ func RegisterFrontUserHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_FrontUser_GetUserByID_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Front_GetUserByID_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_FrontUser_GetUserByID_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Front_GetUserByID_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Front_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Front_Ping_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Front_Ping_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -335,17 +396,21 @@ func RegisterFrontUserHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 }
 
 var (
-	pattern_FrontUser_CreateUser_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"users"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Front_CreateUser_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"users"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_FrontUser_GetToken_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"token"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Front_GetToken_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"token"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_FrontUser_GetUserByID_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"users", "ID"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Front_GetUserByID_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"users", "ID"}, "", runtime.AssumeColonVerbOpt(true)))
+
+	pattern_Front_Ping_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"ping"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
-	forward_FrontUser_CreateUser_0 = runtime.ForwardResponseMessage
+	forward_Front_CreateUser_0 = runtime.ForwardResponseMessage
 
-	forward_FrontUser_GetToken_0 = runtime.ForwardResponseMessage
+	forward_Front_GetToken_0 = runtime.ForwardResponseMessage
 
-	forward_FrontUser_GetUserByID_0 = runtime.ForwardResponseMessage
+	forward_Front_GetUserByID_0 = runtime.ForwardResponseMessage
+
+	forward_Front_Ping_0 = runtime.ForwardResponseMessage
 )

@@ -6,3 +6,4 @@ scrape_configs:
     static_configs:
       - targets:
         - user_service:2112
+        - auth_service:2112

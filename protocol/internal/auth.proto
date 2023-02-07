@@ -1,7 +1,9 @@
 syntax = "proto3";
 
-package go_proto;
-option go_package = "./go_proto";
+package proto;
+option go_package = "./proto";
+
+import "common.proto";
 
 message Credential {
   string login = 1;
@@ -21,4 +23,5 @@ service Auth {
   rpc CreateAccount(Credential) returns (AccountID) {}
   rpc GetToken(Credential) returns (Token) {}
   rpc GetTokenPayload(Token) returns (TokenPayload) {}
+  rpc Ping(Void) returns (Pong) {}
 }

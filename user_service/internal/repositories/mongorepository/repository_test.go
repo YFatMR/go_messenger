@@ -1,49 +1,61 @@
-package mongorepository
+package mongorepository_test
 
 import (
 	"context"
 	"flag"
-	"os"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	recipe "github.com/YFatMR/go_messenger/core/pkg/recipes/go/mongo"
-	"github.com/YFatMR/go_messenger/user_service/internal/entities"
+	"github.com/YFatMR/go_messenger/user_service/internal/entities/accountid"
+	"github.com/YFatMR/go_messenger/user_service/internal/entities/user"
+	"github.com/YFatMR/go_messenger/user_service/internal/repositories/mongorepository"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/suite"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
 
-var (
-	testDatabase        *mongo.Database
-	mongoConfigPathFlag string
-)
+var mongoConfigPathFlag string
 
 func init() {
 	flag.StringVar(&mongoConfigPathFlag, "mongo_config_path", "", "Path to mongodb configuration")
 }
 
-func TestMain(m *testing.M) {
+func newMockUserMongoRepository(collection *mongo.Collection) *mongorepository.UserMongoRepository {
+	nopLogger := loggers.NewOtelZapLoggerWithTraceID(otelzap.New(zap.NewNop()))
+	databaseOperationTimeout := time.Millisecond * 800
+	return mongorepository.NewUserMongoRepository(collection, databaseOperationTimeout, nopLogger)
+}
+
+type MongoRepositoryTestSuite struct {
+	database *mongo.Database
+	suite.Suite
+}
+
+func TestMongoRepositoryTestSuite(t *testing.T) {
 	flag.Parse()
 
 	ctx := context.Background()
 
 	mongoConfig := cviper.New()
 	mongoConfig.SetConfigFile(mongoConfigPathFlag)
+	if err := mongoConfig.ReadInConfig(); err != nil {
+		fmt.Printf("Error reading config file, %s", err)
+		panic(err)
+	}
+
 	database, dockerContainerPurge := recipe.NewMongoTestDatabase(mongoConfig)
 
-	// Setup global variable
-	testDatabase = database
+	suite.Run(t, &MongoRepositoryTestSuite{
+		database: database,
+	})
 
-	// Run tests
-	exitCode := m.Run()
-
-	// Clenup database
-	if err := testDatabase.Drop(ctx); err != nil {
+	if err := database.Drop(ctx); err != nil {
 		panic(err)
 	}
 
@@ -51,69 +63,46 @@ func TestMain(m *testing.M) {
 	if err := dockerContainerPurge(); err != nil {
 		panic(err)
 	}
-	os.Exit(exitCode)
 }
 
-func dropCollection(ctx context.Context, t *testing.T, collection *mongo.Collection) {
-	t.Helper()
-
-	err := collection.Drop(ctx)
-	if err != nil {
-		t.Error(err)
-	}
-}
-
-func newMockUserMongoRepository(collection *mongo.Collection) *UserMongoRepository {
-	tracer := otel.Tracer("fake")
-	nopLogger := loggers.NewOtelZapLoggerWithTraceID(otelzap.New(zap.NewNop()))
-	databaseOperationTimeout := time.Millisecond * 800
-	return NewUserMongoRepository(collection, databaseOperationTimeout, nopLogger, tracer)
-}
-
-func TestUserCreation(t *testing.T) {
-	t.Parallel()
+func (s *MongoRepositoryTestSuite) TestUserCreation() {
 	ctx := context.Background()
+	require := s.Require()
 
 	// Initialize repository
-	randomCollection := testDatabase.Collection(uuid.New().String())
-	defer dropCollection(ctx, t, randomCollection)
+	randomCollection := s.database.Collection(uuid.NewString())
+	defer require.NoError(randomCollection.Drop(ctx))
 	repository := newMockUserMongoRepository(randomCollection)
 
 	// Start test
-	userData := entities.NewMockUser("Ivan", "Petrov")
-	accountID := entities.NewMockAccountID("63c6f759bbe1022255a6b9b5")
-	_, err := repository.Create(context.Background(), userData, accountID)
-	if err != nil {
-		t.Fatalf("User creation failed with error: %s", err)
-	}
+	userData := user.New("Ivan", "Petrov")
+	accountID := accountid.New("63c6f759bbe1022255a6b9b5")
+	userID, _, err := repository.Create(context.Background(), userData, accountID)
+	require.NoError(err)
+	require.NotNil(userID)
 }
 
-func TestFindCreatedUser(t *testing.T) {
-	t.Parallel()
+func (s *MongoRepositoryTestSuite) TestFindCreatedUser() {
 	ctx := context.Background()
+	require := s.Require()
 
 	// Initialize repository
-	randomCollection := testDatabase.Collection(uuid.New().String())
-	defer dropCollection(ctx, t, randomCollection)
+	randomCollection := s.database.Collection(uuid.NewString())
+	defer require.NoError(randomCollection.Drop(ctx))
 	repository := newMockUserMongoRepository(randomCollection)
 
 	// Start test
-	userData := entities.NewMockUser("Ivan1", "Petrov1")
-	accountID := entities.NewMockAccountID("53c6f759bbe1022255a6b9b5")
-	userID, err := repository.Create(context.Background(), userData, accountID)
-	if err != nil {
-		t.Fatalf("User creation failed with error: %s", err)
-	}
+	userData := user.New("Ivan", "Petrov")
+	accountID := accountid.New("63c6f759bbe1022255a6b9b5")
+	userID, _, err := repository.Create(context.Background(), userData, accountID)
+	require.NoError(err, "Can't create user")
+	require.NotNil(userID)
 
-	responseUserData, err := repository.GetByID(context.Background(), userID)
-	if err != nil {
-		t.Fatalf("User search failed with error: %s", err)
-	}
-	if responseUserData == nil {
-		t.Fatalf("User with id %s not exist", userID)
-	}
+	responseUserData, _, err := repository.GetByID(context.Background(), userID)
+	require.NoError(err)
+	require.NotNil(responseUserData)
 
-	if userData.GetName() != responseUserData.GetName() || userData.GetSurname() != responseUserData.GetSurname() {
-		t.Fatalf("Created and found different users %s %s", userData, responseUserData)
-	}
+	usersSame := userData.GetName() == responseUserData.GetName() &&
+		userData.GetSurname() == responseUserData.GetSurname()
+	require.True(usersSame, "Created and found users are different")
 }

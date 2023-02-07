@@ -3,21 +3,27 @@ package main
 import (
 	"context"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 
 	"github.com/YFatMR/go_messenger/auth_service/internal/auth"
+	"github.com/YFatMR/go_messenger/auth_service/internal/auth/jwtmanager"
 	"github.com/YFatMR/go_messenger/auth_service/internal/controllers"
+	"github.com/YFatMR/go_messenger/auth_service/internal/controllers/accountcontroller"
+	cdecorators "github.com/YFatMR/go_messenger/auth_service/internal/controllers/decorators"
+	"github.com/YFatMR/go_messenger/auth_service/internal/repositories"
+	rdecorators "github.com/YFatMR/go_messenger/auth_service/internal/repositories/decorators"
 	"github.com/YFatMR/go_messenger/auth_service/internal/repositories/mongorepository"
 	"github.com/YFatMR/go_messenger/auth_service/internal/servers"
 	"github.com/YFatMR/go_messenger/auth_service/internal/services"
+	"github.com/YFatMR/go_messenger/auth_service/internal/services/accountservice"
+	sdecorators "github.com/YFatMR/go_messenger/auth_service/internal/services/decorators"
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/metrics/prometheus"
 	"github.com/YFatMR/go_messenger/core/pkg/mongodb"
 	"github.com/YFatMR/go_messenger/core/pkg/traces"
-	proto "github.com/YFatMR/go_messenger/protocol/pkg/proto"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
@@ -40,25 +46,14 @@ func main() {
 	logLevel := config.GetZapcoreLogLevelRequired("LOG_LEVEL")
 	logPath := config.GetStringRequired("LOG_PATH")
 
-	databaseURI := config.GetStringRequired("DATABASE_URI")
-	databaseName := config.GetStringRequired("DATABASE_NAME")
-	databaseCollectionName := config.GetStringRequired("DATABASE_COLLECTION_NAME")
-	databaseOperationTimeout := config.GetMillisecondsDurationRequired("DATABASE_OPERATION_TIMEOUT_MILLISECONDS")
-	databaseConnectionTimeout := config.GetMillisecondsDurationRequired("DATABASE_CONNECTION_TIMEOUT_MILLISECONDS")
-	databaseReconnectionCount := config.GetIntRequired("DATABASE_RECONNECTION_COUNT")
-	databaseReconnectionInterval := config.GetMillisecondsDurationRequired(
-		"DATABASE_RECONNECTIONION_INTERVAL_MILLISECONDS",
-	)
+	collectDatabaseQueryMetrics := config.GetBoolRequired("ENABLE_DATABASE_QUERY_METRICS")
 
 	jaegerEndpoint := config.GetStringRequired("JAEGER_COLLECTOR_ENDPOINT")
 	serviceName := config.GetStringRequired("SERVICE_NAME")
 	serviceAddress := config.GetStringRequired("SERVICE_ADDRESS")
-	metricsServiceReadTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_READ_TIMEOUT_SECONDS")
-	metricsServiceWriteTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_WRITE_TIMEOUT_SECONDS")
-	metricsServiceIdleTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_IDLE_TIMEOUT_SECONDS")
-	metricsServiceReadHeaderTimeout := config.GetSecondsDurationRequired("METRICS_SERVICE_READ_HEADER_TIMEOUT_SECONDS")
-	metricsServiceListingSuffix := config.GetStringRequired("METRICS_SERVICE_LISTING_SUFFIX")
-	metricsServiceAddress := config.GetStringRequired("METRICS_SERVICE_ADDRESS")
+
+	databaseSettings := cviper.NewDatabaseSettingsFromConfig(config)
+	metricServiceSettings := cviper.NewMetricMetricServiceSettingsFromConfig(config)
 
 	authTokenSecretKey := config.GetStringRequired("AUTH_TOKEN_SECRET_KEY")
 	authTokenExpirationDuration := config.GetSecondsDurationRequired("AUTH_TOKEN_EXPIRATION_SECONDS")
@@ -79,16 +74,11 @@ func main() {
 	defer logger.Sync()
 
 	// Init database
-	logger.Info("Connecting to database...")
-	mongoSettings := mongodb.NewMongoSettings(
-		databaseURI, databaseName, databaseCollectionName, databaseConnectionTimeout, logger,
-	)
-	mongoCollection, err := mongodb.Connect(ctx, databaseReconnectionCount, databaseReconnectionInterval, mongoSettings)
+	mongoCollection, err := mongodb.Connect(ctx, databaseSettings, logger)
 	if err != nil {
 		logger.Error("Can't establish connection with database", zap.Error(err))
 		panic(err)
 	}
-	logger.Info("Successfully connected to database")
 
 	// Init tracing
 	logger.Info("Init metrics")
@@ -111,34 +101,42 @@ func main() {
 	tracer := otel.Tracer(serviceName)
 
 	// Init metrics
-
-	go func(logger *loggers.OtelZapLoggerWithTraceID) {
-		server := &http.Server{
-			ReadTimeout:       metricsServiceReadTimeout,
-			WriteTimeout:      metricsServiceWriteTimeout,
-			IdleTimeout:       metricsServiceIdleTimeout,
-			ReadHeaderTimeout: metricsServiceReadHeaderTimeout,
-			Addr:              metricsServiceAddress,
-			Handler:           nil,
-		}
-		http.Handle(metricsServiceListingSuffix, promhttp.Handler())
-		//#nosec G114: Use of net/http serve function that has no support for setting timeouts
-		if err := server.ListenAndServe(); err != nil {
-			logger.Error("Can't up metrics server with endpoint" + metricsServiceAddress +
-				". Operation finished with error: " + err.Error())
-			panic(err)
-		}
-	}(logger)
+	if metricServiceSettings != nil {
+		go prometheus.ListenAndServeMetrcirService(metricServiceSettings, logger)
+	}
 
 	// Init Server
 	logger.Info("Init server")
-	authManager := auth.NewJWTManager(authTokenSecretKey, authTokenExpirationDuration, logger, tracer)
+	var authManager jwtmanager.Manager = jwtmanager.New(authTokenSecretKey, authTokenExpirationDuration)
 	passwordValidator := auth.NewDefaultPasswordValidator()
 
-	repository := mongorepository.NewAccountMongoRepository(mongoCollection, databaseOperationTimeout, logger, tracer)
-	service := services.NewAccountService(repository, authManager, logger, tracer)
-	controller := controllers.NewAccountController(service, passwordValidator, logger, tracer)
-	server := servers.NewGRPCAuthServer(controller, logger, tracer)
+	var repository repositories.AccountRepository
+	repository = mongorepository.New(mongoCollection, databaseSettings.GetOperationTimeout())
+	repository = rdecorators.NewLoggingAccountRepositoryDecorator(repository, logger)
+	if collectDatabaseQueryMetrics {
+		repository = rdecorators.NewPrometheusMetricsAccountRepositoryDecorator(repository)
+	}
+	if true {
+		recordErrors := true
+		repository = rdecorators.NewOpentelemetryTracingAccountRepositoryDecorator(repository, tracer, recordErrors)
+	}
+
+	var service services.AccountService
+	service = accountservice.New(repository, authManager)
+	service = sdecorators.NewLoggingAccountServiceDecorator(service, logger)
+	if true {
+		service = sdecorators.NewPrometheusMetricsAccountServiceDecorator(service)
+	}
+	if true {
+		recordErrors := true
+		service = sdecorators.NewOpentelemetryTracingAccountServiceDecorator(service, tracer, recordErrors)
+	}
+
+	var controller controllers.AccountController
+	controller = accountcontroller.New(service, passwordValidator)
+	controller = cdecorators.NewLoggingAccountControllerDecorator(controller, logger)
+
+	server := servers.NewGRPCAuthServer(controller)
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
 		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),

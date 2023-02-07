@@ -1,0 +1,171 @@
+version: '3.8'
+
+services:
+  front_service:
+    build:
+      context: ${PROJECT_ROOT_PATH}
+      dockerfile: ${PROJECT_ROOT_PATH}/front_service/Dockerfile
+
+    container_name: front_service
+    hostname: front_service
+    environment:
+      - SERVICE_NAME=front_service
+
+      - LOG_LEVEL=debug
+      - LOG_PATH=${FRONT_SERVICE_LOG_PATH}
+
+      - REST_SERVICE_ADDRESS=front_service:${FRONT_REST_SERVICE_PORT}
+      - REST_FRONT_SERVICE_READ_TIMEOUT_SECONDS=2
+      - REST_FRONT_SERVICE_WRITE_TIMEOUT_SECONDS=2
+      - REST_FRONT_SERVICE_IDLE_TIMEOUT_SECONDS=15
+      - REST_FRONT_SERVICE_READ_HEADER_TIMEOUT_SECONDS=2
+      - GRPC_SERVICE_ADDRESS=front_service:${FRONT_GRPC_SERVICE_PORT}
+
+      - USER_SERVICE_ADDRESS=user_service:${USER_SERVICE_PORT}
+
+      - AUTH_SERVICE_ADDRESS=auth_service:${AUTH_SERVICE_PORT}
+
+      - GRPC_CONNECTION_BACKOFF_DELAY_MILLISECONDS=1000
+      - GRPC_CONNECTION_BACKOFF_MULTIPLIER=1.6
+      - GRPC_CONNECTION_BACKOFF_JITTER=0.2
+      - GRPC_CONNECTION_BACKOFF_MAX_DELAY_MILLISECONDS=1000
+
+      - JAEGER_COLLECTOR_ENDPOINT=http://jaeger:${JAEGER_COLLECTOR_PORT}/api/traces
+
+      - MICROSERVICES_GRPC_CONNECTION_TIMEOUT_MILLISECONDS=1000
+
+      - GRPC_CONNECTION_KEEPALIVE_TIME_MILLISECONDS=10000
+      - GRPC_CONNECTION_KEEPALIVE_TIMEOUT_MILLISECONDS=20000
+      - GRPC_CONNECTION_KEEPALIVE_PERMIT_WITHOUT_STREAM=false
+
+      - GRPC_AUTHORIZARION_HEADER=authorization
+      - GRPC_AUTHORIZARION_ACCOUNT_ID_HEADER=${GRPC_AUTHORIZARION_ACCOUNT_ID_HEADER}
+      - GRPC_AUTHORIZARION_USER_ROLE_HEADER=${GRPC_AUTHORIZARION_USER_ROLE_HEADER}
+
+    volumes:
+      - type: bind
+        source: ${TEST_RESULT_PATH}/_log/front_service.log
+        target: ${FRONT_SERVICE_LOG_PATH}
+    ports:
+      - "${PUBLIC_REST_FRONT_SERVICE_PORT}:${FRONT_REST_SERVICE_PORT}"
+      - "${PUBLIC_GRPC_FRONT_SERVICE_PORT}:${FRONT_GRPC_SERVICE_PORT}"
+    depends_on:
+      - user_service
+      - auth_service
+    networks:
+      - default
+
+  auth_service:
+    build:
+      context: ${PROJECT_ROOT_PATH}
+      dockerfile: ${PROJECT_ROOT_PATH}/auth_service/Dockerfile
+
+    container_name: auth_service
+    hostname: auth_service
+    environment:
+      - SERVICE_NAME=auth_service
+      - SERVICE_ADDRESS=auth_service:${AUTH_SERVICE_PORT}
+
+      - DATABASE_URI=mongodb://${AUTH_SERVICE_DATABASE_USERNAME}:${AUTH_SERVICE_DATABASE_PASSWORD}@auth_service_mongodb:${AUTH_SERVICE_DATABASE_PORT}
+      - DATABASE_NAME=auth
+      - DATABASE_COLLECTION_NAME=auth
+      - DATABASE_OPERATION_TIMEOUT_MILLISECONDS=1000
+      - DATABASE_CONNECTION_TIMEOUT_MILLISECONDS=2000
+      - DATABASE_STARTUP_RECONNECTION_COUNT=10
+      - DATABASE_STURTUP_RECONNECTIONION_INTERVAL_MILLISECONDS=500
+      - ENABLE_DATABASE_QUERY_METRICS=true
+
+      - LOG_LEVEL=debug
+      - LOG_PATH=${AUTH_SERVICE_LOG_PATH}
+
+      - JAEGER_COLLECTOR_ENDPOINT=http://jaeger:${JAEGER_COLLECTOR_PORT}/api/traces
+
+      - ENABLE_METRIC_SERVICE=false
+
+      - AUTH_TOKEN_SECRET_KEY=kqR4VkjWxjKNqgKHHaY7Nq5VQaLFSXqKILL8xlAhK6zrXQvqP2OEix7Lptw4B3I
+      - AUTH_TOKEN_EXPIRATION_SECONDS=10000
+    volumes:
+      - type: bind
+        source: ${TEST_RESULT_PATH}/_log/auth_service.log
+        target: ${AUTH_SERVICE_LOG_PATH}
+    ports:
+      - "${PUBLIC_AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}"
+    depends_on:
+      - auth_service_mongodb
+    networks:
+      - default
+
+  auth_service_mongodb:
+    image: mongo:latest
+    container_name: auth_service_mongodb
+    hostname: auth_service_mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${AUTH_SERVICE_DATABASE_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${AUTH_SERVICE_DATABASE_PASSWORD}
+    # volumes:
+    #   - ./mongodb:/usr/src/messenger
+    networks:
+      - default
+
+  user_service:
+    build:
+      context: ${PROJECT_ROOT_PATH}
+      dockerfile: ${PROJECT_ROOT_PATH}/user_service/Dockerfile
+
+    container_name: user_service
+    hostname: user_service
+    environment:
+      - SERVICE_NAME=user_service
+      - SERVICE_ADDRESS=user_service:${USER_SERVICE_PORT}
+
+      - DATABASE_URI=mongodb://${USER_SERVICE_DATABASE_USERNAME}:${USER_SERVICE_DATABASE_PASSWORD}@user_service_mongodb:${USER_SERVICE_DATABASE_PORT}
+      - DATABASE_NAME=users
+      - DATABASE_COLLECTION_NAME=users
+      - DATABASE_OPERATION_TIMEOUT_MILLISECONDS=1000
+      - DATABASE_CONNECTION_TIMEOUT_MILLISECONDS=2000
+      - DATABASE_STARTUP_RECONNECTION_COUNT=10
+      - DATABASE_STURTUP_RECONNECTIONION_INTERVAL_MILLISECONDS=500
+
+      - ENABLE_DATABASE_QUERY_METRICS=true
+      - ENABLE_DATABASE_QUERY_TRACING=true
+
+      - LOG_LEVEL=debug
+      - LOG_PATH=${USER_SERVICE_LOG_PATH}
+
+      - JAEGER_COLLECTOR_ENDPOINT=http://jaeger:${JAEGER_COLLECTOR_PORT}/api/traces
+
+      - ENABLE_METRIC_SERVICE=false
+
+    volumes:
+      - type: bind
+        source: ${TEST_RESULT_PATH}/_log/user_service.log
+        target: ${USER_SERVICE_LOG_PATH}
+    ports:
+      - "${PUBLIC_USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
+    depends_on:
+      - user_service_mongodb
+    networks:
+      - default
+
+  user_service_mongodb:
+    image: mongo:latest
+    container_name: user_service_mongodb
+    hostname: user_service_mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${USER_SERVICE_DATABASE_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${USER_SERVICE_DATABASE_PASSWORD}
+    # volumes:
+    #   - ./mongodb:/usr/src/messenger
+    networks:
+      - default
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    hostname: jaeger
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge

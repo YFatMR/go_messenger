@@ -4,7 +4,7 @@
 // - protoc             v3.12.4
 // source: front.proto
 
-package go_proto
+package proto
 
 import (
 	context "context"
@@ -18,158 +18,194 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// FrontUserClient is the client API for FrontUser service.
+// FrontClient is the client API for Front service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type FrontUserClient interface {
+type FrontClient interface {
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserID, error)
 	GetToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error)
 	GetUserByID(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*UserData, error)
+	Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error)
 }
 
-type frontUserClient struct {
+type frontClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewFrontUserClient(cc grpc.ClientConnInterface) FrontUserClient {
-	return &frontUserClient{cc}
+func NewFrontClient(cc grpc.ClientConnInterface) FrontClient {
+	return &frontClient{cc}
 }
 
-func (c *frontUserClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserID, error) {
+func (c *frontClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserID, error) {
 	out := new(UserID)
-	err := c.cc.Invoke(ctx, "/go_proto.FrontUser/CreateUser", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.Front/CreateUser", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *frontUserClient) GetToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error) {
+func (c *frontClient) GetToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error) {
 	out := new(Token)
-	err := c.cc.Invoke(ctx, "/go_proto.FrontUser/GetToken", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.Front/GetToken", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *frontUserClient) GetUserByID(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*UserData, error) {
+func (c *frontClient) GetUserByID(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*UserData, error) {
 	out := new(UserData)
-	err := c.cc.Invoke(ctx, "/go_proto.FrontUser/GetUserByID", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.Front/GetUserByID", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// FrontUserServer is the server API for FrontUser service.
-// All implementations must embed UnimplementedFrontUserServer
+func (c *frontClient) Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error) {
+	out := new(Pong)
+	err := c.cc.Invoke(ctx, "/proto.Front/Ping", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// FrontServer is the server API for Front service.
+// All implementations must embed UnimplementedFrontServer
 // for forward compatibility
-type FrontUserServer interface {
+type FrontServer interface {
 	CreateUser(context.Context, *CreateUserRequest) (*UserID, error)
 	GetToken(context.Context, *Credential) (*Token, error)
 	GetUserByID(context.Context, *UserID) (*UserData, error)
-	mustEmbedUnimplementedFrontUserServer()
+	Ping(context.Context, *Void) (*Pong, error)
+	mustEmbedUnimplementedFrontServer()
 }
 
-// UnimplementedFrontUserServer must be embedded to have forward compatible implementations.
-type UnimplementedFrontUserServer struct {
+// UnimplementedFrontServer must be embedded to have forward compatible implementations.
+type UnimplementedFrontServer struct {
 }
 
-func (UnimplementedFrontUserServer) CreateUser(context.Context, *CreateUserRequest) (*UserID, error) {
+func (UnimplementedFrontServer) CreateUser(context.Context, *CreateUserRequest) (*UserID, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
 }
-func (UnimplementedFrontUserServer) GetToken(context.Context, *Credential) (*Token, error) {
+func (UnimplementedFrontServer) GetToken(context.Context, *Credential) (*Token, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetToken not implemented")
 }
-func (UnimplementedFrontUserServer) GetUserByID(context.Context, *UserID) (*UserData, error) {
+func (UnimplementedFrontServer) GetUserByID(context.Context, *UserID) (*UserData, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserByID not implemented")
 }
-func (UnimplementedFrontUserServer) mustEmbedUnimplementedFrontUserServer() {}
+func (UnimplementedFrontServer) Ping(context.Context, *Void) (*Pong, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedFrontServer) mustEmbedUnimplementedFrontServer() {}
 
-// UnsafeFrontUserServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to FrontUserServer will
+// UnsafeFrontServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to FrontServer will
 // result in compilation errors.
-type UnsafeFrontUserServer interface {
-	mustEmbedUnimplementedFrontUserServer()
+type UnsafeFrontServer interface {
+	mustEmbedUnimplementedFrontServer()
 }
 
-func RegisterFrontUserServer(s grpc.ServiceRegistrar, srv FrontUserServer) {
-	s.RegisterService(&FrontUser_ServiceDesc, srv)
+func RegisterFrontServer(s grpc.ServiceRegistrar, srv FrontServer) {
+	s.RegisterService(&Front_ServiceDesc, srv)
 }
 
-func _FrontUser_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Front_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateUserRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FrontUserServer).CreateUser(ctx, in)
+		return srv.(FrontServer).CreateUser(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/go_proto.FrontUser/CreateUser",
+		FullMethod: "/proto.Front/CreateUser",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FrontUserServer).CreateUser(ctx, req.(*CreateUserRequest))
+		return srv.(FrontServer).CreateUser(ctx, req.(*CreateUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FrontUser_GetToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Front_GetToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Credential)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FrontUserServer).GetToken(ctx, in)
+		return srv.(FrontServer).GetToken(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/go_proto.FrontUser/GetToken",
+		FullMethod: "/proto.Front/GetToken",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FrontUserServer).GetToken(ctx, req.(*Credential))
+		return srv.(FrontServer).GetToken(ctx, req.(*Credential))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FrontUser_GetUserByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Front_GetUserByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UserID)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FrontUserServer).GetUserByID(ctx, in)
+		return srv.(FrontServer).GetUserByID(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/go_proto.FrontUser/GetUserByID",
+		FullMethod: "/proto.Front/GetUserByID",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FrontUserServer).GetUserByID(ctx, req.(*UserID))
+		return srv.(FrontServer).GetUserByID(ctx, req.(*UserID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// FrontUser_ServiceDesc is the grpc.ServiceDesc for FrontUser service.
+func _Front_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Void)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FrontServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Front/Ping",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FrontServer).Ping(ctx, req.(*Void))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// Front_ServiceDesc is the grpc.ServiceDesc for Front service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var FrontUser_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "go_proto.FrontUser",
-	HandlerType: (*FrontUserServer)(nil),
+var Front_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.Front",
+	HandlerType: (*FrontServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "CreateUser",
-			Handler:    _FrontUser_CreateUser_Handler,
+			Handler:    _Front_CreateUser_Handler,
 		},
 		{
 			MethodName: "GetToken",
-			Handler:    _FrontUser_GetToken_Handler,
+			Handler:    _Front_GetToken_Handler,
 		},
 		{
 			MethodName: "GetUserByID",
-			Handler:    _FrontUser_GetUserByID_Handler,
+			Handler:    _Front_GetUserByID_Handler,
+		},
+		{
+			MethodName: "Ping",
+			Handler:    _Front_Ping_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

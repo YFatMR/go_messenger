@@ -1,9 +1,10 @@
 syntax = "proto3";
 
-package go_proto;
-option go_package = "./go_proto";
+package proto;
+option go_package = "./proto";
 
 import "auth.proto";
+import "common.proto";
 
 message UserData {
   string name = 1;
@@ -11,8 +12,6 @@ message UserData {
 }
 
 message UserID { string ID = 1; }
-
-message Void {}
 
 message CreateUserDataRequest {
   AccountID accountID = 1;
@@ -23,4 +22,5 @@ service User {
   rpc CreateUser(CreateUserDataRequest) returns (UserID) {}
   rpc GetUserByID(UserID) returns (UserData) {}
   rpc DeleteUserByID(UserID) returns (Void) {}
+  rpc Ping(Void) returns (Pong) {}
 }

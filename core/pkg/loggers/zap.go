@@ -4,6 +4,9 @@ import (
 	"context"
 	"os"
 
+	"github.com/YFatMR/go_messenger/core/pkg/ulo"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo/ulocore"
+	"github.com/YFatMR/go_messenger/core/pkg/ulo/zapfields"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -70,4 +73,34 @@ func (l *OtelZapLoggerWithTraceID) ErrorContextNoExport(ctx context.Context, msg
 // FatalContextNoExport Provide an ability to write trace ID without exporting.
 func (l *OtelZapLoggerWithTraceID) FatalContextNoExport(ctx context.Context, msg string, fields ...zapcore.Field) {
 	l.LogContextNoExport(ctx, zapcore.FatalLevel, msg, fields...)
+}
+
+func (l *OtelZapLoggerWithTraceID) LogContextULO(ctx context.Context, logstash ulo.LogStash) {
+	if logstash == nil {
+		return
+	}
+	for _, message := range logstash.GetMessages() {
+		fields := zapfields.FromMessage(message)
+		switch message.GetLogLevel() {
+		case ulocore.DebugLevel:
+			l.DebugContext(ctx, "", fields...)
+		case ulocore.InfoLevel:
+			l.InfoContext(ctx, "", fields...)
+		case ulocore.WarningLevel:
+			l.WarnContext(ctx, "", fields...)
+		case ulocore.ErrorLevel:
+			l.ErrorContext(ctx, "", fields...)
+		}
+	}
+}
+
+func (l *OtelZapLoggerWithTraceID) LogContextNoExportULO(ctx context.Context, logstash ulo.LogStash) {
+	if logstash == nil {
+		return
+	}
+	for _, message := range logstash.GetMessages() {
+		fields := zapfields.FromMessage(message)
+		zapLogLevel := zapfields.ToZapLogLevel(message.GetLogLevel())
+		l.LogContextNoExport(ctx, zapLogLevel, "", fields...)
+	}
 }
