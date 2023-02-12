@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package proto;
+option go_package = "./proto";
+
+import "common.proto";
+
+message Program {
+  string language = 1;
+  string sourceCode = 2;
+}
+
+message ProgramResult {
+  string stdout = 1;
+  string stderr = 2;
+}
+
+service Sandbox {
+  rpc Execute(Program) returns (ProgramResult) {}
+  rpc Ping(Void) returns (Pong) {}
+}

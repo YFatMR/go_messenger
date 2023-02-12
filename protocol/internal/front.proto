@@ -6,6 +6,7 @@ option go_package = "./proto";
 import "user.proto";
 import "auth.proto";
 import "common.proto";
+import "sandbox.proto";
 import "google/api/annotations.proto";
 
 message CreateUserRequest {
@@ -31,6 +32,13 @@ service Front {
   rpc GetUserByID(UserID) returns (UserData) {
     option (google.api.http) = {
       get : "/users/{ID}"
+    };
+  }
+
+  rpc Execute(Program) returns (ProgramResult) {
+    option (google.api.http) = {
+      post : "/sandbox"
+      body : "*"
     };
   }
 

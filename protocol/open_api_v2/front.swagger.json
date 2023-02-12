@@ -38,6 +38,38 @@
         ]
       }
     },
+    "/sandbox": {
+      "post": {
+        "operationId": "Front_Execute",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoProgramResult"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoProgram"
+            }
+          }
+        ],
+        "tags": [
+          "Front"
+        ]
+      }
+    },
     "/token": {
       "post": {
         "operationId": "Front_GetToken",
@@ -160,6 +192,28 @@
       "type": "object",
       "properties": {
         "message": {
+          "type": "string"
+        }
+      }
+    },
+    "protoProgram": {
+      "type": "object",
+      "properties": {
+        "language": {
+          "type": "string"
+        },
+        "sourceCode": {
+          "type": "string"
+        }
+      }
+    },
+    "protoProgramResult": {
+      "type": "object",
+      "properties": {
+        "stdout": {
+          "type": "string"
+        },
+        "stderr": {
           "type": "string"
         }
       }

@@ -14,23 +14,26 @@ import (
 
 type FrontServer struct {
 	proto.UnimplementedFrontServer
-	authServiceClient proto.AuthClient
-	userServiceClient proto.UserClient
-	logger            *loggers.OtelZapLoggerWithTraceID
-	tracer            trace.Tracer
-	backoffConfig     backoff.Config
+	authServiceClient    proto.AuthClient
+	userServiceClient    proto.UserClient
+	sandboxServiceClient proto.SandboxClient
+	logger               *loggers.OtelZapLoggerWithTraceID
+	tracer               trace.Tracer
+	backoffConfig        backoff.Config
 }
 
 func NewFrontServer(authServiceClient proto.AuthClient,
-	userServiceClient proto.UserClient, logger *loggers.OtelZapLoggerWithTraceID,
+	userServiceClient proto.UserClient, sandboxServiceClient proto.SandboxClient,
+	logger *loggers.OtelZapLoggerWithTraceID,
 	tracer trace.Tracer, backoffConfig backoff.Config,
 ) FrontServer {
 	return FrontServer{
-		authServiceClient: authServiceClient,
-		userServiceClient: userServiceClient,
-		logger:            logger,
-		tracer:            tracer,
-		backoffConfig:     backoffConfig,
+		authServiceClient:    authServiceClient,
+		userServiceClient:    userServiceClient,
+		sandboxServiceClient: sandboxServiceClient,
+		logger:               logger,
+		tracer:               tracer,
+		backoffConfig:        backoffConfig,
 	}
 }
 
@@ -92,6 +95,18 @@ func (s *FrontServer) GetUserByID(ctx context.Context, request *proto.UserID) (*
 	s.logger.DebugContextNoExport(ctx, "called GetUserByID endpoint")
 	grpcCtx := context.WithValue(ctx, interceptors.AuthorizationFieldContextKey, true)
 	return s.userServiceClient.GetUserByID(grpcCtx, request)
+}
+
+func (s *FrontServer) Execute(ctx context.Context, request *proto.Program) (
+	*proto.ProgramResult, error,
+) {
+	var span trace.Span
+	ctx, span = s.tracer.Start(ctx, "/Execute")
+	defer span.End()
+
+	s.logger.DebugContextNoExport(ctx, "called Execute endpoint")
+	grpcCtx := context.WithValue(ctx, interceptors.AuthorizationFieldContextKey, true)
+	return s.sandboxServiceClient.Execute(grpcCtx, request)
 }
 
 func (s *FrontServer) Ping(ctx context.Context, request *proto.Void) (*proto.Pong, error) {

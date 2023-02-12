@@ -8,10 +8,9 @@ import (
 	"google.golang.org/grpc"
 )
 
-func NewProtobufUserClient(ctx context.Context, serviceAddress string, connectionTimeout time.Duration,
-	opts []grpc.DialOption) (
-	proto.UserClient, error,
-) {
+func NewGRPCAuthClient(ctx context.Context, serviceAddress string, connectionTimeout time.Duration,
+	opts []grpc.DialOption,
+) (proto.AuthClient, error) {
 	ctx, cancel := context.WithTimeout(ctx, connectionTimeout)
 	defer cancel()
 
@@ -19,5 +18,5 @@ func NewProtobufUserClient(ctx context.Context, serviceAddress string, connectio
 	if err != nil {
 		return nil, err
 	}
-	return proto.NewUserClient(conn), nil
+	return proto.NewAuthClient(conn), nil
 }

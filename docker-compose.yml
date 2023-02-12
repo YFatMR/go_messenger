@@ -25,6 +25,8 @@ services:
 
       - AUTH_SERVICE_ADDRESS=auth_service:${AUTH_SERVICE_PORT}
 
+      - SANDBOX_SERVICE_ADDRESS=sandbox_service:${SANDBOX_SERVICE_PORT}
+
       - GRPC_CONNECTION_BACKOFF_DELAY_MILLISECONDS=1000
       - GRPC_CONNECTION_BACKOFF_MULTIPLIER=1.6
       - GRPC_CONNECTION_BACKOFF_JITTER=0.2
@@ -174,6 +176,35 @@ services:
     #   - ./mongodb:/usr/src/messenger
     ports:
       - "27017:${USER_SERVICE_DATABASE_PORT}"
+    networks:
+      - default
+
+  sandbox_service:
+    privileged: true
+    build:
+      context: ${PROJECT_ROOT_PATH}
+      dockerfile: ${PROJECT_ROOT_PATH}/sandbox_service/Dockerfile
+
+    container_name: sandbox_service
+    hostname: sandbox_service
+    environment:
+      - SERVICE_ADDRESS=sandbox_service:${SANDBOX_SERVICE_PORT}
+      - SANDBOX_PROGRAM_EXECUTION_TIMOUT_MILLISECONDS=5000
+      - SANDBOX_DOCKER_IMAGE_NAME=sandbox:latest
+      - SANDBOX_DOCKER_IMAGE_PATH=/app/sandbox.tar
+      - SANDBOX_DOCKER_CLIENT_VERSION=1.41
+      - SANDBOX_MEMORY_LIMITATION_BYTES=134217728 # 128 Mbytes
+      - SANDBOX_NETWORK_DISABLED=true
+      - SANDBOX_CONTAINER_NAME_PREFIX=tmp_
+      - SANDBOX_GO_IMAGE_SOURCE_DIRECTORY=/app
+    volumes:
+      - type: bind
+        source: ${PROJECT_ROOT_PATH}/_log/sandbox_service.log
+        target: ${SANDBOX_SERVICE_LOG_PATH}
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${PROJECT_ROOT_PATH}/sandbox_service/sandbox/docker_images/sandbox.tar:/app/sandbox.tar
+    ports:
+      - "9042:${SANDBOX_SERVICE_PORT}"
     networks:
       - default
 

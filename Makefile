@@ -20,7 +20,8 @@ raw_build:
 	go build -o ${BINARY_DIRECTORY}/auth_service ${ROOT_PROJECT_DIRECTORY}/auth_service/cmd
 	go build -o ${BINARY_DIRECTORY}/front_service ${ROOT_PROJECT_DIRECTORY}/front_service/cmd
 	go build -o ${BINARY_DIRECTORY}/user_service ${ROOT_PROJECT_DIRECTORY}/user_service/cmd
-	go build -o ${BINARY_DIRECTORY}/user_service ${ROOT_PROJECT_DIRECTORY}/qa/test
+	go build -o ${BINARY_DIRECTORY}/qa_test ${ROOT_PROJECT_DIRECTORY}/qa/test
+	go build -o ${BINARY_DIRECTORY}/sandbox_service ${ROOT_PROJECT_DIRECTORY}/sandbox_service/cmd
 
 build: gen
 	make raw_build
@@ -48,6 +49,15 @@ fump-diff:
 
 fump-write:
 	${GOFUMP_BINATY} -w ${GO_SOURCES}
+
+update-sandbox-image:
+	docker build --tag sandbox ${ROOT_PROJECT_DIRECTORY}/sandbox_service/sandbox/
+	docker save -o ${ROOT_PROJECT_DIRECTORY}/sandbox_service/sandbox/docker_images/sandbox.tar sandbox:latest
+
+
+# docker build --tag local_sandbox ${ROOT_PROJECT_DIRECTORY}/sandbox_service/sandbox/
+# docker image tag local_sandbox maximfafa/sandbox2:latest
+# docker image push maximfafa/sandbox2
 
 # cover:
 # 	go test -short -count=1 -race -coverprofile=coverage.out ./...

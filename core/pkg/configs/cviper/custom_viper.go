@@ -37,6 +37,13 @@ func (v *CustomViper) GetIntRequired(key string) int {
 	return v.GetInt(key)
 }
 
+func (v *CustomViper) GetInt64Required(key string) int64 {
+	if v.Get(key) == nil {
+		panic(v.getNoKeyPanicMessage(key))
+	}
+	return v.GetInt64(key)
+}
+
 func (v *CustomViper) GetFloat64Required(key string) float64 {
 	if v.Get(key) == nil {
 		panic(v.getNoKeyPanicMessage(key))
