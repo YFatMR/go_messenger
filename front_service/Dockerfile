@@ -19,7 +19,10 @@ RUN go work init && \
     cd /app/core && go mod download && \
     cd /app/front_service && go mod download
 
-COPY . .
+COPY ./core ./core
+COPY ./protocol ./protocol
+COPY ./front_service ./front_service
+
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./front_service_bin ./front_service/cmd
 
 FROM scratch

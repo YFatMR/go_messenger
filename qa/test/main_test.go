@@ -38,6 +38,7 @@ func TestMain(m *testing.M) {
 	grpcFrontServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_GRPC_FRONT_SERVICE_PORT")
 	userServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_USER_SERVICE_PORT")
 	authServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_AUTH_SERVICE_PORT")
+	sandboxServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_SANDBOX_SERVICE_PORT")
 
 	testResponseTimeout := config.GetMillisecondsDurationRequired("TEST_RESPONSE_TIMEOUT_MILLISECONDS")
 	testSetupTimeout := config.GetMillisecondsDurationRequired("TEST_SETUP_TIMEOUT_MILLISECONDS")
@@ -49,7 +50,7 @@ func TestMain(m *testing.M) {
 
 	// Setup auth service
 	ctxSetup, cancelSetup := context.WithTimeout(ctx, testSetupTimeout)
-	authClient, err := newProtobufAuthClient(ctxSetup, authServiceAddress, testResponseTimeout)
+	authClient, err := newGRPCAuthClient(ctxSetup, authServiceAddress, testResponseTimeout)
 	if err != nil {
 		panic(err)
 	}
@@ -62,7 +63,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Setup user service
-	userClient, err := newProtobufUserClient(ctxSetup, userServiceAddress, testResponseTimeout)
+	userClient, err := newGRPCUserClient(ctxSetup, userServiceAddress, testResponseTimeout)
 	if err != nil {
 		panic(err)
 	}
@@ -74,8 +75,21 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
+	// Setup sandbox service
+	sandboxClient, err := newGRPCSandboxClient(ctxSetup, sandboxServiceAddress, testResponseTimeout)
+	if err != nil {
+		panic(err)
+	}
+	pingSandboxServiceCallback := func(ctx context.Context) (*proto.Pong, error) {
+		return sandboxClient.Ping(ctx, &proto.Void{})
+	}
+	err = pingService(ctx, pingSandboxServiceCallback, testServiceSetupRetryCount, testServiceSetupRetryInterval)
+	if err != nil {
+		panic(err)
+	}
+
 	// Setup front service
-	frontServicegRPCClient, err = newProtobufFrontClient(ctxSetup, grpcFrontServiceAddress, testResponseTimeout)
+	frontServicegRPCClient, err = newGRPCFrontClient(ctxSetup, grpcFrontServiceAddress, testResponseTimeout)
 	if err != nil {
 		panic(err)
 	}

@@ -25,6 +25,7 @@ type FrontClient interface {
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserID, error)
 	GetToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error)
 	GetUserByID(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*UserData, error)
+	Execute(ctx context.Context, in *Program, opts ...grpc.CallOption) (*ProgramResult, error)
 	Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error)
 }
 
@@ -63,6 +64,15 @@ func (c *frontClient) GetUserByID(ctx context.Context, in *UserID, opts ...grpc.
 	return out, nil
 }
 
+func (c *frontClient) Execute(ctx context.Context, in *Program, opts ...grpc.CallOption) (*ProgramResult, error) {
+	out := new(ProgramResult)
+	err := c.cc.Invoke(ctx, "/proto.Front/Execute", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *frontClient) Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error) {
 	out := new(Pong)
 	err := c.cc.Invoke(ctx, "/proto.Front/Ping", in, out, opts...)
@@ -79,6 +89,7 @@ type FrontServer interface {
 	CreateUser(context.Context, *CreateUserRequest) (*UserID, error)
 	GetToken(context.Context, *Credential) (*Token, error)
 	GetUserByID(context.Context, *UserID) (*UserData, error)
+	Execute(context.Context, *Program) (*ProgramResult, error)
 	Ping(context.Context, *Void) (*Pong, error)
 	mustEmbedUnimplementedFrontServer()
 }
@@ -95,6 +106,9 @@ func (UnimplementedFrontServer) GetToken(context.Context, *Credential) (*Token, 
 }
 func (UnimplementedFrontServer) GetUserByID(context.Context, *UserID) (*UserData, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserByID not implemented")
+}
+func (UnimplementedFrontServer) Execute(context.Context, *Program) (*ProgramResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Execute not implemented")
 }
 func (UnimplementedFrontServer) Ping(context.Context, *Void) (*Pong, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
@@ -166,6 +180,24 @@ func _Front_GetUserByID_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Front_Execute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Program)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FrontServer).Execute(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Front/Execute",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FrontServer).Execute(ctx, req.(*Program))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Front_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Void)
 	if err := dec(in); err != nil {
@@ -202,6 +234,10 @@ var Front_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserByID",
 			Handler:    _Front_GetUserByID_Handler,
+		},
+		{
+			MethodName: "Execute",
+			Handler:    _Front_Execute_Handler,
 		},
 		{
 			MethodName: "Ping",

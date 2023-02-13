@@ -8,7 +8,7 @@ import (
 	"os/signal"
 
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
-	grpcclients "github.com/YFatMR/go_messenger/core/pkg/grpc_clients"
+	"github.com/YFatMR/go_messenger/core/pkg/grpcclients"
 	"github.com/YFatMR/go_messenger/core/pkg/loggers"
 	"github.com/YFatMR/go_messenger/core/pkg/traces"
 	"github.com/YFatMR/go_messenger/front_server/internal/interceptors"
@@ -44,6 +44,7 @@ func main() {
 	grpcFrontServiceAddress := config.GetStringRequired("GRPC_SERVICE_ADDRESS")
 	userServiceAddress := config.GetStringRequired("USER_SERVICE_ADDRESS")
 	authServiceAddress := config.GetStringRequired("AUTH_SERVICE_ADDRESS")
+	sandboxServiceAddress := config.GetStringRequired("SANDBOX_SERVICE_ADDRESS")
 	jaegerEndpoint := config.GetStringRequired("JAEGER_COLLECTOR_ENDPOINT")
 	serviceName := config.GetStringRequired("SERVICE_NAME")
 	restServiceReadTimeout := config.GetSecondsDurationRequired("REST_FRONT_SERVICE_READ_TIMEOUT_SECONDS")
@@ -160,7 +161,7 @@ func main() {
 				},
 			),
 		}
-		authServiceClient, err := grpcclients.NewProtobufAuthClient(
+		authServiceClient, err := grpcclients.NewGRPCAuthClient(
 			ctx, authServiceAddress, microservicesConnectionTimeout, authClientOpts,
 		)
 		if err != nil {
@@ -192,7 +193,7 @@ func main() {
 				},
 			),
 		}
-		userServiceClient, err := grpcclients.NewProtobufUserClient(
+		userServiceClient, err := grpcclients.NewGRPCUserClient(
 			ctx, userServiceAddress, microservicesConnectionTimeout, userClientOpts,
 		)
 		if err != nil {
@@ -200,8 +201,15 @@ func main() {
 			panic(err)
 		}
 
+		sandboxServiceClient, err := grpcclients.NewGRPCSandboxClient(
+			ctx, sandboxServiceAddress, microservicesConnectionTimeout, userClientOpts,
+		)
+		if err != nil {
+			panic(err)
+		}
+
 		server := frontserver.NewFrontServer(
-			authServiceClient, userServiceClient, logger, tracer, grpcBackoffConfig,
+			authServiceClient, userServiceClient, sandboxServiceClient, logger, tracer, grpcBackoffConfig,
 		)
 		proto.RegisterFrontServer(grpcServer, &server)
 

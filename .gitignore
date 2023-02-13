@@ -4,3 +4,4 @@ _log_qa
 .idea
 !.gitkeep
 .vscode
+*.tar

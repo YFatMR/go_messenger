@@ -5,6 +5,7 @@ use (
 	./core
 	./front_service
 	./protocol
+	./sandbox_service
 	./qa
 	./user_service
 )
