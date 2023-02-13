@@ -112,7 +112,7 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=${AUTH_SERVICE_DATABASE_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${AUTH_SERVICE_DATABASE_PASSWORD}
     # volumes:
-    #   - ./mongodb:/usr/src/messenger
+    #   - /todo/mongodb:/usr/src/messenger
     ports:
       - "27018:${AUTH_SERVICE_DATABASE_PORT}"
     networks:
@@ -173,7 +173,7 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=${USER_SERVICE_DATABASE_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${USER_SERVICE_DATABASE_PASSWORD}
     # volumes:
-    #   - ./mongodb:/usr/src/messenger
+    #   - /todo/mongodb:/usr/src/messenger
     ports:
       - "27017:${USER_SERVICE_DATABASE_PORT}"
     networks:
@@ -207,6 +207,44 @@ services:
       - "9042:${SANDBOX_SERVICE_PORT}"
     networks:
       - default
+
+  kafka_broker:
+    image: bitnami/kafka:latest
+    container_name: kafka_broker
+    hostname: kafka_broker
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:${KAFKA_BROKER_PORT},CONTROLLER://:${KAFKA_CONTROLLER_PORT}
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka_broker:${KAFKA_BROKER_PORT}
+      - KAFKA_CFG_BROKER_ID=1
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka_broker:${KAFKA_CONTROLLER_PORT}
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_KRAFT_CLUSTER_ID=fM42aVuVTOC2GZbUYkG91g
+      # - BITNAMI_DEBUG=true
+      # volumes:
+      #   - /todo/volume:/bitnami/kafka
+    ports:
+      - "9092:${KAFKA_BROKER_PORT}"
+    networks:
+      - default
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    hostname: kafka-ui
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=kraft
+      - KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS=kafka_broker:${KAFKA_BROKER_PORT}
+      - SERVER_PORT=${KAFKA_UI_PORT}
+    ports:
+      - "9080:${KAFKA_UI_PORT}"
+    networks:
+      - default
+    depends_on:
+      - kafka_broker
 
   jaeger:
     image: jaegertracing/all-in-one:latest
