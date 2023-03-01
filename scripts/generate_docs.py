@@ -137,7 +137,7 @@ class DatabaseRaw:
 
     def __str__(self) -> str:
         return f"| {self._average_rw_ratio:.2f}% | {self._read_average_rps:.2f} | {self._write_average_rps:.2f} | " + \
-            f"{self._peak_rw_ratio}% | {self._read_peak_rps:.2f} | {self._write_peak_rps:.2f} | " + \
+            f"{self._peak_rw_ratio:.2f}% | {self._read_peak_rps:.2f} | {self._write_peak_rps:.2f} | " + \
             f"{self._day_max_dist_space_gb:.2f} | {self._month_max_dist_space_gb:.2f} |"
 
 
@@ -192,11 +192,6 @@ run_go_code = TableRaw("Run code (only Go)", 0.25, 2.0, DAU_USERS)
 lint_go_code = TableRaw("Linting code (only Go)", 0.25, 1.5, DAU_USERS)
 print_all([find_code_listing, create_code_listing, update_code_listing, run_go_code, lint_go_code],
           "Actions with sandbox",)
-
-service_header = TableHeader(["Handler", "Average RPS", "Peak RPS", "Request MAX bytes", "Response MAX bytes"])
-database_header = TableHeader(["Average R/W ratio", "Agerage read RPS", "Agerage write RPS",
-                               "Peak R/W ratio", "Peak read RPS", "Peak write RPS",
-                               "Max disk space utilization (bytes per day)", "Average disk space utilization (bytes per month)"])
 
 # common
 BYTES_PER_SYMBOL = 2

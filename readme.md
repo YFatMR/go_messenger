@@ -60,7 +60,7 @@ In today's digital age, social networks have become an integral part of our dail
 ## User service databse load
 | Average R/W ratio | Agerage read RPS | Agerage write RPS | Peak R/W ratio | Peak read RPS | Peak write RPS | Max write GB (per day) | Max write GB (per month) |
 | ------------ |------------: |------------: |------------: |------------: |------------: |------------: |------------: |
-| 744.44% | 14.89 | 2.00 | 33.88888888888889% | 338.89 | 1000.00 | 171.23 | 5136.97 |
+| 744.44% | 14.89 | 2.00 | 33.89% | 338.89 | 1000.00 | 171.23 | 5136.97 |
 
 ## Sandbox service
 | Handler | Average RPS | Peak RPS | Request MAX bytes | Response MAX bytes |
@@ -74,7 +74,7 @@ In today's digital age, social networks have become an integral part of our dail
 ## Sandbox service databse load
 | Average R/W ratio | Agerage read RPS | Agerage write RPS | Peak R/W ratio | Peak read RPS | Peak write RPS | Max write GB (per day) | Max write GB (per month) |
 | ------------ |------------: |------------: |------------: |------------: |------------: |------------: |------------: |
-| 187.50% | 41.67 | 22.22 | 120.0% | 208.33 | 173.61 | 1.12 | 33.53 |
+| 187.50% | 41.67 | 22.22 | 120.00% | 208.33 | 173.61 | 1.12 | 33.53 |
 
 
 ## TODO:
