@@ -15,7 +15,7 @@ class ShortTableRaw:
 
     def get_average_rps(self) -> float:
         return self._average_rps
-    
+
     def get_peak_rps(self) -> float:
         return self._peak_rps
 
@@ -98,7 +98,7 @@ class HandlerRaw:
 
     def get_response(self) -> Message:
         return self._request
-    
+
     def get_header(self) -> TableHeader:
         return TableHeader([
             "Handler", "Average RPS", "Peak RPS", "Request MAX bytes", "Response MAX bytes",
@@ -110,35 +110,37 @@ class HandlerRaw:
 
 
 class DatabaseRaw:
-    def __init__(self, read_handlers, write_handlers) -> None:
+    def __init__(self, read_handlers, write_handlers, content_producer_handlers) -> None:
         self._read_average_rps = sum([el.get_average_rps() for el in read_handlers])
         self._read_peak_rps = sum([el.get_peak_rps() for el in read_handlers])
         self._write_average_rps = sum([el.get_average_rps() for el in write_handlers])
         self._write_peak_rps = sum([el.get_peak_rps() for el in write_handlers])
-        self._max_disk_space_byte_utilization_per_write_request = sum([el.get_request().get_max_bytes() for el in read_handlers]) + \
-            sum([el.get_response().get_max_bytes() for el in read_handlers])
+
         self._average_rw_ratio = self._read_average_rps / self._write_average_rps * 100
         self._peak_rw_ratio = self._read_peak_rps / self._write_peak_rps * 100
+
+        content_producer_average_rps = sum([el.get_average_rps() for el in content_producer_handlers])
+        database_growth_per_request = sum([el.get_request().get_max_bytes() for el in content_producer_handlers])
 
         SECONDS_IN_DAY = 60 * 60 * 24
         SECONDS_IN_MONTH = SECONDS_IN_DAY * 30
 
         BYTES_IN_GIGABYTE = 1073741824
-        self._day_max_dist_space_gb = self._max_disk_space_byte_utilization_per_write_request * self._write_peak_rps * SECONDS_IN_DAY / BYTES_IN_GIGABYTE
-        self._month_max_dist_space_gb = self._max_disk_space_byte_utilization_per_write_request * self._write_peak_rps * SECONDS_IN_MONTH / BYTES_IN_GIGABYTE
+        self._day_database_growth_gb = database_growth_per_request * content_producer_average_rps * SECONDS_IN_DAY / BYTES_IN_GIGABYTE
+        self._month_database_growth_gb = database_growth_per_request * content_producer_average_rps * SECONDS_IN_MONTH / BYTES_IN_GIGABYTE
 
     def get_header(self) -> TableHeader:
         return TableHeader([
             "Average R/W ratio", "Agerage read RPS", "Agerage write RPS",
             "Peak R/W ratio", "Peak read RPS", "Peak write RPS",
-            "Max write GB (per day)", "Max write GB (per month)",
+            "Database growth GB (per day)", "Database growth GB (per month)",
         ])
 
 
     def __str__(self) -> str:
         return f"| {self._average_rw_ratio:.2f}% | {self._read_average_rps:.2f} | {self._write_average_rps:.2f} | " + \
             f"{self._peak_rw_ratio:.2f}% | {self._read_peak_rps:.2f} | {self._write_peak_rps:.2f} | " + \
-            f"{self._day_max_dist_space_gb:.2f} | {self._month_max_dist_space_gb:.2f} |"
+            f"{self._day_database_growth_gb:.2f} | {self._month_database_growth_gb:.2f} |"
 
 
 def print_all(lst: list, header: str | None = None):
@@ -150,14 +152,15 @@ def print_all(lst: list, header: str | None = None):
         print(el)
     print()
 
+PEAK_HOUR_RPS = 10_000
 DAU_USERS = 50_000
 MAU_USERS = 500_000
 OVERALL_USERS = 1_000_000
 
 
 # Auth actions
-registration = ShortTableRaw("Registration", 2.0, 1000.0)
-authorization = ShortTableRaw("Authorization", 0.5, 100.0)
+registration = ShortTableRaw("Registration", 2.0, 100.0)
+authorization = ShortTableRaw("Authorization", 5.0, 200.0)
 print_all([registration, authorization], "Auth")
 
 # Actions with users
@@ -185,9 +188,9 @@ print_all([create_dialog, delete_dialog, send_message_to_dialog, delete_message_
 
 
 # Actions with sandbox
-create_code_listing = TableRaw("Create code listing", 0.5, 5.0, DAU_USERS)
+create_code_listing = TableRaw("Create code listing", 0.5, 1.5, DAU_USERS)
 find_code_listing = TableRaw("Find code listing", 3.0, 15.0, DAU_USERS)
-update_code_listing = TableRaw("Update code listing", 0.6, 4.0, DAU_USERS)
+update_code_listing = TableRaw("Update code listing", 0.6, 3.0, DAU_USERS)
 run_go_code = TableRaw("Run code (only Go)", 0.25, 2.0, DAU_USERS)
 lint_go_code = TableRaw("Linting code (only Go)", 0.25, 1.5, DAU_USERS)
 print_all([find_code_listing, create_code_listing, update_code_listing, run_go_code, lint_go_code],
@@ -211,14 +214,14 @@ delete_user_by_id = HandlerRaw("DeleteUserByID", [], user_id_message, void_messa
 generate_token = HandlerRaw("GenerateToken", [authorization], credential_message, token_message)
 print_all([create_user, get_user_by_id, delete_user_by_id, generate_token], "User service")
 
-database_stat = DatabaseRaw([get_user_by_id, generate_token], [create_user])
+database_stat = DatabaseRaw([get_user_by_id, generate_token], [create_user], [create_user])
 print_all([database_stat], "User service databse load")
 
 
 # Sandbox service
-pogram_sourse_message = Message(1 , 5000, BYTES_PER_SYMBOL)
+pogram_sourse_message = Message(1 , 4000, BYTES_PER_SYMBOL)
 pogram_id_message = Message(12, 20, BYTES_PER_SYMBOL)
-program_output_message = Message(1 , 5000, BYTES_PER_SYMBOL)
+program_output_message = Message(1 , 4000, BYTES_PER_SYMBOL)
 program_message = ComplesMessage([pogram_id_message, pogram_sourse_message, program_output_message, program_output_message])
 update_program_sourse_request_message = ComplesMessage([pogram_id_message, pogram_sourse_message])
 
@@ -229,5 +232,5 @@ run_program = HandlerRaw("RunProgram", [run_go_code], pogram_id_message, void_me
 lint_program = HandlerRaw("LintProgram", [lint_go_code], pogram_id_message, void_message)
 print_all([create_program, get_program_by_id, update_program_source, run_program, lint_program], "Sandbox service")
 
-database_stat = DatabaseRaw([get_program_by_id], [create_program, update_program_source, run_program, lint_program])
+database_stat = DatabaseRaw([get_program_by_id], [create_program, update_program_source, run_program, lint_program], [create_program])
 print_all([database_stat], "Sandbox service databse load")

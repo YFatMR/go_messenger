@@ -14,8 +14,8 @@ In today's digital age, social networks have become an integral part of our dail
 ## Auth
 | Requirement | Average RPS | Peak RPS |
 | ------------ |------------: |------------: |
-| Registration | 2.00 | 1000.00 |
-| Authorization | 0.50 | 100.00 |
+| Registration | 2.00 | 100.00 |
+| Authorization | 5.00 | 200.00 |
 
 ## Actions with users
 | Requirement | Average load (requests per hour from one user) | Peak load (requests per hour from one user) | Average RPS | Peak RPS |
@@ -44,37 +44,37 @@ In today's digital age, social networks have become an integral part of our dail
 | Requirement | Average load (requests per hour from one user) | Peak load (requests per hour from one user) | Average RPS | Peak RPS |
 | ------------ |------------: |------------: |------------: |------------: |
 | Find code listing | 3.00 | 15.00 | 41.67 | 208.33 |
-| Create code listing | 0.50 | 5.00 | 6.94 | 69.44 |
-| Update code listing | 0.60 | 4.00 | 8.33 | 55.56 |
+| Create code listing | 0.50 | 1.50 | 6.94 | 20.83 |
+| Update code listing | 0.60 | 3.00 | 8.33 | 41.67 |
 | Run code (only Go) | 0.25 | 2.00 | 3.47 | 27.78 |
 | Linting code (only Go) | 0.25 | 1.50 | 3.47 | 20.83 |
 
 ## User service
 | Handler | Average RPS | Peak RPS | Request MAX bytes | Response MAX bytes |
 | ------------ |------------: |------------: |------------: |------------: |
-| CreateUser | 2.00 | 1000.00 | 2048 | 40 |
-| GetUserByID | 14.39 | 238.89 | 40 | 1024 |
+| CreateUser | 2.00 | 100.00 | 2048 | 40 |
+| GetUserByID | 18.89 | 338.89 | 40 | 1024 |
 | DeleteUserByID | 0.00 | 0.00 | 40 | 4 |
-| GenerateToken | 0.50 | 100.00 | 1024 | 2000 |
+| GenerateToken | 5.00 | 200.00 | 1024 | 2000 |
 
 ## User service databse load
-| Average R/W ratio | Agerage read RPS | Agerage write RPS | Peak R/W ratio | Peak read RPS | Peak write RPS | Max write GB (per day) | Max write GB (per month) |
+| Average R/W ratio | Agerage read RPS | Agerage write RPS | Peak R/W ratio | Peak read RPS | Peak write RPS | Database growth GB (per day) | Database growth GB (per month) |
 | ------------ |------------: |------------: |------------: |------------: |------------: |------------: |------------: |
-| 744.44% | 14.89 | 2.00 | 33.89% | 338.89 | 1000.00 | 171.23 | 5136.97 |
+| 1194.44% | 23.89 | 2.00 | 538.89% | 538.89 | 100.00 | 0.33 | 9.89 |
 
 ## Sandbox service
 | Handler | Average RPS | Peak RPS | Request MAX bytes | Response MAX bytes |
 | ------------ |------------: |------------: |------------: |------------: |
-| CreateProgram | 6.94 | 69.44 | 10000 | 40 |
-| GetProgramByID | 41.67 | 208.33 | 40 | 30040 |
-| UpdateProgramSource | 8.33 | 55.56 | 10040 | 4 |
+| CreateProgram | 6.94 | 20.83 | 8000 | 40 |
+| GetProgramByID | 41.67 | 208.33 | 40 | 24040 |
+| UpdateProgramSource | 8.33 | 41.67 | 8040 | 4 |
 | RunProgram | 3.47 | 27.78 | 40 | 4 |
 | LintProgram | 3.47 | 20.83 | 40 | 4 |
 
 ## Sandbox service databse load
-| Average R/W ratio | Agerage read RPS | Agerage write RPS | Peak R/W ratio | Peak read RPS | Peak write RPS | Max write GB (per day) | Max write GB (per month) |
+| Average R/W ratio | Agerage read RPS | Agerage write RPS | Peak R/W ratio | Peak read RPS | Peak write RPS | Database growth GB (per day) | Database growth GB (per month) |
 | ------------ |------------: |------------: |------------: |------------: |------------: |------------: |------------: |
-| 187.50% | 41.67 | 22.22 | 120.00% | 208.33 | 173.61 | 1.12 | 33.53 |
+| 187.50% | 41.67 | 22.22 | 187.50% | 208.33 | 111.11 | 4.47 | 134.11 |
 
 
 ## TODO:
