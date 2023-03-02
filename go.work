@@ -1,11 +1,10 @@
 go 1.19
 
 use (
-	./auth_service
 	./core
 	./front_service
 	./protocol
-	./sandbox_service
 	./qa
+	./sandbox_service
 	./user_service
 )

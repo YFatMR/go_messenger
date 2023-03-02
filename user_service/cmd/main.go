@@ -7,29 +7,29 @@ import (
 	"os/signal"
 
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
-	"github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/ctrace"
+	"github.com/YFatMR/go_messenger/core/pkg/czap"
+	"github.com/YFatMR/go_messenger/core/pkg/jwtmanager"
 	"github.com/YFatMR/go_messenger/core/pkg/metrics/prometheus"
 	"github.com/YFatMR/go_messenger/core/pkg/mongodb"
-	"github.com/YFatMR/go_messenger/core/pkg/traces"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
-	"github.com/YFatMR/go_messenger/user_service/internal/controllers"
-	cdecorators "github.com/YFatMR/go_messenger/user_service/internal/controllers/decorators"
-	"github.com/YFatMR/go_messenger/user_service/internal/controllers/usercontroller"
-	"github.com/YFatMR/go_messenger/user_service/internal/repositories"
-	rdecorators "github.com/YFatMR/go_messenger/user_service/internal/repositories/decorators"
-	"github.com/YFatMR/go_messenger/user_service/internal/repositories/mongorepository"
-	"github.com/YFatMR/go_messenger/user_service/internal/servers/grpcserver"
-	"github.com/YFatMR/go_messenger/user_service/internal/services"
-	sdecorators "github.com/YFatMR/go_messenger/user_service/internal/services/decorators"
-	"github.com/YFatMR/go_messenger/user_service/internal/services/userservice"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"github.com/YFatMR/go_messenger/user_service/controllers"
+	"github.com/YFatMR/go_messenger/user_service/controllers/controllerdecorators"
+	"github.com/YFatMR/go_messenger/user_service/grpcserver"
+	"github.com/YFatMR/go_messenger/user_service/mongorepository"
+	"github.com/YFatMR/go_messenger/user_service/passwordmanager"
+	"github.com/YFatMR/go_messenger/user_service/repositories"
+	"github.com/YFatMR/go_messenger/user_service/repositories/repositorydecorators"
+	"github.com/YFatMR/go_messenger/user_service/services"
+	"github.com/YFatMR/go_messenger/user_service/services/servicedecorators"
+	"github.com/YFatMR/go_messenger/user_service/usercontroller"
+	"github.com/YFatMR/go_messenger/user_service/userservice"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	resourcesdk "go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 )
 
@@ -41,9 +41,6 @@ func main() {
 	config.AutomaticEnv()
 
 	// Init environment vars
-	logLevel := config.GetZapcoreLogLevelRequired("LOG_LEVEL")
-	logPath := config.GetStringRequired("LOG_PATH")
-
 	databaseSettings := cviper.NewDatabaseSettingsFromConfig(config)
 	metricServiceSettings := cviper.NewMetricMetricServiceSettingsFromConfig(config)
 
@@ -55,18 +52,10 @@ func main() {
 	traceDatabaseQuery := config.GetBoolRequired("ENABLE_DATABASE_QUERY_TRACING")
 
 	// Init logger
-	zapLogger, err := loggers.NewBaseZapFileLogger(logLevel, logPath)
+	logger, err := czap.FromConfig(config)
 	if err != nil {
 		panic(err)
 	}
-	logger := loggers.NewOtelZapLoggerWithTraceID(
-		otelzap.New(
-			zapLogger,
-			otelzap.WithTraceIDField(true),
-			otelzap.WithMinLevel(zapcore.ErrorLevel),
-			otelzap.WithStackTrace(true),
-		),
-	)
 	defer logger.Sync()
 
 	// Init database
@@ -82,7 +71,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	traceProvider, err := traces.NewTraceProvider(exporter, resourcesdk.NewWithAttributes(
+	traceProvider, err := ctrace.NewProvider(exporter, resourcesdk.NewWithAttributes(
 		semconv.SchemaURL,
 		semconv.ServiceNameKey.String(serviceName),
 	))
@@ -106,35 +95,39 @@ func main() {
 
 	var repository repositories.UserRepository
 	repository = mongorepository.NewUserMongoRepository(mongoCollection, databaseSettings.GetOperationTimeout(), logger)
-	repository = rdecorators.NewLoggingUserRepositoryDecorator(repository, logger)
+	repository = repositorydecorators.NewLoggingUserRepositoryDecorator(repository, logger)
 	if collectDatabaseQueryMetrics {
-		repository = rdecorators.NewPrometheusMetricsUserRepositoryDecorator(repository)
+		repository = repositorydecorators.NewPrometheusMetricsUserRepositoryDecorator(repository)
 	}
 	if traceDatabaseQuery {
 		// TODO: make as config option (?)
 		recordTraceErrors := true
-		repository = rdecorators.NewOpentelemetryTracingUserRepositoryDecorator(repository, tracer, recordTraceErrors)
+		repository = repositorydecorators.NewOpentelemetryTracingUserRepositoryDecorator(
+			repository, tracer, recordTraceErrors,
+		)
 	}
 
+	passwordManager := passwordmanager.Default()
+	jwtManager := jwtmanager.FromConfig(config, logger)
 	var service services.UserService
-	service = userservice.New(repository)
+	service = userservice.New(repository, passwordManager, jwtManager, logger)
 	// TODO: make config options
 	if true {
-		service = sdecorators.NewLoggingUserServiceDecorator(service, logger)
+		service = servicedecorators.NewLoggingUserServiceDecorator(service, logger)
 	}
 	if true {
-		service = sdecorators.NewPrometheusMetricsUserServiceDecorator(service)
+		service = servicedecorators.NewPrometheusMetricsUserServiceDecorator(service)
 	}
 	if true {
 		recordTraceErrors := true
-		service = sdecorators.NewOpentelemetryTracingUserServiceDecorator(service, tracer, recordTraceErrors)
+		service = servicedecorators.NewOpentelemetryTracingUserServiceDecorator(service, tracer, recordTraceErrors)
 	}
 
 	var controller controllers.UserController
-	controller = usercontroller.New(service)
+	controller = usercontroller.New(service, logger)
 	// TODO: make config options
 	if true {
-		controller = cdecorators.NewLoggingUserControllerDecorator(controller, logger)
+		controller = controllerdecorators.NewLoggingUserControllerDecorator(controller, logger)
 	}
 
 	server := grpcserver.New(controller)

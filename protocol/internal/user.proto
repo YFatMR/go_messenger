@@ -3,24 +3,33 @@ syntax = "proto3";
 package proto;
 option go_package = "./proto";
 
-import "auth.proto";
 import "common.proto";
 
 message UserData {
-  string name = 1;
-  string surname = 2;
+  string nickname = 1;
+  string name = 2;
+  string surname = 3;
 }
+
+message Credential {
+  string login = 1;
+  string password = 2;
+  string role = 3;
+}
+
+message Token { string accessToken = 1; }
 
 message UserID { string ID = 1; }
 
-message CreateUserDataRequest {
-  AccountID accountID = 1;
+message CreateUserRequest {
+  Credential credential = 1;
   UserData userData = 2;
 }
 
 service User {
-  rpc CreateUser(CreateUserDataRequest) returns (UserID) {}
+  rpc CreateUser(CreateUserRequest) returns (UserID) {}
   rpc GetUserByID(UserID) returns (UserData) {}
   rpc DeleteUserByID(UserID) returns (Void) {}
+  rpc GenerateToken(Credential) returns (Token) {}
   rpc Ping(Void) returns (Pong) {}
 }

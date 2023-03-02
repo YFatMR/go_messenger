@@ -7,12 +7,19 @@ import (
 	"os/signal"
 
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
+	"github.com/YFatMR/go_messenger/core/pkg/ctrace"
+	"github.com/YFatMR/go_messenger/core/pkg/czap"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
-	"github.com/YFatMR/go_messenger/sandbox_service/execontroller"
-	"github.com/YFatMR/go_messenger/sandbox_service/exeservice"
-	"github.com/YFatMR/go_messenger/sandbox_service/grpcserver"
+	"github.com/YFatMR/go_messenger/sandbox_service/cdocker"
+	"github.com/YFatMR/go_messenger/sandbox_service/decorators/controllerdecorators"
+	"github.com/YFatMR/go_messenger/sandbox_service/decorators/repositorydecorators"
+	"github.com/YFatMR/go_messenger/sandbox_service/decorators/servicedecorators"
+	"github.com/YFatMR/go_messenger/sandbox_service/grpcc"
 	"github.com/YFatMR/go_messenger/sandbox_service/sandbox"
-	"github.com/docker/docker/client"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	resourcesdk "go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"google.golang.org/grpc"
 )
 
@@ -23,52 +30,64 @@ func main() {
 	config := cviper.New()
 	config.AutomaticEnv()
 
-	programExecutionTimeout := config.GetMillisecondsDurationRequired("SANDBOX_PROGRAM_EXECUTION_TIMOUT_MILLISECONDS")
 	serviceAddress := config.GetStringRequired("SERVICE_ADDRESS")
-	sandboxDockerImage := config.GetStringRequired("SANDBOX_DOCKER_IMAGE_NAME")
-	sandboxMemoryLimit := config.GetInt64Required("SANDBOX_MEMORY_LIMITATION_BYTES")
-	sandboxNetworkDisabled := config.GetBoolRequired("SANDBOX_NETWORK_DISABLED")
-	sandboxContainerNamePrefix := config.GetStringRequired("SANDBOX_CONTAINER_NAME_PREFIX")
-	sandboxImageSourceDirectory := config.GetStringRequired("SANDBOX_GO_IMAGE_SOURCE_DIRECTORY")
-	sandboxDockerClientVersion := config.GetStringRequired("SANDBOX_DOCKER_CLIENT_VERSION")
-	sandboxImagePath := config.GetStringRequired("SANDBOX_DOCKER_IMAGE_PATH")
+	serviceName := config.GetStringRequired("SERVICE_NAME")
+	jaegerEndpoint := config.GetStringRequired("JAEGER_COLLECTOR_ENDPOINT")
 
-	dockerConfig := sandbox.NewDockerClientConfig(
-		sandboxDockerImage, sandboxMemoryLimit, sandboxNetworkDisabled,
-		sandboxContainerNamePrefix, sandboxImageSourceDirectory,
+	logger, err := czap.FromConfig(config)
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+
+	// Init tracing
+	logger.Info("Init metrics")
+	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerEndpoint)))
+	if err != nil {
+		panic(err)
+	}
+	traceProvider, err := ctrace.NewProvider(exporter, resourcesdk.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceNameKey.String(serviceName),
+	))
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := traceProvider.Shutdown(context.Background()); err != nil { // TODO: Shutdown -> with timeout
+			panic(err)
+		}
+	}()
+	tracer := otel.Tracer(serviceName)
+
+	codeRunner, err := cdocker.CodeRunnerFromConfig(ctx, config, logger)
+	if err != nil {
+		panic(err)
+	}
+	defer codeRunner.Stop()
+	workerPool := WorkerPoolFromCongig(config)
+
+	sandboxRepository, err := sandbox.RepositoryFromConfig(ctx, config, logger)
+	if err != nil {
+		panic(err)
+	}
+	sandboxRepository = repositorydecorators.NewOpentelemetryTracingSandboxRepositoryDecorator(
+		sandboxRepository, tracer, false,
 	)
+	sandboxRepository = repositorydecorators.NewLoggingSandboxRepositoryDecorator(sandboxRepository, logger)
 
-	dockerClient, err := client.NewClientWithOpts(client.WithVersion(sandboxDockerClientVersion))
-	if err != nil {
-		panic(err)
-	}
-	defer dockerClient.Close()
+	kafkaClient := sandbox.KafkaClientFromConfig(config, logger)
+	defer kafkaClient.Stop()
+	sandboxService := sandbox.NewService(sandboxRepository, codeRunner, workerPool, kafkaClient, logger)
+	sandboxService = servicedecorators.NewOpentelemetryTracingSandboxServiceDecorator(sandboxService, tracer, false)
+	sandboxService = servicedecorators.NewLoggingSandboxServiceDecorator(sandboxService, logger)
 
-	// Unpacking docker image
-	dockerImageFile, err := os.Open(sandboxImagePath)
-	if err != nil {
-		panic(err)
-	}
-	defer dockerImageFile.Close()
-	loadImageResponse, err := dockerClient.ImageLoad(ctx, dockerImageFile, false)
-	if err != nil {
-		panic(err)
-	}
-	defer loadImageResponse.Body.Close()
-	if err != nil {
-		panic(err)
-	}
+	grpcHeaders := grpcc.HeadersFromConfig(config)
+	contextManager := grpcc.NewContextManager(grpcHeaders)
+	controller := sandbox.NewController(sandboxService, contextManager, logger)
+	controller = controllerdecorators.NewLoggingSandboxControllerDecorator(controller, logger)
 
-	// We check that the desired docker image has been found
-	_, _, err = dockerClient.ImageInspectWithRaw(ctx, sandboxDockerImage)
-	if err != nil {
-		panic(err)
-	}
-
-	sandboxClient := sandbox.NewDockerClient(dockerClient, dockerConfig)
-	service := exeservice.New(sandboxClient, programExecutionTimeout)
-	controller := execontroller.New(service)
-	sandboxServer := grpcserver.New(controller)
+	sandboxServer := grpcc.NewSandboxServer(controller)
 
 	grpcServer := grpc.NewServer()
 	listener, err := net.Listen("tcp", serviceAddress)

@@ -23,9 +23,13 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FrontClient interface {
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserID, error)
-	GetToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error)
+	GenerateToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error)
 	GetUserByID(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*UserData, error)
-	Execute(ctx context.Context, in *Program, opts ...grpc.CallOption) (*ProgramResult, error)
+	GetProgramByID(ctx context.Context, in *ProgramID, opts ...grpc.CallOption) (*Program, error)
+	CreateProgram(ctx context.Context, in *ProgramSource, opts ...grpc.CallOption) (*ProgramID, error)
+	UpdateProgramSource(ctx context.Context, in *UpdateProgramSourceRequest, opts ...grpc.CallOption) (*Void, error)
+	RunProgram(ctx context.Context, in *ProgramID, opts ...grpc.CallOption) (*Void, error)
+	LintProgram(ctx context.Context, in *ProgramID, opts ...grpc.CallOption) (*Void, error)
 	Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error)
 }
 
@@ -46,9 +50,9 @@ func (c *frontClient) CreateUser(ctx context.Context, in *CreateUserRequest, opt
 	return out, nil
 }
 
-func (c *frontClient) GetToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error) {
+func (c *frontClient) GenerateToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error) {
 	out := new(Token)
-	err := c.cc.Invoke(ctx, "/proto.Front/GetToken", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.Front/GenerateToken", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -64,9 +68,45 @@ func (c *frontClient) GetUserByID(ctx context.Context, in *UserID, opts ...grpc.
 	return out, nil
 }
 
-func (c *frontClient) Execute(ctx context.Context, in *Program, opts ...grpc.CallOption) (*ProgramResult, error) {
-	out := new(ProgramResult)
-	err := c.cc.Invoke(ctx, "/proto.Front/Execute", in, out, opts...)
+func (c *frontClient) GetProgramByID(ctx context.Context, in *ProgramID, opts ...grpc.CallOption) (*Program, error) {
+	out := new(Program)
+	err := c.cc.Invoke(ctx, "/proto.Front/GetProgramByID", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *frontClient) CreateProgram(ctx context.Context, in *ProgramSource, opts ...grpc.CallOption) (*ProgramID, error) {
+	out := new(ProgramID)
+	err := c.cc.Invoke(ctx, "/proto.Front/CreateProgram", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *frontClient) UpdateProgramSource(ctx context.Context, in *UpdateProgramSourceRequest, opts ...grpc.CallOption) (*Void, error) {
+	out := new(Void)
+	err := c.cc.Invoke(ctx, "/proto.Front/UpdateProgramSource", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *frontClient) RunProgram(ctx context.Context, in *ProgramID, opts ...grpc.CallOption) (*Void, error) {
+	out := new(Void)
+	err := c.cc.Invoke(ctx, "/proto.Front/RunProgram", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *frontClient) LintProgram(ctx context.Context, in *ProgramID, opts ...grpc.CallOption) (*Void, error) {
+	out := new(Void)
+	err := c.cc.Invoke(ctx, "/proto.Front/LintProgram", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -87,9 +127,13 @@ func (c *frontClient) Ping(ctx context.Context, in *Void, opts ...grpc.CallOptio
 // for forward compatibility
 type FrontServer interface {
 	CreateUser(context.Context, *CreateUserRequest) (*UserID, error)
-	GetToken(context.Context, *Credential) (*Token, error)
+	GenerateToken(context.Context, *Credential) (*Token, error)
 	GetUserByID(context.Context, *UserID) (*UserData, error)
-	Execute(context.Context, *Program) (*ProgramResult, error)
+	GetProgramByID(context.Context, *ProgramID) (*Program, error)
+	CreateProgram(context.Context, *ProgramSource) (*ProgramID, error)
+	UpdateProgramSource(context.Context, *UpdateProgramSourceRequest) (*Void, error)
+	RunProgram(context.Context, *ProgramID) (*Void, error)
+	LintProgram(context.Context, *ProgramID) (*Void, error)
 	Ping(context.Context, *Void) (*Pong, error)
 	mustEmbedUnimplementedFrontServer()
 }
@@ -101,14 +145,26 @@ type UnimplementedFrontServer struct {
 func (UnimplementedFrontServer) CreateUser(context.Context, *CreateUserRequest) (*UserID, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
 }
-func (UnimplementedFrontServer) GetToken(context.Context, *Credential) (*Token, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetToken not implemented")
+func (UnimplementedFrontServer) GenerateToken(context.Context, *Credential) (*Token, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateToken not implemented")
 }
 func (UnimplementedFrontServer) GetUserByID(context.Context, *UserID) (*UserData, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserByID not implemented")
 }
-func (UnimplementedFrontServer) Execute(context.Context, *Program) (*ProgramResult, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Execute not implemented")
+func (UnimplementedFrontServer) GetProgramByID(context.Context, *ProgramID) (*Program, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProgramByID not implemented")
+}
+func (UnimplementedFrontServer) CreateProgram(context.Context, *ProgramSource) (*ProgramID, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateProgram not implemented")
+}
+func (UnimplementedFrontServer) UpdateProgramSource(context.Context, *UpdateProgramSourceRequest) (*Void, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateProgramSource not implemented")
+}
+func (UnimplementedFrontServer) RunProgram(context.Context, *ProgramID) (*Void, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RunProgram not implemented")
+}
+func (UnimplementedFrontServer) LintProgram(context.Context, *ProgramID) (*Void, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LintProgram not implemented")
 }
 func (UnimplementedFrontServer) Ping(context.Context, *Void) (*Pong, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
@@ -144,20 +200,20 @@ func _Front_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Front_GetToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Front_GenerateToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Credential)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FrontServer).GetToken(ctx, in)
+		return srv.(FrontServer).GenerateToken(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.Front/GetToken",
+		FullMethod: "/proto.Front/GenerateToken",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FrontServer).GetToken(ctx, req.(*Credential))
+		return srv.(FrontServer).GenerateToken(ctx, req.(*Credential))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -180,20 +236,92 @@ func _Front_GetUserByID_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Front_Execute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Program)
+func _Front_GetProgramByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProgramID)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FrontServer).Execute(ctx, in)
+		return srv.(FrontServer).GetProgramByID(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.Front/Execute",
+		FullMethod: "/proto.Front/GetProgramByID",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FrontServer).Execute(ctx, req.(*Program))
+		return srv.(FrontServer).GetProgramByID(ctx, req.(*ProgramID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Front_CreateProgram_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProgramSource)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FrontServer).CreateProgram(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Front/CreateProgram",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FrontServer).CreateProgram(ctx, req.(*ProgramSource))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Front_UpdateProgramSource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateProgramSourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FrontServer).UpdateProgramSource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Front/UpdateProgramSource",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FrontServer).UpdateProgramSource(ctx, req.(*UpdateProgramSourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Front_RunProgram_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProgramID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FrontServer).RunProgram(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Front/RunProgram",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FrontServer).RunProgram(ctx, req.(*ProgramID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Front_LintProgram_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProgramID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FrontServer).LintProgram(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Front/LintProgram",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FrontServer).LintProgram(ctx, req.(*ProgramID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -228,16 +356,32 @@ var Front_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Front_CreateUser_Handler,
 		},
 		{
-			MethodName: "GetToken",
-			Handler:    _Front_GetToken_Handler,
+			MethodName: "GenerateToken",
+			Handler:    _Front_GenerateToken_Handler,
 		},
 		{
 			MethodName: "GetUserByID",
 			Handler:    _Front_GetUserByID_Handler,
 		},
 		{
-			MethodName: "Execute",
-			Handler:    _Front_Execute_Handler,
+			MethodName: "GetProgramByID",
+			Handler:    _Front_GetProgramByID_Handler,
+		},
+		{
+			MethodName: "CreateProgram",
+			Handler:    _Front_CreateProgram_Handler,
+		},
+		{
+			MethodName: "UpdateProgramSource",
+			Handler:    _Front_UpdateProgramSource_Handler,
+		},
+		{
+			MethodName: "RunProgram",
+			Handler:    _Front_RunProgram_Handler,
+		},
+		{
+			MethodName: "LintProgram",
+			Handler:    _Front_LintProgram_Handler,
 		},
 		{
 			MethodName: "Ping",

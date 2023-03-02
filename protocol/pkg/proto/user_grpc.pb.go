@@ -22,9 +22,10 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UserClient interface {
-	CreateUser(ctx context.Context, in *CreateUserDataRequest, opts ...grpc.CallOption) (*UserID, error)
+	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserID, error)
 	GetUserByID(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*UserData, error)
 	DeleteUserByID(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*Void, error)
+	GenerateToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error)
 	Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error)
 }
 
@@ -36,7 +37,7 @@ func NewUserClient(cc grpc.ClientConnInterface) UserClient {
 	return &userClient{cc}
 }
 
-func (c *userClient) CreateUser(ctx context.Context, in *CreateUserDataRequest, opts ...grpc.CallOption) (*UserID, error) {
+func (c *userClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserID, error) {
 	out := new(UserID)
 	err := c.cc.Invoke(ctx, "/proto.User/CreateUser", in, out, opts...)
 	if err != nil {
@@ -63,6 +64,15 @@ func (c *userClient) DeleteUserByID(ctx context.Context, in *UserID, opts ...grp
 	return out, nil
 }
 
+func (c *userClient) GenerateToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error) {
+	out := new(Token)
+	err := c.cc.Invoke(ctx, "/proto.User/GenerateToken", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userClient) Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error) {
 	out := new(Pong)
 	err := c.cc.Invoke(ctx, "/proto.User/Ping", in, out, opts...)
@@ -76,9 +86,10 @@ func (c *userClient) Ping(ctx context.Context, in *Void, opts ...grpc.CallOption
 // All implementations must embed UnimplementedUserServer
 // for forward compatibility
 type UserServer interface {
-	CreateUser(context.Context, *CreateUserDataRequest) (*UserID, error)
+	CreateUser(context.Context, *CreateUserRequest) (*UserID, error)
 	GetUserByID(context.Context, *UserID) (*UserData, error)
 	DeleteUserByID(context.Context, *UserID) (*Void, error)
+	GenerateToken(context.Context, *Credential) (*Token, error)
 	Ping(context.Context, *Void) (*Pong, error)
 	mustEmbedUnimplementedUserServer()
 }
@@ -87,7 +98,7 @@ type UserServer interface {
 type UnimplementedUserServer struct {
 }
 
-func (UnimplementedUserServer) CreateUser(context.Context, *CreateUserDataRequest) (*UserID, error) {
+func (UnimplementedUserServer) CreateUser(context.Context, *CreateUserRequest) (*UserID, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
 }
 func (UnimplementedUserServer) GetUserByID(context.Context, *UserID) (*UserData, error) {
@@ -95,6 +106,9 @@ func (UnimplementedUserServer) GetUserByID(context.Context, *UserID) (*UserData,
 }
 func (UnimplementedUserServer) DeleteUserByID(context.Context, *UserID) (*Void, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteUserByID not implemented")
+}
+func (UnimplementedUserServer) GenerateToken(context.Context, *Credential) (*Token, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateToken not implemented")
 }
 func (UnimplementedUserServer) Ping(context.Context, *Void) (*Pong, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
@@ -113,7 +127,7 @@ func RegisterUserServer(s grpc.ServiceRegistrar, srv UserServer) {
 }
 
 func _User_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateUserDataRequest)
+	in := new(CreateUserRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -125,7 +139,7 @@ func _User_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(int
 		FullMethod: "/proto.User/CreateUser",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServer).CreateUser(ctx, req.(*CreateUserDataRequest))
+		return srv.(UserServer).CreateUser(ctx, req.(*CreateUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -166,6 +180,24 @@ func _User_DeleteUserByID_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _User_GenerateToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Credential)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).GenerateToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.User/GenerateToken",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).GenerateToken(ctx, req.(*Credential))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _User_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Void)
 	if err := dec(in); err != nil {
@@ -202,6 +234,10 @@ var User_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteUserByID",
 			Handler:    _User_DeleteUserByID_Handler,
+		},
+		{
+			MethodName: "GenerateToken",
+			Handler:    _User_GenerateToken_Handler,
 		},
 		{
 			MethodName: "Ping",

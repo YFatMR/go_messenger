@@ -5,17 +5,35 @@ option go_package = "./proto";
 
 import "common.proto";
 
-message Program {
+message ProgramSource {
   string language = 1;
   string sourceCode = 2;
 }
 
-message ProgramResult {
+message ProgramID { string ID = 1; }
+
+message ProgramOutput {
   string stdout = 1;
   string stderr = 2;
 }
 
+message Program {
+  ProgramID programID = 1;
+  ProgramSource source = 2;
+  ProgramOutput codeRunnerOutput = 3;
+  ProgramOutput linterOutput = 4;
+}
+
+message UpdateProgramSourceRequest {
+  ProgramID programID = 1;
+  ProgramSource programSource = 2;
+}
+
 service Sandbox {
-  rpc Execute(Program) returns (ProgramResult) {}
+  rpc GetProgramByID(ProgramID) returns (Program) {}
+  rpc CreateProgram(ProgramSource) returns (ProgramID) {}
+  rpc UpdateProgramSource(UpdateProgramSourceRequest) returns (Void) {}
+  rpc RunProgram(ProgramID) returns (Void) {}
+  rpc LintProgram(ProgramID) returns (Void) {}
   rpc Ping(Void) returns (Pong) {}
 }

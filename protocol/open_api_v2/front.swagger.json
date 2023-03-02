@@ -38,14 +38,14 @@
         ]
       }
     },
-    "/sandbox": {
+    "/programs": {
       "post": {
-        "operationId": "Front_Execute",
+        "operationId": "Front_CreateProgram",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/protoProgramResult"
+              "$ref": "#/definitions/protoProgramID"
             }
           },
           "default": {
@@ -61,8 +61,134 @@
             "in": "body",
             "required": true,
             "schema": {
+              "$ref": "#/definitions/protoProgramSource"
+            }
+          }
+        ],
+        "tags": [
+          "Front"
+        ]
+      }
+    },
+    "/programs/lint": {
+      "patch": {
+        "operationId": "Front_LintProgram",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoVoid"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoProgramID"
+            }
+          }
+        ],
+        "tags": [
+          "Front"
+        ]
+      }
+    },
+    "/programs/run": {
+      "patch": {
+        "operationId": "Front_RunProgram",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoVoid"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoProgramID"
+            }
+          }
+        ],
+        "tags": [
+          "Front"
+        ]
+      }
+    },
+    "/programs/source": {
+      "patch": {
+        "operationId": "Front_UpdateProgramSource",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoVoid"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoUpdateProgramSourceRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Front"
+        ]
+      }
+    },
+    "/programs/{ID}": {
+      "get": {
+        "operationId": "Front_GetProgramByID",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
               "$ref": "#/definitions/protoProgram"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ID",
+            "in": "path",
+            "required": true,
+            "type": "string"
           }
         ],
         "tags": [
@@ -72,7 +198,7 @@
     },
     "/token": {
       "post": {
-        "operationId": "Front_GetToken",
+        "operationId": "Front_GenerateToken",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -185,6 +311,9 @@
         },
         "password": {
           "type": "string"
+        },
+        "role": {
+          "type": "string"
         }
       }
     },
@@ -199,21 +328,46 @@
     "protoProgram": {
       "type": "object",
       "properties": {
-        "language": {
-          "type": "string"
+        "programID": {
+          "$ref": "#/definitions/protoProgramID"
         },
-        "sourceCode": {
+        "source": {
+          "$ref": "#/definitions/protoProgramSource"
+        },
+        "codeRunnerOutput": {
+          "$ref": "#/definitions/protoProgramOutput"
+        },
+        "linterOutput": {
+          "$ref": "#/definitions/protoProgramOutput"
+        }
+      }
+    },
+    "protoProgramID": {
+      "type": "object",
+      "properties": {
+        "ID": {
           "type": "string"
         }
       }
     },
-    "protoProgramResult": {
+    "protoProgramOutput": {
       "type": "object",
       "properties": {
         "stdout": {
           "type": "string"
         },
         "stderr": {
+          "type": "string"
+        }
+      }
+    },
+    "protoProgramSource": {
+      "type": "object",
+      "properties": {
+        "language": {
+          "type": "string"
+        },
+        "sourceCode": {
           "type": "string"
         }
       }
@@ -226,9 +380,23 @@
         }
       }
     },
+    "protoUpdateProgramSourceRequest": {
+      "type": "object",
+      "properties": {
+        "programID": {
+          "$ref": "#/definitions/protoProgramID"
+        },
+        "programSource": {
+          "$ref": "#/definitions/protoProgramSource"
+        }
+      }
+    },
     "protoUserData": {
       "type": "object",
       "properties": {
+        "nickname": {
+          "type": "string"
+        },
         "name": {
           "type": "string"
         },
@@ -244,6 +412,9 @@
           "type": "string"
         }
       }
+    },
+    "protoVoid": {
+      "type": "object"
     },
     "protobufAny": {
       "type": "object",

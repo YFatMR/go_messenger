@@ -14,13 +14,15 @@ func (u *UserManager) NewUnauthorizedUser(ctx context.Context) (*proto.UserID, *
 	userCredential := &proto.Credential{
 		Login:    uuid.NewString(),
 		Password: uuid.NewString(),
+		Role:     "user",
 	}
 
 	userID, err := frontServicegRPCClient.CreateUser(ctx, &proto.CreateUserRequest{
 		Credential: userCredential,
 		UserData: &proto.UserData{
-			Name:    uuid.NewString(),
-			Surname: uuid.NewString(),
+			Nickname: uuid.NewString(),
+			Name:     uuid.NewString(),
+			Surname:  uuid.NewString(),
 		},
 	})
 	if err != nil {
@@ -35,7 +37,7 @@ func (u *UserManager) NewAuthorizedUser(ctx context.Context) (*proto.UserID, *pr
 		return nil, nil, err
 	}
 
-	token, err := frontServicegRPCClient.GetToken(ctx, credential)
+	token, err := frontServicegRPCClient.GenerateToken(ctx, credential)
 	if err != nil {
 		return nil, nil, err
 	}

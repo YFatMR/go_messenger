@@ -36,7 +36,7 @@ issues:
       linters:
         - funlen
         - gocyclo
-    - path: interceptors/auth.go
+    - path: auth_interceptor.go
       linters:
         - funlen
     - path: test/main_test.go

@@ -4,11 +4,11 @@ import (
 	"net/http"
 
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
-	"github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/czap"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func ListenAndServeMetrcirService(config *cviper.MetricServiceSettings, logger *loggers.OtelZapLoggerWithTraceID) {
+func ListenAndServeMetrcirService(config *cviper.MetricServiceSettings, logger *czap.Logger) {
 	server := &http.Server{
 		Addr:              config.GetAddress(),
 		ReadTimeout:       config.GetReadTimeout(),

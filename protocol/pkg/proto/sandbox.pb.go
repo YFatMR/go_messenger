@@ -20,7 +20,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-type Program struct {
+type ProgramSource struct {
 	Language             string   `protobuf:"bytes,1,opt,name=language,proto3" json:"language,omitempty"`
 	SourceCode           string   `protobuf:"bytes,2,opt,name=sourceCode,proto3" json:"sourceCode,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -28,11 +28,146 @@ type Program struct {
 	XXX_sizecache        int32    `json:"-"`
 }
 
+func (m *ProgramSource) Reset()         { *m = ProgramSource{} }
+func (m *ProgramSource) String() string { return proto.CompactTextString(m) }
+func (*ProgramSource) ProtoMessage()    {}
+func (*ProgramSource) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6fddaeda1f9b863c, []int{0}
+}
+
+func (m *ProgramSource) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ProgramSource.Unmarshal(m, b)
+}
+func (m *ProgramSource) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ProgramSource.Marshal(b, m, deterministic)
+}
+func (m *ProgramSource) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProgramSource.Merge(m, src)
+}
+func (m *ProgramSource) XXX_Size() int {
+	return xxx_messageInfo_ProgramSource.Size(m)
+}
+func (m *ProgramSource) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProgramSource.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProgramSource proto.InternalMessageInfo
+
+func (m *ProgramSource) GetLanguage() string {
+	if m != nil {
+		return m.Language
+	}
+	return ""
+}
+
+func (m *ProgramSource) GetSourceCode() string {
+	if m != nil {
+		return m.SourceCode
+	}
+	return ""
+}
+
+type ProgramID struct {
+	ID                   string   `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ProgramID) Reset()         { *m = ProgramID{} }
+func (m *ProgramID) String() string { return proto.CompactTextString(m) }
+func (*ProgramID) ProtoMessage()    {}
+func (*ProgramID) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6fddaeda1f9b863c, []int{1}
+}
+
+func (m *ProgramID) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ProgramID.Unmarshal(m, b)
+}
+func (m *ProgramID) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ProgramID.Marshal(b, m, deterministic)
+}
+func (m *ProgramID) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProgramID.Merge(m, src)
+}
+func (m *ProgramID) XXX_Size() int {
+	return xxx_messageInfo_ProgramID.Size(m)
+}
+func (m *ProgramID) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProgramID.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProgramID proto.InternalMessageInfo
+
+func (m *ProgramID) GetID() string {
+	if m != nil {
+		return m.ID
+	}
+	return ""
+}
+
+type ProgramOutput struct {
+	Stdout               string   `protobuf:"bytes,1,opt,name=stdout,proto3" json:"stdout,omitempty"`
+	Stderr               string   `protobuf:"bytes,2,opt,name=stderr,proto3" json:"stderr,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ProgramOutput) Reset()         { *m = ProgramOutput{} }
+func (m *ProgramOutput) String() string { return proto.CompactTextString(m) }
+func (*ProgramOutput) ProtoMessage()    {}
+func (*ProgramOutput) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6fddaeda1f9b863c, []int{2}
+}
+
+func (m *ProgramOutput) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ProgramOutput.Unmarshal(m, b)
+}
+func (m *ProgramOutput) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ProgramOutput.Marshal(b, m, deterministic)
+}
+func (m *ProgramOutput) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProgramOutput.Merge(m, src)
+}
+func (m *ProgramOutput) XXX_Size() int {
+	return xxx_messageInfo_ProgramOutput.Size(m)
+}
+func (m *ProgramOutput) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProgramOutput.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProgramOutput proto.InternalMessageInfo
+
+func (m *ProgramOutput) GetStdout() string {
+	if m != nil {
+		return m.Stdout
+	}
+	return ""
+}
+
+func (m *ProgramOutput) GetStderr() string {
+	if m != nil {
+		return m.Stderr
+	}
+	return ""
+}
+
+type Program struct {
+	ProgramID            *ProgramID     `protobuf:"bytes,1,opt,name=programID,proto3" json:"programID,omitempty"`
+	Source               *ProgramSource `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
+	CodeRunnerOutput     *ProgramOutput `protobuf:"bytes,3,opt,name=codeRunnerOutput,proto3" json:"codeRunnerOutput,omitempty"`
+	LinterOutput         *ProgramOutput `protobuf:"bytes,4,opt,name=linterOutput,proto3" json:"linterOutput,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
 func (m *Program) Reset()         { *m = Program{} }
 func (m *Program) String() string { return proto.CompactTextString(m) }
 func (*Program) ProtoMessage()    {}
 func (*Program) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6fddaeda1f9b863c, []int{0}
+	return fileDescriptor_6fddaeda1f9b863c, []int{3}
 }
 
 func (m *Program) XXX_Unmarshal(b []byte) error {
@@ -53,70 +188,87 @@ func (m *Program) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Program proto.InternalMessageInfo
 
-func (m *Program) GetLanguage() string {
+func (m *Program) GetProgramID() *ProgramID {
 	if m != nil {
-		return m.Language
+		return m.ProgramID
 	}
-	return ""
+	return nil
 }
 
-func (m *Program) GetSourceCode() string {
+func (m *Program) GetSource() *ProgramSource {
 	if m != nil {
-		return m.SourceCode
+		return m.Source
 	}
-	return ""
+	return nil
 }
 
-type ProgramResult struct {
-	Stdout               string   `protobuf:"bytes,1,opt,name=stdout,proto3" json:"stdout,omitempty"`
-	Stderr               string   `protobuf:"bytes,2,opt,name=stderr,proto3" json:"stderr,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ProgramResult) Reset()         { *m = ProgramResult{} }
-func (m *ProgramResult) String() string { return proto.CompactTextString(m) }
-func (*ProgramResult) ProtoMessage()    {}
-func (*ProgramResult) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6fddaeda1f9b863c, []int{1}
-}
-
-func (m *ProgramResult) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ProgramResult.Unmarshal(m, b)
-}
-func (m *ProgramResult) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ProgramResult.Marshal(b, m, deterministic)
-}
-func (m *ProgramResult) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ProgramResult.Merge(m, src)
-}
-func (m *ProgramResult) XXX_Size() int {
-	return xxx_messageInfo_ProgramResult.Size(m)
-}
-func (m *ProgramResult) XXX_DiscardUnknown() {
-	xxx_messageInfo_ProgramResult.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ProgramResult proto.InternalMessageInfo
-
-func (m *ProgramResult) GetStdout() string {
+func (m *Program) GetCodeRunnerOutput() *ProgramOutput {
 	if m != nil {
-		return m.Stdout
+		return m.CodeRunnerOutput
 	}
-	return ""
+	return nil
 }
 
-func (m *ProgramResult) GetStderr() string {
+func (m *Program) GetLinterOutput() *ProgramOutput {
 	if m != nil {
-		return m.Stderr
+		return m.LinterOutput
 	}
-	return ""
+	return nil
+}
+
+type UpdateProgramSourceRequest struct {
+	ProgramID            *ProgramID     `protobuf:"bytes,1,opt,name=programID,proto3" json:"programID,omitempty"`
+	ProgramSource        *ProgramSource `protobuf:"bytes,2,opt,name=programSource,proto3" json:"programSource,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *UpdateProgramSourceRequest) Reset()         { *m = UpdateProgramSourceRequest{} }
+func (m *UpdateProgramSourceRequest) String() string { return proto.CompactTextString(m) }
+func (*UpdateProgramSourceRequest) ProtoMessage()    {}
+func (*UpdateProgramSourceRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6fddaeda1f9b863c, []int{4}
+}
+
+func (m *UpdateProgramSourceRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UpdateProgramSourceRequest.Unmarshal(m, b)
+}
+func (m *UpdateProgramSourceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UpdateProgramSourceRequest.Marshal(b, m, deterministic)
+}
+func (m *UpdateProgramSourceRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateProgramSourceRequest.Merge(m, src)
+}
+func (m *UpdateProgramSourceRequest) XXX_Size() int {
+	return xxx_messageInfo_UpdateProgramSourceRequest.Size(m)
+}
+func (m *UpdateProgramSourceRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateProgramSourceRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateProgramSourceRequest proto.InternalMessageInfo
+
+func (m *UpdateProgramSourceRequest) GetProgramID() *ProgramID {
+	if m != nil {
+		return m.ProgramID
+	}
+	return nil
+}
+
+func (m *UpdateProgramSourceRequest) GetProgramSource() *ProgramSource {
+	if m != nil {
+		return m.ProgramSource
+	}
+	return nil
 }
 
 func init() {
+	proto.RegisterType((*ProgramSource)(nil), "proto.ProgramSource")
+	proto.RegisterType((*ProgramID)(nil), "proto.ProgramID")
+	proto.RegisterType((*ProgramOutput)(nil), "proto.ProgramOutput")
 	proto.RegisterType((*Program)(nil), "proto.Program")
-	proto.RegisterType((*ProgramResult)(nil), "proto.ProgramResult")
+	proto.RegisterType((*UpdateProgramSourceRequest)(nil), "proto.UpdateProgramSourceRequest")
 }
 
 func init() {
@@ -124,18 +276,30 @@ func init() {
 }
 
 var fileDescriptor_6fddaeda1f9b863c = []byte{
-	// 206 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x54, 0x8e, 0x4d, 0x4b, 0xc4, 0x30,
-	0x10, 0x40, 0x77, 0x45, 0x37, 0xee, 0xe8, 0x7a, 0x18, 0x44, 0x96, 0x1c, 0x44, 0x72, 0xf2, 0x54,
-	0x51, 0x7f, 0x80, 0xa0, 0xec, 0xbd, 0x54, 0xf0, 0xe0, 0xc9, 0xb4, 0x09, 0xa1, 0xd0, 0x66, 0x24,
-	0x1f, 0xd0, 0x9f, 0x2f, 0x24, 0xa3, 0xb8, 0xa7, 0xe1, 0xbd, 0x81, 0x37, 0x03, 0xbb, 0xa8, 0xbd,
-	0xe9, 0x69, 0x69, 0xbe, 0x03, 0x25, 0xc2, 0xb3, 0x32, 0xe4, 0xe5, 0x40, 0xf3, 0x4c, 0xbe, 0x4a,
-	0x75, 0x00, 0xd1, 0x06, 0x72, 0x41, 0xcf, 0x28, 0xe1, 0x7c, 0xd2, 0xde, 0x65, 0xed, 0xec, 0x7e,
-	0x7d, 0xb7, 0xbe, 0xdf, 0x76, 0x7f, 0x8c, 0xb7, 0x00, 0x91, 0x72, 0x18, 0xec, 0x1b, 0x19, 0xbb,
-	0x3f, 0x29, 0xdb, 0x7f, 0x46, 0xbd, 0xc0, 0x8e, 0x33, 0x9d, 0x8d, 0x79, 0x4a, 0x78, 0x03, 0x9b,
-	0x98, 0x0c, 0xe5, 0xc4, 0x29, 0x26, 0xf6, 0x36, 0x04, 0x8e, 0x30, 0x3d, 0x7d, 0x81, 0x78, 0xaf,
-	0xdf, 0xe2, 0x23, 0x88, 0xc3, 0x62, 0x87, 0x9c, 0x2c, 0x5e, 0xd5, 0x2f, 0x1b, 0x6e, 0xcb, 0xeb,
-	0x63, 0xae, 0xb7, 0xd4, 0x0a, 0x15, 0x9c, 0xb6, 0xa3, 0x77, 0x78, 0xc1, 0xfb, 0x0f, 0x1a, 0x8d,
-	0xfc, 0x85, 0x96, 0xbc, 0x53, 0xab, 0xd7, 0xed, 0xa7, 0x68, 0x1e, 0x8a, 0xe9, 0x37, 0x65, 0x3c,
-	0xff, 0x04, 0x00, 0x00, 0xff, 0xff, 0x93, 0xcd, 0x97, 0x9d, 0x21, 0x01, 0x00, 0x00,
+	// 389 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x92, 0xc1, 0x6a, 0xdb, 0x40,
+	0x10, 0x86, 0x25, 0xd5, 0xb5, 0xab, 0x91, 0x65, 0xcc, 0xb4, 0x14, 0xa3, 0x42, 0x69, 0xf7, 0xd4,
+	0x43, 0xab, 0x82, 0xdb, 0x43, 0xdb, 0x4b, 0x83, 0x2d, 0x30, 0x22, 0x81, 0x18, 0x99, 0xe4, 0x90,
+	0x9b, 0x6c, 0x2d, 0x42, 0x60, 0xef, 0x2a, 0xab, 0x5d, 0x48, 0xde, 0x20, 0x4f, 0x96, 0x17, 0xc9,
+	0x8b, 0x04, 0xa4, 0xb5, 0x6c, 0x45, 0x8e, 0x49, 0x4e, 0xcb, 0xfc, 0xfb, 0xcd, 0x3f, 0xff, 0x2c,
+	0x0b, 0x6e, 0x11, 0xb3, 0x64, 0xc9, 0x6f, 0xfc, 0x5c, 0x70, 0xc9, 0xf1, 0x6d, 0x79, 0x78, 0xfd,
+	0x15, 0xdf, 0x6c, 0x38, 0xab, 0x44, 0x72, 0x0a, 0xee, 0x5c, 0xf0, 0x54, 0xc4, 0x9b, 0x05, 0x57,
+	0x62, 0x45, 0xd1, 0x83, 0x77, 0xeb, 0x98, 0xa5, 0x2a, 0x4e, 0xe9, 0xc8, 0xfc, 0x62, 0x7e, 0xb3,
+	0xa3, 0xba, 0xc6, 0xcf, 0x00, 0x45, 0x49, 0x4d, 0x79, 0x42, 0x47, 0x56, 0x79, 0xbb, 0xa7, 0x90,
+	0x4f, 0x60, 0x6b, 0xb3, 0x30, 0xc0, 0x01, 0x58, 0x61, 0xa0, 0x2d, 0xac, 0x30, 0x20, 0xff, 0xeb,
+	0x49, 0xe7, 0x4a, 0xe6, 0x4a, 0xe2, 0x47, 0xe8, 0x16, 0x32, 0xe1, 0x4a, 0x6a, 0x48, 0x57, 0x5a,
+	0xa7, 0x42, 0xe8, 0x09, 0xba, 0x22, 0x0f, 0x26, 0xf4, 0xb4, 0x03, 0xfa, 0x60, 0xe7, 0xdb, 0x49,
+	0x65, 0xbb, 0x33, 0x1e, 0x56, 0x1b, 0xf9, 0x75, 0x82, 0x68, 0x87, 0xe0, 0x77, 0xe8, 0x56, 0x39,
+	0x4b, 0x4f, 0x67, 0xfc, 0xa1, 0x09, 0x57, 0xbb, 0x47, 0x9a, 0xc1, 0x13, 0x18, 0xae, 0x78, 0x42,
+	0x23, 0xc5, 0x18, 0x15, 0x55, 0xda, 0xd1, 0x9b, 0x43, 0x7d, 0xd5, 0x5d, 0xd4, 0xa2, 0xf1, 0x0f,
+	0xf4, 0xd7, 0x19, 0x93, 0x75, 0x77, 0xe7, 0x48, 0x77, 0x83, 0x24, 0x77, 0x26, 0x78, 0x17, 0x79,
+	0x12, 0x4b, 0xda, 0xcc, 0x46, 0xaf, 0x15, 0x2d, 0xe4, 0xab, 0x17, 0xff, 0x07, 0x6e, 0xbe, 0xef,
+	0x73, 0x74, 0xff, 0x26, 0x3a, 0xbe, 0xb7, 0xa0, 0xb7, 0xa8, 0xbe, 0x10, 0xfe, 0x86, 0xc1, 0x8c,
+	0x4a, 0x8d, 0x4f, 0x6e, 0xc3, 0x00, 0x5b, 0x63, 0xbd, 0x41, 0x53, 0x21, 0x06, 0xfe, 0x05, 0x77,
+	0x2a, 0xe8, 0x6e, 0x17, 0x3c, 0x38, 0xd7, 0x6b, 0x59, 0x11, 0x03, 0x67, 0xf0, 0xfe, 0xc0, 0x33,
+	0xe0, 0x57, 0x8d, 0x3e, 0xff, 0x44, 0x9e, 0xa3, 0x91, 0x4b, 0x9e, 0x25, 0xc4, 0xc0, 0x1f, 0x00,
+	0x91, 0x62, 0xdb, 0x00, 0xed, 0xd4, 0x4f, 0x70, 0x1f, 0x9c, 0xb3, 0x8c, 0xc9, 0x17, 0xf3, 0x04,
+	0x3a, 0xf3, 0x8c, 0xa5, 0xb8, 0x2f, 0xd7, 0xcc, 0x9c, 0xb3, 0x94, 0x18, 0x13, 0xfb, 0xaa, 0xe7,
+	0xff, 0x2c, 0x95, 0x65, 0xb7, 0x3c, 0x7e, 0x3d, 0x06, 0x00, 0x00, 0xff, 0xff, 0xa8, 0x7a, 0xf4,
+	0xec, 0x9c, 0x03, 0x00, 0x00,
 }
