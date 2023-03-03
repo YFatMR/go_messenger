@@ -11,9 +11,7 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/czap"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/YFatMR/go_messenger/sandbox_service/cdocker"
-	"github.com/YFatMR/go_messenger/sandbox_service/decorators/controllerdecorators"
-	"github.com/YFatMR/go_messenger/sandbox_service/decorators/repositorydecorators"
-	"github.com/YFatMR/go_messenger/sandbox_service/decorators/servicedecorators"
+	"github.com/YFatMR/go_messenger/sandbox_service/decorator"
 	"github.com/YFatMR/go_messenger/sandbox_service/grpcc"
 	"github.com/YFatMR/go_messenger/sandbox_service/sandbox"
 	"go.opentelemetry.io/otel"
@@ -71,21 +69,21 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	sandboxRepository = repositorydecorators.NewOpentelemetryTracingSandboxRepositoryDecorator(
+	sandboxRepository = decorator.NewOpentelemetryTracingSandboxRepositoryDecorator(
 		sandboxRepository, tracer, false,
 	)
-	sandboxRepository = repositorydecorators.NewLoggingSandboxRepositoryDecorator(sandboxRepository, logger)
+	sandboxRepository = decorator.NewLoggingSandboxRepositoryDecorator(sandboxRepository, logger)
 
 	kafkaClient := sandbox.KafkaClientFromConfig(config, logger)
 	defer kafkaClient.Stop()
 	sandboxService := sandbox.NewService(sandboxRepository, codeRunner, workerPool, kafkaClient, logger)
-	sandboxService = servicedecorators.NewOpentelemetryTracingSandboxServiceDecorator(sandboxService, tracer, false)
-	sandboxService = servicedecorators.NewLoggingSandboxServiceDecorator(sandboxService, logger)
+	sandboxService = decorator.NewOpentelemetryTracingSandboxServiceDecorator(sandboxService, tracer, false)
+	sandboxService = decorator.NewLoggingSandboxServiceDecorator(sandboxService, logger)
 
 	grpcHeaders := grpcc.HeadersFromConfig(config)
 	contextManager := grpcc.NewContextManager(grpcHeaders)
 	controller := sandbox.NewController(sandboxService, contextManager, logger)
-	controller = controllerdecorators.NewLoggingSandboxControllerDecorator(controller, logger)
+	controller = decorator.NewLoggingSandboxControllerDecorator(controller, logger)
 
 	sandboxServer := grpcc.NewSandboxServer(controller)
 

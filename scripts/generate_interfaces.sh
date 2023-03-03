@@ -11,110 +11,61 @@ cd $ROOT_PROJECT_DIRECTORY
 
 export GOPATH="/home/am/go"
 export PATH="$PATH:$(go env GOPATH)/bin"
-
 GO_WRAP_BINARY="${GOPATH}/bin/gowrap"
 
-# user service
-# user service: repositories
-USER_SERVICE_REPOSITORY_INTERFACE_FOLDER="${ROOT_PROJECT_DIRECTORY}/user_service/repositories"
-${GO_WRAP_BINARY} gen \
-    -p ${USER_SERVICE_REPOSITORY_INTERFACE_FOLDER} \
-    -i UserRepository \
-    -t ${GO_CZAP_LOGGER_DECORATOR_TEMPLATE} \
-    -o ${ROOT_PROJECT_DIRECTORY}/user_service/repositories/repositorydecorators/czap_logger${GENERATED_DECORATORS_EXTENTION}
+GENERATE_DECORATORS(){
+    INTERFACE_FOLDER=$1
+    INTERFACE_NAME=$2
+    DECORATORS_FILE_PREFIX=$3 # example user_service_
+    GENERATED_DECORATORS_FOLDER=$4
+    GENERATE_LOG_DECORATOR=$5
+    GENERATE_TRACING_DECORATOR=$6
+    GENERATE_METRICS_DECORATOR=$7
+    METRICS_PREFIX=$8
+    GLOBAL_VARS_PREFIX="private_${INTERFACE_NAME}_"
+    if [ "${GENERATE_LOG_DECORATOR}" = true ]; then
+        ${GO_WRAP_BINARY} gen \
+            -p ${INTERFACE_FOLDER} \
+            -i ${INTERFACE_NAME} \
+            -t ${GO_CZAP_LOGGER_DECORATOR_TEMPLATE} \
+            -o ${GENERATED_DECORATORS_FOLDER}/${DECORATORS_FILE_PREFIX}czap_logger${GENERATED_DECORATORS_EXTENTION}
+    fi
 
-${GO_WRAP_BINARY} gen \
-    -p ${USER_SERVICE_REPOSITORY_INTERFACE_FOLDER} \
-    -i UserRepository \
-    -t ${GO_OPENTELEMETRY_TRACING_DECORATOR_TEMPLATE} \
-    -o ${ROOT_PROJECT_DIRECTORY}/user_service/repositories/repositorydecorators/opentelemetry_tracing${GENERATED_DECORATORS_EXTENTION}
+    if [ "${GENERATE_TRACING_DECORATOR}" = true ]; then
+        ${GO_WRAP_BINARY} gen \
+            -p ${INTERFACE_FOLDER} \
+            -i ${INTERFACE_NAME} \
+            -t ${GO_OPENTELEMETRY_TRACING_DECORATOR_TEMPLATE} \
+            -o ${GENERATED_DECORATORS_FOLDER}/${DECORATORS_FILE_PREFIX}opentelemetry_tracing${GENERATED_DECORATORS_EXTENTION}
+    fi
 
-${GO_WRAP_BINARY} gen \
-    -v metricPrefix=database_query \
-    -p ${USER_SERVICE_REPOSITORY_INTERFACE_FOLDER} \
-    -i UserRepository \
-    -t ${GO_PROMETHEUS_METRICS_DECORATOR_TEMPLATE} \
-    -o ${ROOT_PROJECT_DIRECTORY}/user_service/repositories/repositorydecorators/prometheus_metrics${GENERATED_DECORATORS_EXTENTION}
+    if [ "${GENERATE_METRICS_DECORATOR}" = true ]; then
+        ${GO_WRAP_BINARY} gen \
+            -v metricPrefix=${METRICS_PREFIX} -v globalVarPrefix=${GLOBAL_VARS_PREFIX} \
+            -p ${INTERFACE_FOLDER} \
+            -i ${INTERFACE_NAME} \
+            -t ${GO_PROMETHEUS_METRICS_DECORATOR_TEMPLATE} \
+            -o ${GENERATED_DECORATORS_FOLDER}/${DECORATORS_FILE_PREFIX}prometheus_metrics${GENERATED_DECORATORS_EXTENTION}
+    fi
+}
 
-# user service: services
-${GO_WRAP_BINARY} gen \
-    -p ${ROOT_PROJECT_DIRECTORY}/user_service/services \
-    -i UserService \
-    -t ${GO_CZAP_LOGGER_DECORATOR_TEMPLATE} \
-    -o ${ROOT_PROJECT_DIRECTORY}/user_service/services/servicedecorators/czap_logger${GENERATED_DECORATORS_EXTENTION}
-
-${GO_WRAP_BINARY} gen \
-    -p ${ROOT_PROJECT_DIRECTORY}/user_service/services \
-    -i UserService \
-    -t ${GO_OPENTELEMETRY_TRACING_DECORATOR_TEMPLATE} \
-    -o ${ROOT_PROJECT_DIRECTORY}/user_service/services/servicedecorators/opentelemetry_tracing${GENERATED_DECORATORS_EXTENTION}
-
-${GO_WRAP_BINARY} gen \
-    -v metricPrefix=service_request \
-    -p ${ROOT_PROJECT_DIRECTORY}/user_service/services \
-    -i UserService \
-    -t ${GO_PROMETHEUS_METRICS_DECORATOR_TEMPLATE} \
-    -o ${ROOT_PROJECT_DIRECTORY}/user_service/services/servicedecorators/prometheus_metrics${GENERATED_DECORATORS_EXTENTION}
-
-# user service: controllers
-${GO_WRAP_BINARY} gen \
-    -p ${ROOT_PROJECT_DIRECTORY}/user_service/controllers \
-    -i UserController \
-    -t ${GO_CZAP_LOGGER_DECORATOR_TEMPLATE} \
-    -o ${ROOT_PROJECT_DIRECTORY}/user_service/controllers/controllerdecorators/czap_logger${GENERATED_DECORATORS_EXTENTION}
+# User service
+USER_SERVICE_INTERFACE_FOLDER="${ROOT_PROJECT_DIRECTORY}/user_service/apientity"
+USER_SERVICE_GENERATED_DECORATORS_FOLDER="${ROOT_PROJECT_DIRECTORY}/user_service/decorator"
+# Repository
+GENERATE_DECORATORS "${USER_SERVICE_INTERFACE_FOLDER}" "UserRepository" "user_repository_" "${USER_SERVICE_GENERATED_DECORATORS_FOLDER}" true true true "database_query"
+# Service
+GENERATE_DECORATORS "${USER_SERVICE_INTERFACE_FOLDER}" "UserService" "user_service_" "${USER_SERVICE_GENERATED_DECORATORS_FOLDER}" true true true "service_request"
+# Controller
+GENERATE_DECORATORS "${USER_SERVICE_INTERFACE_FOLDER}" "UserController" "user_controller_" "${USER_SERVICE_GENERATED_DECORATORS_FOLDER}" true false false "none"
 
 
-# sandbox service
-# sandbox service: repositories
-SANDBOX_REPOSITORY_INTERFACE_FOLDER="${ROOT_PROJECT_DIRECTORY}/sandbox_service/apientity"
-SANDBOX_REPOSITORY_GENERATED_DECORATORS_FOLDER="${ROOT_PROJECT_DIRECTORY}/sandbox_service/decorators/repositorydecorators"
-${GO_WRAP_BINARY} gen \
-    -p ${SANDBOX_REPOSITORY_INTERFACE_FOLDER} \
-    -i SandboxRepository \
-    -t ${GO_CZAP_LOGGER_DECORATOR_TEMPLATE} \
-    -o ${SANDBOX_REPOSITORY_GENERATED_DECORATORS_FOLDER}/czap_logger${GENERATED_DECORATORS_EXTENTION}
-
-${GO_WRAP_BINARY} gen \
-    -p ${SANDBOX_REPOSITORY_INTERFACE_FOLDER} \
-    -i SandboxRepository \
-    -t ${GO_OPENTELEMETRY_TRACING_DECORATOR_TEMPLATE} \
-    -o ${SANDBOX_REPOSITORY_GENERATED_DECORATORS_FOLDER}/opentelemetry_tracing${GENERATED_DECORATORS_EXTENTION}
-
-# ${GO_WRAP_BINARY} gen \
-#     -v metricPrefix=database_query \
-#     -p ${SANDBOX_REPOSITORY_INTERFACE_FOLDER} \
-#     -i SandboxRepository \
-#     -t ${GO_PROMETHEUS_METRICS_DECORATOR_TEMPLATE} \
-#     -o ${SANDBOX_REPOSITORY_GENERATED_DECORATORS_FOLDER}/prometheus_metrics${GENERATED_DECORATORS_EXTENTION}
-
-# sandbox service: service
+# Sandbox service
 SANDBOX_SERVICE_INTERFACE_FOLDER="${ROOT_PROJECT_DIRECTORY}/sandbox_service/apientity"
-SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER="${ROOT_PROJECT_DIRECTORY}/sandbox_service/decorators/servicedecorators"
-${GO_WRAP_BINARY} gen \
-    -p ${SANDBOX_SERVICE_INTERFACE_FOLDER} \
-    -i SandboxService \
-    -t ${GO_CZAP_LOGGER_DECORATOR_TEMPLATE} \
-    -o ${SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER}/czap_logger${GENERATED_DECORATORS_EXTENTION}
-
-${GO_WRAP_BINARY} gen \
-    -p ${SANDBOX_SERVICE_INTERFACE_FOLDER} \
-    -i SandboxService \
-    -t ${GO_OPENTELEMETRY_TRACING_DECORATOR_TEMPLATE} \
-    -o ${SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER}/opentelemetry_tracing${GENERATED_DECORATORS_EXTENTION}
-
-# ${GO_WRAP_BINARY} gen \
-#     -v metricPrefix=database_query \
-#     -p ${SANDBOX_SERVICE_INTERFACE_FOLDER} \
-#     -i SandboxService \
-#     -t ${GO_PROMETHEUS_METRICS_DECORATOR_TEMPLATE} \
-#     -o ${SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER}/prometheus_metrics${GENERATED_DECORATORS_EXTENTION}
-
-
-# sandbox service: service
-SANDBOX_CONTROLLER_INTERFACE_FOLDER="${ROOT_PROJECT_DIRECTORY}/sandbox_service/apientity"
-SANDBOX_CONTROLLER_GENERATED_DECORATORS_FOLDER="${ROOT_PROJECT_DIRECTORY}/sandbox_service/decorators/controllerdecorators"
-${GO_WRAP_BINARY} gen \
-    -p ${SANDBOX_CONTROLLER_INTERFACE_FOLDER} \
-    -i SandboxController \
-    -t ${GO_CZAP_LOGGER_DECORATOR_TEMPLATE} \
-    -o ${SANDBOX_CONTROLLER_GENERATED_DECORATORS_FOLDER}/czap_logger${GENERATED_DECORATORS_EXTENTION}
+SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER="${ROOT_PROJECT_DIRECTORY}/sandbox_service/decorator"
+# Repository
+GENERATE_DECORATORS "${SANDBOX_SERVICE_INTERFACE_FOLDER}" "SandboxRepository" "sandbox_repository_" "${SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER}" true true false "database_query"
+# Service
+GENERATE_DECORATORS "${SANDBOX_SERVICE_INTERFACE_FOLDER}" "SandboxService" "sandbox_service_" "${SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER}" true true false "service_request"
+# Controller
+GENERATE_DECORATORS "${SANDBOX_SERVICE_INTERFACE_FOLDER}" "SandboxController" "sandbox_controller_" "${SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER}" true false false "none"
