@@ -6,7 +6,7 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/czap"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/YFatMR/go_messenger/sandbox_service/apientity"
-	"github.com/YFatMR/go_messenger/sandbox_service/protobufentity"
+	"github.com/YFatMR/go_messenger/sandbox_service/entity"
 	"go.uber.org/zap"
 )
 
@@ -29,7 +29,7 @@ func NewController(sandboxService apientity.SandboxService, contextManager apien
 func (c *controller) GetProgramByID(ctx context.Context, request *proto.ProgramID) (
 	*proto.Program, error,
 ) {
-	programID, err := protobufentity.ToProgramID(request)
+	programID, err := entity.ProgramIDFromProtobuf(request)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (c *controller) GetProgramByID(ctx context.Context, request *proto.ProgramI
 	if err != nil {
 		return nil, err
 	}
-	result := protobufentity.FromProgram(program)
+	result := entity.ProgramToProtobuf(program)
 	c.logger.Debug("program  src result", zap.String("source", result.Source.SourceCode))
 	if program == nil {
 		c.logger.Error("Got null program!")
@@ -48,7 +48,7 @@ func (c *controller) GetProgramByID(ctx context.Context, request *proto.ProgramI
 func (c *controller) CreateProgram(ctx context.Context, request *proto.ProgramSource) (
 	*proto.ProgramID, error,
 ) {
-	programSource, err := protobufentity.ToProgramSource(request)
+	programSource, err := entity.ProgramSourceFromProtobuf(request)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (c *controller) CreateProgram(ctx context.Context, request *proto.ProgramSo
 	if err != nil {
 		return nil, err
 	}
-	return protobufentity.FromProgramID(programID), nil
+	return entity.ProgramIDToProtobuf(programID), nil
 }
 
 func (c *controller) UpdateProgramSource(ctx context.Context,
@@ -64,11 +64,11 @@ func (c *controller) UpdateProgramSource(ctx context.Context,
 ) (
 	*proto.Void, error,
 ) {
-	programSource, err := protobufentity.ToProgramSource(request.GetProgramSource())
+	programSource, err := entity.ProgramSourceFromProtobuf(request.GetProgramSource())
 	if err != nil {
 		return nil, err
 	}
-	programID, err := protobufentity.ToProgramID(request.GetProgramID())
+	programID, err := entity.ProgramIDFromProtobuf(request.GetProgramID())
 	if err != nil {
 		return nil, err
 	}
@@ -76,33 +76,33 @@ func (c *controller) UpdateProgramSource(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	return protobufentity.Void(), nil
+	return entity.VoidProtobuf(), nil
 }
 
 func (c *controller) RunProgram(ctx context.Context, request *proto.ProgramID) (
 	*proto.Void, error,
 ) {
-	programID, err := protobufentity.ToProgramID(request)
+	programID, err := entity.ProgramIDFromProtobuf(request)
 	if err != nil {
 		return nil, err
 	}
 	userID, err := c.contextManager.UserIDFromContext(ctx)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Can not extract user ID from metedata", zap.Error(err))
-		return protobufentity.Void(), ErrNoMetadataKey
+		return entity.VoidProtobuf(), ErrNoMetadataKey
 	}
 	err = c.sandboxService.RunProgram(ctx, programID, userID)
 	if err != nil {
 		return nil, err
 	}
-	return protobufentity.Void(), nil
+	return entity.VoidProtobuf(), nil
 }
 
 func (c *controller) LintProgram(ctx context.Context, request *proto.ProgramID) (
 	*proto.Void, error,
 ) {
 	// TODO: implement
-	// programID, err := protobufentity.ToProgramID(request)
+	// programID, err := entity.ProgramIDFromProtobuf(request)
 	// if err != nil {
 	// 	return nil, err
 	// }
@@ -110,7 +110,7 @@ func (c *controller) LintProgram(ctx context.Context, request *proto.ProgramID) 
 	// if err != nil {
 	// 	return nil, err
 	// }
-	return protobufentity.Void(), nil
+	return entity.VoidProtobuf(), nil
 }
 
 func (c *controller) Ping(ctx context.Context, request *proto.Void) (

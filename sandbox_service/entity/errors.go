@@ -1,4 +1,4 @@
-package protobufentity
+package entity
 
 import "errors"
 
