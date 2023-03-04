@@ -32,7 +32,7 @@ run: build_docker_compose
 	sudo docker-compose --file ${ROOT_PROJECT_DIRECTORY}/docker-compose.yml --env-file ${ROOT_PROJECT_DIRECTORY}/production.env --verbose up
 
 run-tests:
-	go test -tags=test -v -race -o ${BINARY_DIRECTORY}/user_service_repository_tests ${ROOT_PROJECT_DIRECTORY}/user_service/mongorepository/ -args -mongo_config_path="${ROOT_PROJECT_DIRECTORY}/core/pkg/recipes/go/mongo/.env"
+	go test -tags=test -v -race -o ${BINARY_DIRECTORY}/user_service_repository_tests ${ROOT_PROJECT_DIRECTORY}/user_service/user/ -args -mongo_config_path="${ROOT_PROJECT_DIRECTORY}/core/pkg/recipes/go/mongo/.env"
 
 # up compose first:
 # sudo docker-compose --file ./docker-compose-test.yml --env-file ./test.env build
