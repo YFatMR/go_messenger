@@ -18,13 +18,20 @@ import (
 	"go.uber.org/zap"
 )
 
-type codeRunner struct {
-	client *client.Client
-	config *CodeRunnerSettings
-	logger *czap.Logger
+type DockerRunnerLimitations struct {
+	InputSourceCodeByte int
+	OutputStdoutByte    int
+	OutputStderrByte    int
 }
 
-type CodeRunnerSettings struct {
+type codeRunner struct {
+	client      *client.Client
+	config      *DockerRunnerSettings
+	limitations *DockerRunnerLimitations
+	logger      *czap.Logger
+}
+
+type DockerRunnerSettings struct {
 	ImageName                   string
 	ImagePath                   string
 	MemoryLimitBytes            int64
@@ -34,8 +41,8 @@ type CodeRunnerSettings struct {
 	RunCodeTimeout              time.Duration
 }
 
-func DockerRunnerSettingsFromConfig(config *cviper.CustomViper) *CodeRunnerSettings {
-	return &CodeRunnerSettings{
+func DockerRunnerSettingsFromConfig(config *cviper.CustomViper) *DockerRunnerSettings {
+	return &DockerRunnerSettings{
 		ImageName:                   config.GetStringRequired("DOCKER_CODE_RUNNER_IMAGE_NAME"),
 		ImagePath:                   config.GetStringRequired("DOCKER_CODE_RUNNER_IMAGE_PATH"),
 		MemoryLimitBytes:            config.GetInt64Required("DOCKER_CODE_RUNNER_MEMORY_LIMITATION_BYTES"),
@@ -48,11 +55,22 @@ func DockerRunnerSettingsFromConfig(config *cviper.CustomViper) *CodeRunnerSetti
 	}
 }
 
-func NewCodeRunner(client *client.Client, config *CodeRunnerSettings, logger *czap.Logger) apientity.CodeRunner {
+func DockerRunnerLimitationsFromConfig(config *cviper.CustomViper) *DockerRunnerLimitations {
+	return &DockerRunnerLimitations{
+		InputSourceCodeByte: config.GetIntRequired("DOCKER_CODE_RUNNER_INPUT_SOURCE_CODE_LIMITATION_BYTE"),
+		OutputStdoutByte:    config.GetIntRequired("DOCKER_CODE_RUNNER_OUTPUT_STDOUT_LIMITATION_BYTE"),
+		OutputStderrByte:    config.GetIntRequired("DOCKER_CODE_RUNNER_OUTPUT_STDERR_LIMITATION_BYTE"),
+	}
+}
+
+func NewCodeRunner(client *client.Client, config *DockerRunnerSettings, limitations *DockerRunnerLimitations,
+	logger *czap.Logger,
+) apientity.CodeRunner {
 	return &codeRunner{
-		client: client,
-		config: config,
-		logger: logger,
+		client:      client,
+		config:      config,
+		limitations: limitations,
+		logger:      logger,
 	}
 }
 
@@ -60,6 +78,7 @@ func CodeRunnerFromConfig(ctx context.Context, config *cviper.CustomViper, logge
 	apientity.CodeRunner, error,
 ) {
 	dockerRunnerSettings := DockerRunnerSettingsFromConfig(config)
+	dockerRunnerLimitations := DockerRunnerLimitationsFromConfig(config)
 	dockerClient, err := ClientFromConfig(config)
 	if err != nil {
 		return nil, err
@@ -70,7 +89,7 @@ func CodeRunnerFromConfig(ctx context.Context, config *cviper.CustomViper, logge
 	if err != nil {
 		return nil, err
 	}
-	return NewCodeRunner(dockerClient, dockerRunnerSettings, logger), nil
+	return NewCodeRunner(dockerClient, dockerRunnerSettings, dockerRunnerLimitations, logger), nil
 }
 
 func (c *codeRunner) Stop() {
@@ -80,6 +99,14 @@ func (c *codeRunner) Stop() {
 func (c *codeRunner) RunGoCode(ctx context.Context, sourceCode string, userID string) (
 	*entity.ProgramOutput, error,
 ) {
+	if len(sourceCode) > c.limitations.InputSourceCodeByte {
+		c.logger.ErrorContext(
+			ctx, "Too huge input",
+			zap.Int("input code size byte", len(sourceCode)),
+			zap.Int("limitation byte", c.limitations.InputSourceCodeByte),
+		)
+		return nil, ErrHugeInput
+	}
 	containerName := c.config.ContainerNamePrefix + userID
 
 	exeContainer, err := c.createContainer(ctx, containerName)
@@ -193,6 +220,13 @@ func (c *codeRunner) GetProgramOutput(ctx context.Context, containerID string) (
 	if err != nil {
 		return nil, err
 	}
+
+	stdout.Truncate(c.limitations.OutputStdoutByte)
+	stdout.Write([]byte("..."))
+
+	stderr.Truncate(c.limitations.OutputStderrByte)
+	stderr.Write([]byte("..."))
+
 	return &entity.ProgramOutput{
 		Stdout: stdout.String(),
 		Stderr: stderr.String(),
