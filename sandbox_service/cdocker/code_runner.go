@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"io"
 	"time"
 
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
@@ -126,11 +127,10 @@ func (c *codeRunner) RunGoCode(ctx context.Context, sourceCode string, userID st
 }
 
 func (c *codeRunner) createTARReader(sourceCode string) (
-	*bytes.Buffer, error,
+	io.Reader, error,
 ) {
 	buf := new(bytes.Buffer)
 	tw := tar.NewWriter(buf)
-	defer tw.Close()
 
 	hdr := &tar.Header{
 		Name: "main.go",
@@ -143,7 +143,10 @@ func (c *codeRunner) createTARReader(sourceCode string) (
 	if _, err := tw.Write([]byte(sourceCode)); err != nil {
 		return nil, err
 	}
-	return bytes.NewBuffer(buf.Bytes()), nil
+
+	// do not use defer (it write footer)
+	tw.Close()
+	return bytes.NewReader(buf.Bytes()), nil
 }
 
 func (c *codeRunner) createContainer(ctx context.Context, containerName string) (
