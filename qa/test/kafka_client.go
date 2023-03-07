@@ -17,21 +17,12 @@ type KafkaClient struct {
 	Limitations KafkaLimitations
 }
 
-func (k *KafkaClient) WaitMessageWithKey(ctx context.Context, key string) (
+func (k *KafkaClient) WaitMessage(ctx context.Context) (
 	kafka.Message, error,
 ) {
 	ctx, cancel := context.WithTimeout(ctx, k.Limitations.ReadTimeout)
 	defer cancel()
-	for {
-		message, err := k.Reader.ReadMessage(ctx)
-		if err != nil {
-			return message, err
-		}
-		if string(message.Key) != key {
-			continue
-		}
-		return message, nil
-	}
+	return k.Reader.ReadMessage(ctx)
 }
 
 func (k *KafkaClient) Close() {

@@ -15,14 +15,9 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type KafkaKeys struct {
-	CodeRunnerMessageKey string
-}
-
 type SandboxTestSuite struct {
-	kafkaKeys   KafkaKeys
-	kafkaClient KafkaClient
-	userManager UserManager
+	sandboxTopicKafkaClient KafkaClient
+	userManager             UserManager
 	suite.Suite
 }
 
@@ -34,17 +29,12 @@ func TestSandboxTestSuite(t *testing.T) {
 		panic(err)
 	}
 
-	kafkaClient := NewKafkaClientFromConfig(config)
-	defer kafkaClient.Close()
+	sandboxTopicKafkaClient := NewKafkaClientFromConfig(config)
+	defer sandboxTopicKafkaClient.Close()
 
 	suite.Run(
 		t,
-		&SandboxTestSuite{
-			kafkaClient: kafkaClient,
-			kafkaKeys: KafkaKeys{
-				CodeRunnerMessageKey: config.GetStringRequired("KAFKA_CODE_RUNNER_MESSAGE_KEY"),
-			},
-		},
+		&SandboxTestSuite{sandboxTopicKafkaClient: sandboxTopicKafkaClient},
 	)
 }
 
@@ -94,7 +84,7 @@ func (s *SandboxTestSuite) TestRunHelloWorld() {
 	ctx := context.Background()
 	require := s.Require()
 
-	authorizedUserID, token, err := s.userManager.NewAuthorizedUser(ctx)
+	_, token, err := s.userManager.NewAuthorizedUser(ctx)
 	require.NoError(err)
 
 	expectedProgram := NewHelloWorldProgram()
@@ -111,17 +101,12 @@ func (s *SandboxTestSuite) TestRunHelloWorld() {
 	require.NoError(err)
 
 	// Wait kafka
-	message, err := s.kafkaClient.WaitMessageWithKey(ctx, s.kafkaKeys.CodeRunnerMessageKey)
+	message, err := s.sandboxTopicKafkaClient.WaitMessage(ctx)
 	require.NoError(err)
 
 	var programExecutionMessage ckafka.ProgramExecutionMessage
 	err = json.Unmarshal(message.Value, &programExecutionMessage)
 	require.NoError(err)
-
-	require.Equal(
-		authorizedUserID.ID, programExecutionMessage.UserID,
-		"Most likely the kafka client has read the old message",
-	)
 
 	// Message got. It means that program is executed and result writed to database
 	program, err := frontServicegRPCClient.GetProgramByID(ctx, programID)

@@ -14,21 +14,13 @@ import (
 	"go.uber.org/zap"
 )
 
-type KafkaKeys struct {
-	CodeRunnerMessageKey string
-}
-
 type KafkaClient struct {
-	keys                  KafkaKeys
 	writer                *kafka.Writer
 	logger                *czap.Logger
 	writeOperationTimeout time.Duration
 }
 
 func KafkaClientFromConfig(config *cviper.CustomViper, logger *czap.Logger) apientity.KafkaClient {
-	keys := KafkaKeys{
-		CodeRunnerMessageKey: config.GetStringRequired("KAFKA_CODE_RUNNER_MESSAGE_KEY"),
-	}
 	writer := &kafka.Writer{
 		Addr:         kafka.TCP(config.GetStringRequired("KAFKA_BROKER_ADDRESS")),
 		Topic:        config.GetStringRequired("KAFKA_CODE_RUNNER_TOPIC"),
@@ -39,7 +31,6 @@ func KafkaClientFromConfig(config *cviper.CustomViper, logger *czap.Logger) apie
 	}
 
 	return &KafkaClient{
-		keys:   keys,
 		writer: writer,
 		logger: logger,
 		// TODO: check that it's true
@@ -56,7 +47,6 @@ func (c *KafkaClient) WriteProgramExecutionMessage(ctx context.Context, programI
 ) error {
 	message, err := json.Marshal(ckafka.ProgramExecutionMessage{
 		ProgramID: programID.ID,
-		UserID:    userID.ID,
 	})
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Unable to create message", zap.Error(err))
@@ -68,7 +58,7 @@ func (c *KafkaClient) WriteProgramExecutionMessage(ctx context.Context, programI
 	err = c.writer.WriteMessages(
 		ctx,
 		kafka.Message{
-			Key:   []byte(c.keys.CodeRunnerMessageKey),
+			Key:   []byte(userID.ID),
 			Value: message,
 			Time:  time.Now(),
 		},
