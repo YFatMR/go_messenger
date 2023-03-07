@@ -3,106 +3,69 @@ SCRIPT_DIRECTORY=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && 
 ROOT_PROJECT_DIRECTORY="${SCRIPT_DIRECTORY}/.."
 GENERATED_DECORATORS_EXTENTION=".gen.go"
 GO_DECORATORS_TEMPLATE_DIRECTORY="${ROOT_PROJECT_DIRECTORY}/core/pkg/decorators/templates"
+GO_CZAP_LOGGER_DECORATOR_TEMPLATE="${GO_DECORATORS_TEMPLATE_DIRECTORY}/czap_logger.template.go"
+GO_OPENTELEMETRY_TRACING_DECORATOR_TEMPLATE="${GO_DECORATORS_TEMPLATE_DIRECTORY}/opentelemetry_tracing.template.go"
+GO_PROMETHEUS_METRICS_DECORATOR_TEMPLATE="${GO_DECORATORS_TEMPLATE_DIRECTORY}/prometheus_metrics.template.go"
 
 cd $ROOT_PROJECT_DIRECTORY
 
 export GOPATH="/home/am/go"
 export PATH="$PATH:$(go env GOPATH)/bin"
-
 GO_WRAP_BINARY="${GOPATH}/bin/gowrap"
 
-# user service
-# user service: repositories
-${GO_WRAP_BINARY} gen \
-    -p ${ROOT_PROJECT_DIRECTORY}/user_service/internal/repositories \
-    -i UserRepository \
-    -t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/ulo_logger.go \
-    -o ${ROOT_PROJECT_DIRECTORY}/user_service/internal/repositories/decorators/ulo_logger${GENERATED_DECORATORS_EXTENTION}
+GENERATE_DECORATORS(){
+    INTERFACE_FOLDER=$1
+    INTERFACE_NAME=$2
+    DECORATORS_FILE_PREFIX=$3 # example user_service_
+    GENERATED_DECORATORS_FOLDER=$4
+    GENERATE_LOG_DECORATOR=$5
+    GENERATE_TRACING_DECORATOR=$6
+    GENERATE_METRICS_DECORATOR=$7
+    METRICS_PREFIX=$8
+    GLOBAL_VARS_PREFIX="private_${INTERFACE_NAME}_"
+    if [ "${GENERATE_LOG_DECORATOR}" = true ]; then
+        ${GO_WRAP_BINARY} gen \
+            -p ${INTERFACE_FOLDER} \
+            -i ${INTERFACE_NAME} \
+            -t ${GO_CZAP_LOGGER_DECORATOR_TEMPLATE} \
+            -o ${GENERATED_DECORATORS_FOLDER}/${DECORATORS_FILE_PREFIX}czap_logger${GENERATED_DECORATORS_EXTENTION}
+    fi
 
-${GO_WRAP_BINARY} gen \
-    -p ${ROOT_PROJECT_DIRECTORY}/user_service/internal/repositories \
-    -i UserRepository \
-    -t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/opentelemetry_tracing.go \
-    -o ${ROOT_PROJECT_DIRECTORY}/user_service/internal/repositories/decorators/opentelemetry_tracing${GENERATED_DECORATORS_EXTENTION}
+    if [ "${GENERATE_TRACING_DECORATOR}" = true ]; then
+        ${GO_WRAP_BINARY} gen \
+            -p ${INTERFACE_FOLDER} \
+            -i ${INTERFACE_NAME} \
+            -t ${GO_OPENTELEMETRY_TRACING_DECORATOR_TEMPLATE} \
+            -o ${GENERATED_DECORATORS_FOLDER}/${DECORATORS_FILE_PREFIX}opentelemetry_tracing${GENERATED_DECORATORS_EXTENTION}
+    fi
 
-${GO_WRAP_BINARY} gen \
-    -v metricPrefix=database_query \
-    -p ${ROOT_PROJECT_DIRECTORY}/user_service/internal/repositories \
-    -i UserRepository \
-    -t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/prometheus_metrics.go \
-    -o ${ROOT_PROJECT_DIRECTORY}/user_service/internal/repositories/decorators/prometheus_metrics${GENERATED_DECORATORS_EXTENTION}
+    if [ "${GENERATE_METRICS_DECORATOR}" = true ]; then
+        ${GO_WRAP_BINARY} gen \
+            -v metricPrefix=${METRICS_PREFIX} -v globalVarPrefix=${GLOBAL_VARS_PREFIX} \
+            -p ${INTERFACE_FOLDER} \
+            -i ${INTERFACE_NAME} \
+            -t ${GO_PROMETHEUS_METRICS_DECORATOR_TEMPLATE} \
+            -o ${GENERATED_DECORATORS_FOLDER}/${DECORATORS_FILE_PREFIX}prometheus_metrics${GENERATED_DECORATORS_EXTENTION}
+    fi
+}
 
-# # user service: services
-${GO_WRAP_BINARY} gen \
-    -p ${ROOT_PROJECT_DIRECTORY}/user_service/internal/services \
-    -i UserService \
-    -t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/ulo_logger.go \
-    -o ${ROOT_PROJECT_DIRECTORY}/user_service/internal/services/decorators/ulo_logger${GENERATED_DECORATORS_EXTENTION}
+# User service
+USER_SERVICE_INTERFACE_FOLDER="${ROOT_PROJECT_DIRECTORY}/user_service/apientity"
+USER_SERVICE_GENERATED_DECORATORS_FOLDER="${ROOT_PROJECT_DIRECTORY}/user_service/decorator"
+# Repository
+GENERATE_DECORATORS "${USER_SERVICE_INTERFACE_FOLDER}" "UserRepository" "user_repository_" "${USER_SERVICE_GENERATED_DECORATORS_FOLDER}" true true true "database_query"
+# Service
+GENERATE_DECORATORS "${USER_SERVICE_INTERFACE_FOLDER}" "UserService" "user_service_" "${USER_SERVICE_GENERATED_DECORATORS_FOLDER}" true true true "service_request"
+# Controller
+GENERATE_DECORATORS "${USER_SERVICE_INTERFACE_FOLDER}" "UserController" "user_controller_" "${USER_SERVICE_GENERATED_DECORATORS_FOLDER}" true false false "none"
 
-${GO_WRAP_BINARY} gen \
-    -p ${ROOT_PROJECT_DIRECTORY}/user_service/internal/services \
-    -i UserService \
-    -t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/opentelemetry_tracing.go \
-    -o ${ROOT_PROJECT_DIRECTORY}/user_service/internal/services/decorators/opentelemetry_tracing${GENERATED_DECORATORS_EXTENTION}
 
-${GO_WRAP_BINARY} gen \
-    -v metricPrefix=service_request \
-    -p ${ROOT_PROJECT_DIRECTORY}/user_service/internal/services \
-    -i UserService \
-    -t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/prometheus_metrics.go \
-    -o ${ROOT_PROJECT_DIRECTORY}/user_service/internal/services/decorators/prometheus_metrics${GENERATED_DECORATORS_EXTENTION}
-
-# # user service: controllers
-${GO_WRAP_BINARY} gen \
-    -p ${ROOT_PROJECT_DIRECTORY}/user_service/internal/controllers \
-    -i UserController \
-    -t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/ulo_logger.go \
-    -o ${ROOT_PROJECT_DIRECTORY}/user_service/internal/controllers/decorators/ulo_logger${GENERATED_DECORATORS_EXTENTION}
-
-# auth service
-# auth service: repositories
-${GO_WRAP_BINARY} gen \
-    -p ${ROOT_PROJECT_DIRECTORY}/auth_service/internal/repositories \
-    -i AccountRepository \
-    -t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/ulo_logger.go \
-    -o ${ROOT_PROJECT_DIRECTORY}/auth_service/internal/repositories/decorators/ulo_logger${GENERATED_DECORATORS_EXTENTION}
-
-${GO_WRAP_BINARY} gen \
-    -p ${ROOT_PROJECT_DIRECTORY}/auth_service/internal/repositories \
-    -i AccountRepository \
-    -t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/opentelemetry_tracing.go \
-    -o ${ROOT_PROJECT_DIRECTORY}/auth_service/internal/repositories/decorators/opentelemetry_tracing${GENERATED_DECORATORS_EXTENTION}
-
-${GO_WRAP_BINARY} gen \
-    -v metricPrefix=database_query \
-    -p ${ROOT_PROJECT_DIRECTORY}/auth_service/internal/repositories \
-    -i AccountRepository \
-    -t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/prometheus_metrics.go \
-    -o ${ROOT_PROJECT_DIRECTORY}/auth_service/internal/repositories/decorators/prometheus_metrics${GENERATED_DECORATORS_EXTENTION}
-
-# auth service: services
-${GO_WRAP_BINARY} gen \
-    -p ${ROOT_PROJECT_DIRECTORY}/auth_service/internal/services \
-    -i AccountService \
-    -t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/ulo_logger.go \
-    -o ${ROOT_PROJECT_DIRECTORY}/auth_service/internal/services/decorators/ulo_logger${GENERATED_DECORATORS_EXTENTION}
-
-${GO_WRAP_BINARY} gen \
-    -p ${ROOT_PROJECT_DIRECTORY}/auth_service/internal/services \
-    -i AccountService \
-    -t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/opentelemetry_tracing.go \
-    -o ${ROOT_PROJECT_DIRECTORY}/auth_service/internal/services/decorators/opentelemetry_tracing${GENERATED_DECORATORS_EXTENTION}
-
-${GO_WRAP_BINARY} gen \
-    -v metricPrefix=service_request \
-    -p ${ROOT_PROJECT_DIRECTORY}/auth_service/internal/services \
-    -i AccountService \
-    -t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/prometheus_metrics.go \
-    -o ${ROOT_PROJECT_DIRECTORY}/auth_service/internal/services/decorators/prometheus_metrics${GENERATED_DECORATORS_EXTENTION}
-
-# auth service: controllers
-${GO_WRAP_BINARY} gen \
-    -p ${ROOT_PROJECT_DIRECTORY}/auth_service/internal/controllers \
-    -i AccountController \
-    -t ${GO_DECORATORS_TEMPLATE_DIRECTORY}/ulo_logger.go \
-    -o ${ROOT_PROJECT_DIRECTORY}/auth_service/internal/controllers/decorators/ulo_logger${GENERATED_DECORATORS_EXTENTION}
+# Sandbox service
+SANDBOX_SERVICE_INTERFACE_FOLDER="${ROOT_PROJECT_DIRECTORY}/sandbox_service/apientity"
+SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER="${ROOT_PROJECT_DIRECTORY}/sandbox_service/decorator"
+# Repository
+GENERATE_DECORATORS "${SANDBOX_SERVICE_INTERFACE_FOLDER}" "SandboxRepository" "sandbox_repository_" "${SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER}" true true false "database_query"
+# Service
+GENERATE_DECORATORS "${SANDBOX_SERVICE_INTERFACE_FOLDER}" "SandboxService" "sandbox_service_" "${SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER}" true true false "service_request"
+# Controller
+GENERATE_DECORATORS "${SANDBOX_SERVICE_INTERFACE_FOLDER}" "SandboxController" "sandbox_controller_" "${SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER}" true false false "none"

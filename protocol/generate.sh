@@ -28,8 +28,8 @@ protoc \
     internal/front.proto \
     internal/user.proto \
     internal/common.proto \
-    internal/auth.proto \
     internal/sandbox.proto
+    # internal/auth.proto \
 
 # generate openapiv2 for REST endpoint
 protoc \

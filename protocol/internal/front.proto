@@ -4,15 +4,9 @@ package proto;
 option go_package = "./proto";
 
 import "user.proto";
-import "auth.proto";
 import "common.proto";
 import "sandbox.proto";
 import "google/api/annotations.proto";
-
-message CreateUserRequest {
-  Credential credential = 1;
-  UserData userData = 2;
-}
 
 service Front {
   rpc CreateUser(CreateUserRequest) returns (UserID) {
@@ -22,7 +16,7 @@ service Front {
     };
   }
 
-  rpc GetToken(Credential) returns (Token) {
+  rpc GenerateToken(Credential) returns (Token) {
     option (google.api.http) = {
       post : "/token"
       body : "*"
@@ -35,9 +29,36 @@ service Front {
     };
   }
 
-  rpc Execute(Program) returns (ProgramResult) {
+  rpc GetProgramByID(ProgramID) returns (Program) {
     option (google.api.http) = {
-      post : "/sandbox"
+      get : "/programs/{ID}"
+    };
+  }
+
+  rpc CreateProgram(ProgramSource) returns (ProgramID) {
+    option (google.api.http) = {
+      post : "/programs"
+      body : "*"
+    };
+  }
+
+  rpc UpdateProgramSource(UpdateProgramSourceRequest) returns (Void) {
+    option (google.api.http) = {
+      patch : "/programs/source"
+      body : "*"
+    };
+  }
+
+  rpc RunProgram(ProgramID) returns (Void) {
+    option (google.api.http) = {
+      patch : "/programs/run"
+      body : "*"
+    };
+  }
+
+  rpc LintProgram(ProgramID) returns (Void) {
+    option (google.api.http) = {
+      patch : "/programs/lint"
       body : "*"
     };
   }

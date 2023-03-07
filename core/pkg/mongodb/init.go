@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
-	"github.com/YFatMR/go_messenger/core/pkg/loggers"
+	"github.com/YFatMR/go_messenger/core/pkg/czap"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 )
 
-func Connect(ctx context.Context, settings *cviper.DatabaseSettings, logger *loggers.OtelZapLoggerWithTraceID) (
+func Connect(ctx context.Context, settings *cviper.DatabaseSettings, logger *czap.Logger) (
 	_ *mongo.Collection, err error,
 ) {
 	getCollection := func() (*mongo.Collection, error) {

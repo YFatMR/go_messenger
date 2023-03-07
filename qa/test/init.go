@@ -16,16 +16,6 @@ var (
 	grpcAuthorizationHeader string
 )
 
-func newGRPCAuthClient(ctx context.Context, serviceAddress string, responseTimeout time.Duration) (
-	proto.AuthClient, error,
-) {
-	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-	}
-	return grpcclients.NewGRPCAuthClient(ctx, serviceAddress, responseTimeout, opts)
-}
-
 func newGRPCUserClient(ctx context.Context, serviceAddress string, responseTimeout time.Duration) (
 	proto.UserClient, error,
 ) {

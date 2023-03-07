@@ -27,7 +27,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: v1.50.1
-          args: --config ./.golangci.yml ./core/... ./front_service/... ./protocol/... ./user_service/... ./auth_service/... ./qa/... ./sandbox_service/...
+          args: --timeout=3m --config ./.golangci.yml ./core/... ./front_service/... ./protocol/... ./user_service/... ./qa/... ./sandbox_service/...
 
       - name: Build (without proto file generation)
         run: make raw_build

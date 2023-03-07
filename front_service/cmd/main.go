@@ -8,22 +8,20 @@ import (
 	"os/signal"
 
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
+	"github.com/YFatMR/go_messenger/core/pkg/ctrace"
+	"github.com/YFatMR/go_messenger/core/pkg/czap"
 	"github.com/YFatMR/go_messenger/core/pkg/grpcclients"
-	"github.com/YFatMR/go_messenger/core/pkg/loggers"
-	"github.com/YFatMR/go_messenger/core/pkg/traces"
-	"github.com/YFatMR/go_messenger/front_server/internal/interceptors"
-	frontserver "github.com/YFatMR/go_messenger/front_server/internal/server"
+	"github.com/YFatMR/go_messenger/core/pkg/jwtmanager"
+	"github.com/YFatMR/go_messenger/front_server/grpcc"
+	"github.com/YFatMR/go_messenger/front_server/proxy"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	resourcesdk "go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials/insecure"
@@ -38,12 +36,9 @@ func main() {
 	config.AutomaticEnv()
 
 	// Init environment vars
-	logLevel := config.GetZapcoreLogLevelRequired("LOG_LEVEL")
-	logPath := config.GetStringRequired("LOG_PATH")
 	restFrontServiceAddress := config.GetStringRequired("REST_SERVICE_ADDRESS")
 	grpcFrontServiceAddress := config.GetStringRequired("GRPC_SERVICE_ADDRESS")
 	userServiceAddress := config.GetStringRequired("USER_SERVICE_ADDRESS")
-	authServiceAddress := config.GetStringRequired("AUTH_SERVICE_ADDRESS")
 	sandboxServiceAddress := config.GetStringRequired("SANDBOX_SERVICE_ADDRESS")
 	jaegerEndpoint := config.GetStringRequired("JAEGER_COLLECTOR_ENDPOINT")
 	serviceName := config.GetStringRequired("SERVICE_NAME")
@@ -54,10 +49,6 @@ func main() {
 	microservicesConnectionTimeout := config.GetMillisecondsDurationRequired(
 		"MICROSERVICES_GRPC_CONNECTION_TIMEOUT_MILLISECONDS",
 	)
-
-	grpcAuthorizationHeader := config.GetStringRequired("GRPC_AUTHORIZARION_HEADER")
-	grpcAuthorizationAccountIDHeader := config.GetStringRequired("GRPC_AUTHORIZARION_ACCOUNT_ID_HEADER")
-	grpcAuthorizationUserRoleHeader := config.GetStringRequired("GRPC_AUTHORIZARION_USER_ROLE_HEADER")
 
 	grpcBackoffConfig := backoff.Config{
 		BaseDelay:  config.GetMillisecondsDurationRequired("GRPC_CONNECTION_BACKOFF_DELAY_MILLISECONDS"),
@@ -73,18 +64,10 @@ func main() {
 	}
 
 	// Init logger
-	zapLogger, err := loggers.NewBaseZapFileLogger(logLevel, logPath)
+	logger, err := czap.FromConfig(config)
 	if err != nil {
 		panic(err)
 	}
-	logger := loggers.NewOtelZapLoggerWithTraceID(
-		otelzap.New(
-			zapLogger,
-			otelzap.WithTraceIDField(true),
-			otelzap.WithMinLevel(zapcore.ErrorLevel),
-			otelzap.WithStackTrace(true),
-		),
-	)
 	defer logger.Sync()
 
 	// Init tracing
@@ -92,7 +75,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	traceProvider, err := traces.NewTraceProvider(exporter, resourcesdk.NewWithAttributes(
+	traceProvider, err := ctrace.NewProvider(exporter, resourcesdk.NewWithAttributes(
 		semconv.SchemaURL,
 		semconv.ServiceNameKey.String(serviceName),
 	))
@@ -104,7 +87,7 @@ func main() {
 			panic(err)
 		}
 	}(ctx)
-	tracer := otel.Tracer(serviceName)
+	// tracer := otel.Tracer(serviceName)
 
 	// Run REST front service with "user service" API
 	go func() {
@@ -150,33 +133,14 @@ func main() {
 			zap.String("user server address", userServiceAddress),
 		)
 
-		logger.Info("Connecting to auth service...", zap.String("address", authServiceAddress))
-		authClientOpts := []grpc.DialOption{
-			grpc.WithKeepaliveParams(grpcKeepaliveParameters),
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-			grpc.WithConnectParams(
-				grpc.ConnectParams{
-					Backoff: grpcBackoffConfig,
-				},
-			),
-		}
-		authServiceClient, err := grpcclients.NewGRPCAuthClient(
-			ctx, authServiceAddress, microservicesConnectionTimeout, authClientOpts,
-		)
-		if err != nil {
-			logger.Error("Server stopped! Can't connect to auth service", zap.String("address", authServiceAddress))
-			panic(err)
-		}
-
 		logger.Info("Connecting to user service...", zap.String("address", userServiceAddress))
+
+		headers := grpcc.GRPCHeadersFromConfig(config)
+		jwtManager := jwtmanager.FromConfig(config, logger)
 
 		unaryInterceptors := []grpc.UnaryClientInterceptor{
 			otelgrpc.UnaryClientInterceptor(),
-			interceptors.UnaryAuthInterceptor(
-				authServiceClient, grpcAuthorizationHeader, grpcAuthorizationAccountIDHeader,
-				grpcAuthorizationUserRoleHeader, logger,
-			),
+			grpcc.UnaryAuthInterceptor(jwtManager, headers, logger),
 		}
 
 		userClientOpts := []grpc.DialOption{
@@ -208,9 +172,10 @@ func main() {
 			panic(err)
 		}
 
-		server := frontserver.NewFrontServer(
-			authServiceClient, userServiceClient, sandboxServiceClient, logger, tracer, grpcBackoffConfig,
-		)
+		proxyController := proxy.NewController(userServiceClient, sandboxServiceClient, logger)
+		unsafeProxyController := proxy.NewUnsafeController(userServiceClient, logger)
+
+		server := grpcc.NewFrontServer(proxyController, unsafeProxyController)
 		proto.RegisterFrontServer(grpcServer, &server)
 
 		logger.Info("Starting serve gRPC front server")

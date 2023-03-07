@@ -23,8 +23,6 @@ services:
 
       - USER_SERVICE_ADDRESS=user_service:${USER_SERVICE_PORT}
 
-      - AUTH_SERVICE_ADDRESS=auth_service:${AUTH_SERVICE_PORT}
-
       - SANDBOX_SERVICE_ADDRESS=sandbox_service:${SANDBOX_SERVICE_PORT}
 
       - GRPC_CONNECTION_BACKOFF_DELAY_MILLISECONDS=1000
@@ -41,8 +39,11 @@ services:
       - GRPC_CONNECTION_KEEPALIVE_PERMIT_WITHOUT_STREAM=false
 
       - GRPC_AUTHORIZARION_HEADER=authorization
-      - GRPC_AUTHORIZARION_ACCOUNT_ID_HEADER=${GRPC_AUTHORIZARION_ACCOUNT_ID_HEADER}
-      - GRPC_AUTHORIZARION_USER_ROLE_HEADER=${GRPC_AUTHORIZARION_USER_ROLE_HEADER}
+      - GRPC_USER_ID_HEADER=${GRPC_USER_ID_HEADER}
+      - GRPC_USER_ROLE_HEADER=${GRPC_USER_ROLE_HEADER}
+
+      - AUTH_TOKEN_SECRET_KEY=${AUTH_TOKEN_SECRET_KEY}
+      - AUTH_TOKEN_EXPIRATION_SECONDS=0
 
     volumes:
       - type: bind
@@ -53,59 +54,6 @@ services:
       - "${PUBLIC_GRPC_FRONT_SERVICE_PORT}:${FRONT_GRPC_SERVICE_PORT}"
     depends_on:
       - user_service
-      - auth_service
-    networks:
-      - default
-
-  auth_service:
-    build:
-      context: ${PROJECT_ROOT_PATH}
-      dockerfile: ${PROJECT_ROOT_PATH}/auth_service/Dockerfile
-
-    container_name: auth_service
-    hostname: auth_service
-    environment:
-      - SERVICE_NAME=auth_service
-      - SERVICE_ADDRESS=auth_service:${AUTH_SERVICE_PORT}
-
-      - DATABASE_URI=mongodb://${AUTH_SERVICE_DATABASE_USERNAME}:${AUTH_SERVICE_DATABASE_PASSWORD}@auth_service_mongodb:${AUTH_SERVICE_DATABASE_PORT}
-      - DATABASE_NAME=auth
-      - DATABASE_COLLECTION_NAME=auth
-      - DATABASE_OPERATION_TIMEOUT_MILLISECONDS=1000
-      - DATABASE_CONNECTION_TIMEOUT_MILLISECONDS=2000
-      - DATABASE_STARTUP_RECONNECTION_COUNT=10
-      - DATABASE_STURTUP_RECONNECTIONION_INTERVAL_MILLISECONDS=500
-      - ENABLE_DATABASE_QUERY_METRICS=true
-
-      - LOG_LEVEL=debug
-      - LOG_PATH=${AUTH_SERVICE_LOG_PATH}
-
-      - JAEGER_COLLECTOR_ENDPOINT=http://jaeger:${JAEGER_COLLECTOR_PORT}/api/traces
-
-      - ENABLE_METRIC_SERVICE=false
-
-      - AUTH_TOKEN_SECRET_KEY=kqR4VkjWxjKNqgKHHaY7Nq5VQaLFSXqKILL8xlAhK6zrXQvqP2OEix7Lptw4B3I
-      - AUTH_TOKEN_EXPIRATION_SECONDS=10000
-    volumes:
-      - type: bind
-        source: ${TEST_RESULT_PATH}/_log/auth_service.log
-        target: ${AUTH_SERVICE_LOG_PATH}
-    ports:
-      - "${PUBLIC_AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}"
-    depends_on:
-      - auth_service_mongodb
-    networks:
-      - default
-
-  auth_service_mongodb:
-    image: mongo:latest
-    container_name: auth_service_mongodb
-    hostname: auth_service_mongodb
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=${AUTH_SERVICE_DATABASE_USERNAME}
-      - MONGO_INITDB_ROOT_PASSWORD=${AUTH_SERVICE_DATABASE_PASSWORD}
-    # volumes:
-    #   - ./mongodb:/usr/src/messenger
     networks:
       - default
 
@@ -133,6 +81,13 @@ services:
 
       - LOG_LEVEL=debug
       - LOG_PATH=${USER_SERVICE_LOG_PATH}
+
+      - AUTH_TOKEN_SECRET_KEY=${AUTH_TOKEN_SECRET_KEY}
+      - AUTH_TOKEN_EXPIRATION_SECONDS=10000
+
+      - GRPC_AUTHORIZARION_HEADER=authorization
+      - GRPC_USER_ID_HEADER=${GRPC_USER_ID_HEADER}
+      - GRPC_USER_ROLE_HEADER=${GRPC_USER_ROLE_HEADER}
 
       - JAEGER_COLLECTOR_ENDPOINT=http://jaeger:${JAEGER_COLLECTOR_PORT}/api/traces
 
@@ -171,25 +126,106 @@ services:
     hostname: sandbox_service
     environment:
       - SERVICE_ADDRESS=sandbox_service:${SANDBOX_SERVICE_PORT}
-      - SANDBOX_PROGRAM_EXECUTION_TIMOUT_MILLISECONDS=5000
-      - SANDBOX_DOCKER_IMAGE_NAME=sandbox:latest
-      - SANDBOX_DOCKER_IMAGE_PATH=/app/sandbox.tar
-      - SANDBOX_DOCKER_CLIENT_VERSION=1.41
-      - SANDBOX_MEMORY_LIMITATION_BYTES=134217728 # 128 Mbytes
-      - SANDBOX_NETWORK_DISABLED=true
-      - SANDBOX_CONTAINER_NAME_PREFIX=tmp_
-      - SANDBOX_GO_IMAGE_SOURCE_DIRECTORY=/app
+      - SERVICE_NAME=sandbox_service
 
+      - WORKER_POOL_WORKERS_COUNT=4
+
+      - DOCKER_CODE_RUNNER_IMAGE_NAME=sandbox:latest
+      - DOCKER_CODE_RUNNER_IMAGE_PATH=/app/sandbox.tar
+      - DOCKER_CODE_RUNNER_CLIENT_VERSION=1.41
+      - DOCKER_CODE_RUNNER_MEMORY_LIMITATION_BYTES=134217728 # 128 Mbytes
+      - DOCKER_CODE_RUNNER_NETWORK_DISABLED=true
+      - DOCKER_CODE_RUNNER_CONTAINER_NAME_PREFIX=tmp_
+      - DOCKER_CODE_RUNNER_GO_IMAGE_SOURCE_DIRECTORY=/app
+      - DOCKER_CODE_RUNNER_PROGRAM_EXECUTION_TIMEOUT_MILLISECONDS=5000
+
+      - GRPC_USER_ID_HEADER=${GRPC_USER_ID_HEADER}
+      - GRPC_USER_ROLE_HEADER=${GRPC_USER_ROLE_HEADER}
+
+      - LOG_LEVEL=debug
+      - LOG_PATH=${SANDBOX_SERVICE_LOG_PATH}
+
+      - KAFKA_BROKER_ADDRESS=kafka_broker:${KAFKA_BROKER_PORT}
+      - KAFKA_CODE_RUNNER_TOPIC=events
+      - KAFKA_WRITER_WRITE_TIMEOUT_MILLISECONDS=10000
+      - KAFKA_WRITER_READ_TIMEOUT_MILLISECONDS=10000
+      - KAFKA_CODE_RUNNER_MESSAGE_KEY=sandbox_code_runner_output
+
+      - DATABASE_URI=mongodb://${SANDBOX_SERVICE_DATABASE_USERNAME}:${SANDBOX_SERVICE_DATABASE_PASSWORD}@sandbox_service_mongodb:${SANDBOX_SERVICE_DATABASE_PORT}
+      - DATABASE_NAME=sandbox
+      - DATABASE_COLLECTION_NAME=programs
+      - DATABASE_OPERATION_TIMEOUT_MILLISECONDS=1000
+      - DATABASE_CONNECTION_TIMEOUT_MILLISECONDS=2000
+      - DATABASE_STARTUP_RECONNECTION_COUNT=10
+      - DATABASE_STURTUP_RECONNECTIONION_INTERVAL_MILLISECONDS=500
+
+      - JAEGER_COLLECTOR_ENDPOINT=http://jaeger:${JAEGER_COLLECTOR_PORT}/api/traces
     volumes:
       - type: bind
         source: ${TEST_RESULT_PATH}/_log/sandbox_service.log
         target: ${SANDBOX_SERVICE_LOG_PATH}
       - /var/run/docker.sock:/var/run/docker.sock
-      - ${PROJECT_ROOT_PATH}/sandbox_service/sandbox/docker_images/sandbox.tar:/app/sandbox.tar
+      - ${PROJECT_ROOT_PATH}/sandbox_service/docker/images/sandbox.tar:/app/sandbox.tar
     ports:
       - "${PUBLIC_SANDBOX_SERVICE_PORT}:${SANDBOX_SERVICE_PORT}"
     networks:
       - default
+
+  sandbox_service_mongodb:
+    image: mongo:latest
+    container_name: sandbox_service_mongodb
+    hostname: sandbox_service_mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${SANDBOX_SERVICE_DATABASE_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${SANDBOX_SERVICE_DATABASE_PASSWORD}
+    ports:
+      - "27016:${SANDBOX_SERVICE_DATABASE_PORT}"
+    networks:
+      - default
+
+  kafka_broker:
+    image: bitnami/kafka:latest
+    container_name: kafka_broker
+    hostname: kafka_broker
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:${KAFKA_BROKER_PORT},CONTROLLER://:${KAFKA_CONTROLLER_PORT},PLAINTEXT_HOST://kafka_broker:${PUBLIC_KAFKA_BROKER_PORT}
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka_broker:${KAFKA_BROKER_PORT},PLAINTEXT_HOST://localhost:${PUBLIC_KAFKA_BROKER_PORT}
+      - KAFKA_CFG_BROKER_ID=1
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka_broker:${KAFKA_CONTROLLER_PORT}
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_KRAFT_CLUSTER_ID=fM42aVuVTOC2GZbUYkG91g
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      # - KAFKA_CFG_CREATE_TOPICS=events:1:1
+      # - KAFKA_CREATE_TOPICS=events2:1:1
+      - BITNAMI_DEBUG=true
+    # volumes:
+    #   - /todo/volume:/bitnami/kafka
+    # command: /opt/bitnami/scripts/kafka/run.sh && /opt/bitnami/kafka/bin/kafka-topics.sh --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic events
+    #&&
+    ports:
+      - "${PUBLIC_KAFKA_BROKER_PORT}:${PUBLIC_KAFKA_BROKER_PORT}"
+    networks:
+      - default
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    hostname: kafka-ui
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=kraft
+      - KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS=kafka_broker:${KAFKA_BROKER_PORT}
+      - SERVER_PORT=${KAFKA_UI_PORT}
+    ports:
+      - "9080:${KAFKA_UI_PORT}"
+    networks:
+      - default
+    depends_on:
+      - kafka_broker
 
   jaeger:
     image: jaegertracing/all-in-one:latest

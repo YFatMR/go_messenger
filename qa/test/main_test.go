@@ -37,7 +37,6 @@ func TestMain(m *testing.M) {
 	// restFrontServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_REST_FRONT_SERVICE_PORT")
 	grpcFrontServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_GRPC_FRONT_SERVICE_PORT")
 	userServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_USER_SERVICE_PORT")
-	authServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_AUTH_SERVICE_PORT")
 	sandboxServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_SANDBOX_SERVICE_PORT")
 
 	testResponseTimeout := config.GetMillisecondsDurationRequired("TEST_RESPONSE_TIMEOUT_MILLISECONDS")
@@ -47,20 +46,7 @@ func TestMain(m *testing.M) {
 	testServiceSetupRetryInterval := config.GetMillisecondsDurationRequired(
 		"TEST_SERVICE_SETUP_RETRY_INTERVAL_MILLISECONDS",
 	)
-
-	// Setup auth service
 	ctxSetup, cancelSetup := context.WithTimeout(ctx, testSetupTimeout)
-	authClient, err := newGRPCAuthClient(ctxSetup, authServiceAddress, testResponseTimeout)
-	if err != nil {
-		panic(err)
-	}
-	pingAuthServiceCallback := func(ctx context.Context) (*proto.Pong, error) {
-		return authClient.Ping(ctx, &proto.Void{})
-	}
-	err = pingService(ctx, pingAuthServiceCallback, testServiceSetupRetryCount, testServiceSetupRetryInterval)
-	if err != nil {
-		panic(err)
-	}
 
 	// Setup user service
 	userClient, err := newGRPCUserClient(ctxSetup, userServiceAddress, testResponseTimeout)

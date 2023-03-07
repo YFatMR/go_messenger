@@ -3,31 +3,30 @@ import (
 	"time"
 )
 
-type databaseOperatinTag string
+{{ $metricPrefix := snakecase .Vars.metricPrefix }}
+{{ $globalVariablesPrefix := .Vars.globalVarPrefix }}
 
 const (
-	okStatusTag    = "ok"
-	errorStatusTag = "error"
+	{{ $globalVariablesPrefix }}okStatusTag    = "ok"
+	{{ $globalVariablesPrefix }}errorStatusTag = "error"
 )
 
 // Prefixes:
 // database_query: for database
 // service_request: for seervices
 
-{{ $metricPrefix := snakecase .Vars.metricPrefix }}
-
 // Naming rule: https://prometheus.io/docs/practices/naming/
 var (
-	durationSeconds = promauto.NewHistogramVec(prometheus.HistogramOpts{
+	{{ $globalVariablesPrefix }}DurationSeconds = promauto.NewHistogramVec(prometheus.HistogramOpts{
 			Name:    "{{ $metricPrefix }}_duration_seconds",
 			Buckets: []float64{0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 4},
 			Help:    "Duration of one database query",
 	}, []string{"status", "operation"})
-	processedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+	{{ $globalVariablesPrefix }}ProcessedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 			Name: "{{ $metricPrefix }}_processed_total",
 			Help: "Count of query to database",
 	}, []string{"status", "operation"})
-	startProcessTotal = promauto.NewCounter(prometheus.CounterOpts{
+	{{ $globalVariablesPrefix }}StartProcessTotal = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "{{ $metricPrefix }}_start_process_total",
 		Help: "Count of started queries",
 	})
@@ -57,19 +56,19 @@ func New{{$decorator}}(base {{.Interface.Type}}) *{{$decorator}} {
 		panic("Expected context variable")
 		{{ break }}
 	{{ end }}
-	
+
 		startTime := time.Now()
-		startProcessTotal.Inc()
+		{{ $globalVariablesPrefix }}StartProcessTotal.Inc()
 		defer func () {
 			functionDuration := time.Since(startTime).Seconds()
-			statusTag := okStatusTag
+			statusTag := {{ $globalVariablesPrefix }}okStatusTag
 		{{ if $method.ReturnsError }}
 			if err != nil {
-				statusTag = errorStatusTag
+				statusTag = {{ $globalVariablesPrefix }}errorStatusTag
 			}
 		{{ end }}
-			durationSeconds.WithLabelValues(statusTag, "{{ snakecase $method.Name }}").Observe(functionDuration)
-			processedTotal.WithLabelValues(statusTag, "{{ snakecase $method.Name }}").Inc()
+			{{ $globalVariablesPrefix }}DurationSeconds.WithLabelValues(statusTag, "{{ snakecase $method.Name }}").Observe(functionDuration)
+			{{ $globalVariablesPrefix }}ProcessedTotal.WithLabelValues(statusTag, "{{ snakecase $method.Name }}").Inc()
 		}()
 		{{ $method.Pass "d.base." -}}
 	}
