@@ -149,7 +149,7 @@ services:
       - LOG_PATH=${SANDBOX_SERVICE_LOG_PATH}
 
       - KAFKA_BROKER_ADDRESS=kafka_broker:${KAFKA_BROKER_PORT}
-      - KAFKA_CODE_RUNNER_TOPIC=events
+      - KAFKA_CODE_RUNNER_TOPIC=code_runner_results
       - KAFKA_WRITER_WRITE_TIMEOUT_MILLISECONDS=10000
       - KAFKA_WRITER_READ_TIMEOUT_MILLISECONDS=10000
 
@@ -202,13 +202,7 @@ services:
       - KAFKA_KRAFT_CLUSTER_ID=fM42aVuVTOC2GZbUYkG91g
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
-      # - KAFKA_CFG_CREATE_TOPICS=events:1:1
-      # - KAFKA_CREATE_TOPICS=events2:1:1
       - BITNAMI_DEBUG=true
-    # volumes:
-    #   - /todo/volume:/bitnami/kafka
-    # command: /opt/bitnami/scripts/kafka/run.sh && /opt/bitnami/kafka/bin/kafka-topics.sh --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic events
-    #&&
     ports:
       - "${PUBLIC_KAFKA_BROKER_PORT}:${PUBLIC_KAFKA_BROKER_PORT}"
     networks:

@@ -216,19 +216,23 @@ func (c *codeRunner) GetProgramOutput(ctx context.Context, containerID string) (
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 
+	min := func(a, b int) int {
+		if a < b {
+			return a
+		}
+		return b
+	}
+
 	_, err = stdcopy.StdCopy(stdout, stderr, logs)
 	if err != nil {
 		return nil, err
 	}
 
-	stdout.Truncate(c.limitations.OutputStdoutByte)
-	stdout.Write([]byte("..."))
-
-	stderr.Truncate(c.limitations.OutputStderrByte)
-	stderr.Write([]byte("..."))
+	limitedStdout := stdout.Next(min(c.limitations.OutputStdoutByte, stdout.Len()))
+	limitedStderr := stderr.Next(min(c.limitations.OutputStderrByte, stderr.Len()))
 
 	return &entity.ProgramOutput{
-		Stdout: stdout.String(),
-		Stderr: stderr.String(),
+		Stdout: string(limitedStdout),
+		Stderr: string(limitedStderr),
 	}, nil
 }

@@ -34,8 +34,11 @@ func New{{$decorator}}(base {{.Interface.Type}}, logger *czap.Logger) *{{$decora
 	func (d *{{$decorator}}) {{$method.Declaration}} {
 
 	{{ if not ($method.AcceptsContext) }}
-		panic("Expected context variable")
-		{{ break }}
+		d.logger.Info("{{ $decorator }}: calling {{ $method.Name }}")
+		defer d.logger.Info("{{$decorator}}: {{$method.Name}} finished")
+		{{ $method.Pass "d.base." -}}
+	}
+		{{ continue }}
 	{{ end }}
 
 	{{ if not $method.ReturnsError }}

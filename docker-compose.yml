@@ -154,7 +154,7 @@ services:
       - LOG_PATH=${SANDBOX_SERVICE_LOG_PATH}
 
       - KAFKA_BROKER_ADDRESS=kafka_broker:${KAFKA_BROKER_PORT}
-      - KAFKA_CODE_RUNNER_TOPIC=events
+      - KAFKA_CODE_RUNNER_TOPIC=code_runner_results
       - KAFKA_WRITER_WRITE_TIMEOUT_MILLISECONDS=10000
       - KAFKA_WRITER_READ_TIMEOUT_MILLISECONDS=10000
 
@@ -205,7 +205,6 @@ services:
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka_broker:${KAFKA_CONTROLLER_PORT}
       - ALLOW_PLAINTEXT_LISTENER=yes
       - KAFKA_KRAFT_CLUSTER_ID=fM42aVuVTOC2GZbUYkG91g
-      - KAFKA_CFG_CREATE_TOPICS=events
       - BITNAMI_DEBUG=false
       # volumes:
       #   - /todo/volume:/bitnami/kafka

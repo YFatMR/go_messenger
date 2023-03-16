@@ -60,6 +60,7 @@ func (s *sandboxService) RunProgram(ctx context.Context, programID *entity.Progr
 		Execute: func() {
 			ctx := context.Background()
 			output, err := s.codeRunner.RunGoCode(ctx, program.Source.SourceCode, userID.ID)
+			s.logger.Debug("Run program", zap.String("program ID", programID.ID))
 			if err != nil {
 				// TODO: mutex for logger
 				s.logger.Error(

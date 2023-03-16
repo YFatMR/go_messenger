@@ -69,3 +69,5 @@ GENERATE_DECORATORS "${SANDBOX_SERVICE_INTERFACE_FOLDER}" "SandboxRepository" "s
 GENERATE_DECORATORS "${SANDBOX_SERVICE_INTERFACE_FOLDER}" "SandboxService" "sandbox_service_" "${SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER}" true true false "service_request"
 # Controller
 GENERATE_DECORATORS "${SANDBOX_SERVICE_INTERFACE_FOLDER}" "SandboxController" "sandbox_controller_" "${SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER}" true false false "none"
+# Kafka client
+GENERATE_DECORATORS "${SANDBOX_SERVICE_INTERFACE_FOLDER}" "KafkaClient" "kafka_client_" "${SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER}" true false false "none"

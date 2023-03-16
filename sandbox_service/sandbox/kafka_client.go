@@ -9,6 +9,7 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	"github.com/YFatMR/go_messenger/core/pkg/czap"
 	"github.com/YFatMR/go_messenger/sandbox_service/apientity"
+	"github.com/YFatMR/go_messenger/sandbox_service/decorator"
 	"github.com/YFatMR/go_messenger/sandbox_service/entity"
 	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
@@ -29,13 +30,13 @@ func KafkaClientFromConfig(config *cviper.CustomViper, logger *czap.Logger) apie
 		WriteTimeout: config.GetMillisecondsDurationRequired("KAFKA_WRITER_WRITE_TIMEOUT_MILLISECONDS"),
 		ReadTimeout:  config.GetMillisecondsDurationRequired("KAFKA_WRITER_READ_TIMEOUT_MILLISECONDS"),
 	}
-
-	return &KafkaClient{
+	base := &KafkaClient{
 		writer: writer,
 		logger: logger,
 		// TODO: check that it's true
 		writeOperationTimeout: config.GetMillisecondsDurationRequired("KAFKA_WRITER_WRITE_TIMEOUT_MILLISECONDS"),
 	}
+	return decorator.NewLoggingKafkaClientDecorator(base, logger)
 }
 
 func (c *KafkaClient) Stop() {
