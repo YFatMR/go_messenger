@@ -5,7 +5,7 @@ import (
 
 	"github.com/YFatMR/go_messenger/core/pkg/czap"
 	"github.com/YFatMR/go_messenger/front_server/apientity"
-	"github.com/YFatMR/go_messenger/front_server/grpcc"
+	"github.com/YFatMR/go_messenger/front_server/grpcapi"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"go.uber.org/zap"
 )
@@ -22,14 +22,18 @@ func NewUnsafeController(userServiceClient proto.UserClient, logger *czap.Logger
 	}
 }
 
-func (c *unsafeController) CreateUser(ctx context.Context, request *proto.CreateUserRequest) (
+func (c *unsafeController) CreateUser(ctx context.Context, request *proto.CreateUserFrontRequest) (
 	*proto.UserID, error,
 ) {
-	grpcCtx := context.WithValue(ctx, grpcc.AuthorizationFieldContextKey, false)
+	grpcCtx := context.WithValue(ctx, grpcapi.AuthorizationFieldContextKey, false)
 	userID, err := c.userServiceClient.CreateUser(
 		grpcCtx, &proto.CreateUserRequest{
-			Credential: request.GetCredential(),
-			UserData:   request.GetUserData(),
+			Credential: &proto.Credential{
+				Email:    request.GetCredential().GetEmail(),
+				Password: request.GetCredential().GetPassword(),
+				Role:     "user",
+			},
+			UserData: request.GetUserData(),
 		},
 	)
 	if err != nil {
@@ -39,11 +43,15 @@ func (c *unsafeController) CreateUser(ctx context.Context, request *proto.Create
 	return userID, nil
 }
 
-func (c *unsafeController) GenerateToken(ctx context.Context, request *proto.Credential) (
+func (c *unsafeController) GenerateToken(ctx context.Context, request *proto.PublicCredential) (
 	*proto.Token, error,
 ) {
-	grpcCtx := context.WithValue(ctx, grpcc.AuthorizationFieldContextKey, false)
-	return c.userServiceClient.GenerateToken(grpcCtx, request)
+	grpcCtx := context.WithValue(ctx, grpcapi.AuthorizationFieldContextKey, false)
+	return c.userServiceClient.GenerateToken(grpcCtx, &proto.Credential{
+		Email:    request.GetEmail(),
+		Password: request.GetPassword(),
+		Role:     "user",
+	})
 }
 
 func (c *unsafeController) Ping(ctx context.Context, request *proto.Void) (

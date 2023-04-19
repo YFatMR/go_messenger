@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	resourcesdk "go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -40,6 +41,13 @@ func main() {
 		panic(err)
 	}
 	defer logger.Sync()
+
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error("Panic!", zap.Any("msg", r))
+		}
+		panic("Panic")
+	}()
 
 	// Init tracing
 	logger.Info("Init metrics")

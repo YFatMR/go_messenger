@@ -77,6 +77,33 @@ func FromConfig(config *cviper.CustomViper) (*Logger, error) {
 	}, nil
 }
 
+func FromConfigWithStdStreams(config *cviper.CustomViper) (*Logger, error) {
+	logLevel := config.GetZapcoreLogLevelRequired("LOG_LEVEL")
+
+	// Init logger
+	zapConfig := zap.NewProductionConfig()
+	zapConfig.OutputPaths = append(zapConfig.OutputPaths, "stdout")
+	zapConfig.Level.SetLevel(logLevel)
+
+	zapLogger, err := zapConfig.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Logger{
+		Logger: *otelzap.New(
+			zapLogger,
+			otelzap.WithTraceIDField(true),
+			otelzap.WithMinLevel(zapcore.ErrorLevel),
+			otelzap.WithStackTrace(true),
+		),
+		settings: Settings{
+			LogTraceID:            true,
+			ExportMessageLogLevel: zap.ErrorLevel,
+		},
+	}, nil
+}
+
 func (l *Logger) logWithContext(ctx context.Context, level zapcore.Level,
 	msg string, fields ...zapcore.Field,
 ) {

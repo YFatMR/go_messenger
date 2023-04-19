@@ -6,17 +6,23 @@ option go_package = "./proto";
 import "user.proto";
 import "common.proto";
 import "sandbox.proto";
+import "dialog.proto";
 import "google/api/annotations.proto";
 
+message CreateUserFrontRequest {
+  PublicCredential credential = 1;
+  UserData userData = 2;
+}
+
 service Front {
-  rpc CreateUser(CreateUserRequest) returns (UserID) {
+  rpc CreateUser(CreateUserFrontRequest) returns (UserID) {
     option (google.api.http) = {
       post : "/users"
       body : "*"
     };
   }
 
-  rpc GenerateToken(Credential) returns (Token) {
+  rpc GenerateToken(PublicCredential) returns (Token) {
     option (google.api.http) = {
       post : "/token"
       body : "*"
@@ -60,6 +66,19 @@ service Front {
     option (google.api.http) = {
       patch : "/programs/lint"
       body : "*"
+    };
+  }
+
+  rpc CreateDialogWith(UserID) returns (Dialog) {
+    option (google.api.http) = {
+      post : "/dialogs"
+      body : "*"
+    };
+  }
+
+  rpc GetDialogs(GetDialogsRequest) returns (GetDialogsResponse) {
+    option (google.api.http) = {
+      get : "/dialogs/{offset}/{limit}"
     };
   }
 

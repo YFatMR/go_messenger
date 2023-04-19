@@ -1,4 +1,4 @@
-package grpcc
+package grpcapi
 
 import "github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 

@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package proto;
+option go_package = "./proto";
+
+import "common.proto";
+
+message Image {
+  ImageID imageID = 1;
+  bytes image = 2;
+  map<string, string> metadata = 3;
+}
+
+service ImageService {
+  rpc GetProfileImage(ImageID) returns (Image) {}
+  rpc CreateProfileImage(Image) returns (ImageID) {}
+  rpc Ping(Void) returns (Pong) {}
+}

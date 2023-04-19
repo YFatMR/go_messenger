@@ -10,14 +10,13 @@ import (
 
 type UserManager struct{}
 
-func (u *UserManager) NewUnauthorizedUser(ctx context.Context) (*proto.UserID, *proto.Credential, error) {
-	userCredential := &proto.Credential{
-		Login:    uuid.NewString(),
+func (u *UserManager) NewUnauthorizedUser(ctx context.Context) (*proto.UserID, *proto.PublicCredential, error) {
+	userCredential := &proto.PublicCredential{
+		Email:    uuid.NewString(),
 		Password: uuid.NewString(),
-		Role:     "user",
 	}
 
-	userID, err := frontServicegRPCClient.CreateUser(ctx, &proto.CreateUserRequest{
+	userID, err := frontServicegRPCClient.CreateUser(ctx, &proto.CreateUserFrontRequest{
 		Credential: userCredential,
 		UserData: &proto.UserData{
 			Nickname: uuid.NewString(),

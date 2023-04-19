@@ -21,6 +21,7 @@ raw_build:
 	go build -o ${BINARY_DIRECTORY}/user_service ${ROOT_PROJECT_DIRECTORY}/user_service/cmd
 	go build -o ${BINARY_DIRECTORY}/qa_test ${ROOT_PROJECT_DIRECTORY}/qa/test
 	go build -o ${BINARY_DIRECTORY}/sandbox_service ${ROOT_PROJECT_DIRECTORY}/sandbox_service/cmd
+	go build -o ${BINARY_DIRECTORY}/dialog_service ${ROOT_PROJECT_DIRECTORY}/dialog_service/cmd
 
 build: gen
 	make raw_build
@@ -30,6 +31,13 @@ build_docker_compose: build
 
 run: build_docker_compose
 	sudo docker-compose --file ${ROOT_PROJECT_DIRECTORY}/docker-compose.yml --env-file ${ROOT_PROJECT_DIRECTORY}/production.env --verbose up
+
+compose_down:
+	sudo docker-compose --file ${ROOT_PROJECT_DIRECTORY}/docker-compose.yml --env-file ${ROOT_PROJECT_DIRECTORY}/production.env --verbose down
+
+compose_down_volume:
+	sudo docker-compose --file ${ROOT_PROJECT_DIRECTORY}/docker-compose.yml --env-file ${ROOT_PROJECT_DIRECTORY}/production.env --verbose down --volumes
+	docker volume prune
 
 run-tests:
 	go test -tags=test -v -race -o ${BINARY_DIRECTORY}/user_service_repository_tests ${ROOT_PROJECT_DIRECTORY}/user_service/user/ -args -mongo_config_path="${ROOT_PROJECT_DIRECTORY}/core/pkg/recipes/go/mongo/.env"

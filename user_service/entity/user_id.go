@@ -5,11 +5,11 @@ import (
 )
 
 type UserID struct {
-	ID string
+	ID uint64
 }
 
 func UserIDFromProtobuf(userID *proto.UserID) (*UserID, error) {
-	if userID == nil || userID.ID == "" {
+	if userID == nil || userID.ID == 0 {
 		return nil, ErrWrongRequestFormat
 	}
 	return &UserID{

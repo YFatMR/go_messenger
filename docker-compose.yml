@@ -22,8 +22,8 @@ services:
       - GRPC_SERVICE_ADDRESS=front_service:${FRONT_GRPC_SERVICE_PORT}
 
       - USER_SERVICE_ADDRESS=user_service:${USER_SERVICE_PORT}
-
       - SANDBOX_SERVICE_ADDRESS=sandbox_service:${SANDBOX_SERVICE_PORT}
+      - DIALOG_SERVICE_ADDRESS=dialog_service:${DIALOG_SERVICE_PORT}
 
       - GRPC_CONNECTION_BACKOFF_DELAY_MILLISECONDS=1000
       - GRPC_CONNECTION_BACKOFF_MULTIPLIER=1.6
@@ -68,14 +68,7 @@ services:
       - SERVICE_NAME=user_service
       - SERVICE_ADDRESS=user_service:${USER_SERVICE_PORT}
 
-      - DATABASE_URI=mongodb://${USER_SERVICE_DATABASE_USERNAME}:${USER_SERVICE_DATABASE_PASSWORD}@user_service_mongodb:${USER_SERVICE_DATABASE_PORT}
-      - DATABASE_NAME=users
-      - DATABASE_COLLECTION_NAME=users
-      - DATABASE_OPERATION_TIMEOUT_MILLISECONDS=1000
-      - DATABASE_CONNECTION_TIMEOUT_MILLISECONDS=2000
-      - DATABASE_STARTUP_RECONNECTION_COUNT=10
-      - DATABASE_STURTUP_RECONNECTIONION_INTERVAL_MILLISECONDS=500
-
+      - DATABASE_URL=postgres://${USER_SERVICE_DATABASE_USERNAME}:${USER_SERVICE_DATABASE_PASSWORD}@user_service_db:5432/${USER_SERVICE_DATABASE_NAME}?sslmode=disable&pool_max_conns=10
       - ENABLE_DATABASE_QUERY_METRICS=true
       - ENABLE_DATABASE_QUERY_TRACING=true
 
@@ -103,21 +96,20 @@ services:
       - "9030:${USER_SERVICE_PORT}"
       - "2112:${USER_SERVICE_METRICS_PORT}"
     depends_on:
-      - user_service_mongodb
+      - user_service_db
     networks:
       - default
 
-  user_service_mongodb:
-    image: mongo:latest
-    container_name: user_service_mongodb
-    hostname: user_service_mongodb
+  user_service_db:
+    image: postgres:latest
+    container_name: user_service_db
+    hostname: user_service_db
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=${USER_SERVICE_DATABASE_USERNAME}
-      - MONGO_INITDB_ROOT_PASSWORD=${USER_SERVICE_DATABASE_PASSWORD}
-    # volumes:
-    #   - /todo/mongodb:/usr/src/messenger
+      - POSTGRES_USER=${USER_SERVICE_DATABASE_USERNAME}
+      - POSTGRES_PASSWORD=${USER_SERVICE_DATABASE_PASSWORD}
+      - POSTGRES_DB=${USER_SERVICE_DATABASE_NAME}
     ports:
-      - "27017:${USER_SERVICE_DATABASE_PORT}"
+      - "9035:${USER_SERVICE_DATABASE_PORT}"
     networks:
       - default
 
@@ -187,6 +179,64 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=${SANDBOX_SERVICE_DATABASE_PASSWORD}
     ports:
       - "27016:${SANDBOX_SERVICE_DATABASE_PORT}"
+    networks:
+      - default
+
+  dialog_service:
+    build:
+      context: ${PROJECT_ROOT_PATH}
+      dockerfile: ${PROJECT_ROOT_PATH}/dialog_service/Dockerfile
+
+    container_name: dialog_service
+    hostname: dialog_service
+    environment:
+      - SERVICE_NAME=dialog_service
+      - SERVICE_ADDRESS=dialog_service:${DIALOG_SERVICE_PORT}
+
+      - USER_SERVICE_ADDRESS=user_service:${USER_SERVICE_PORT}
+      - USER_SERVICE_CONNECTION_TIMEOUT_MILLISECONDS=2000
+
+      - GRPC_USER_ID_HEADER=${GRPC_USER_ID_HEADER}
+
+      - DATABASE_URL=postgres://${DIALOG_SERVICE_DATABSE_USERNAME}:${DIALOG_SERVICE_DATABSE_PASSWORD}@dialog_service_db:5432/${DIALOG_SERVICE_DATABSE_NAME}?sslmode=disable&pool_max_conns=10
+      - DATABASE_OPERATION_TIMEOUT_MILLISECONDS=1000
+      - DATABASE_CONNECTION_TIMEOUT_MILLISECONDS=2000
+      - DATABASE_STARTUP_RECONNECTION_COUNT=10
+      - DATABASE_STURTUP_RECONNECTIONION_INTERVAL_MILLISECONDS=500
+
+      - GRPC_CONNECTION_BACKOFF_DELAY_MILLISECONDS=1000
+      - GRPC_CONNECTION_BACKOFF_MULTIPLIER=1.6
+      - GRPC_CONNECTION_BACKOFF_JITTER=0.2
+      - GRPC_CONNECTION_BACKOFF_MAX_DELAY_MILLISECONDS=1000
+
+      - GRPC_CONNECTION_KEEPALIVE_TIME_MILLISECONDS=10000
+      - GRPC_CONNECTION_KEEPALIVE_TIMEOUT_MILLISECONDS=20000
+      - GRPC_CONNECTION_KEEPALIVE_PERMIT_WITHOUT_STREAM=false
+
+      - LOG_LEVEL=debug
+      - LOG_PATH=${DIALOG_SERVICE_LOG_PATH}
+
+    volumes:
+      - type: bind
+        source: ${PROJECT_ROOT_PATH}/_log/dialog_service.log
+        target: ${DIALOG_SERVICE_LOG_PATH}
+    ports:
+      - "9031:${DIALOG_SERVICE_PORT}"
+    depends_on:
+      - dialog_service_db
+    networks:
+      - default
+
+  dialog_service_db:
+    image: postgres:latest
+    container_name: dialog_service_db
+    hostname: dialog_service_db
+    environment:
+      - POSTGRES_USER=${DIALOG_SERVICE_DATABSE_USERNAME}
+      - POSTGRES_PASSWORD=${DIALOG_SERVICE_DATABSE_PASSWORD}
+      - POSTGRES_DB=${DIALOG_SERVICE_DATABSE_NAME}
+    ports:
+      - "9035:${DIALOG_SERVICE_DATABSE_PORT}"
     networks:
       - default
 

@@ -2,6 +2,7 @@ go 1.19
 
 use (
 	./core
+	./dialog_service
 	./front_service
 	./protocol
 	./qa

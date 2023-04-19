@@ -1,10 +1,10 @@
 package entity
 
 type Account struct {
-	UserID         string
-	Login          string
+	UserID         UserID
+	Email          string
 	HashedPassword string
-	Role           *UserRole
+	Role           UserRole
 	Nickname       string
 	Name           string
 	Surname        string

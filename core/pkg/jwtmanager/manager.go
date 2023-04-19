@@ -11,7 +11,7 @@ import (
 )
 
 type TokenPayload struct {
-	UserID   string
+	UserID   uint64
 	UserRole string
 }
 

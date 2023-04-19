@@ -7,7 +7,7 @@ import (
 )
 
 type CodeRunner interface {
-	RunGoCode(ctx context.Context, sourceCode string, userID string) (
+	RunGoCode(ctx context.Context, sourceCode string, userID *entity.UserID) (
 		output *entity.ProgramOutput, err error,
 	)
 	Stop()

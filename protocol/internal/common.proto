@@ -6,3 +6,9 @@ option go_package = "./proto";
 message Void {}
 
 message Pong { string message = 1; }
+
+message UserID { uint64 ID = 1; }
+
+message DialogID { uint64 ID = 1; }
+
+message ImageID { string ID = 1; }

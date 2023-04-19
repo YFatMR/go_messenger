@@ -1,14 +1,14 @@
 package entity
 
 type Credential struct {
-	Login          string
+	Email          string
 	HashedPassword string
-	Role           *UserRole
+	Role           UserRole
 }
 
 func CredentialFromUnsafeCredential(usafeCredential *UnsafeCredential, hashedPassword string) *Credential {
 	return &Credential{
-		Login:          usafeCredential.Login,
+		Email:          usafeCredential.Email,
 		HashedPassword: hashedPassword,
 		Role:           usafeCredential.Role,
 	}

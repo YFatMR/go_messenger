@@ -12,12 +12,13 @@ import (
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	"github.com/YFatMR/go_messenger/sandbox_service/cdocker"
 	"github.com/YFatMR/go_messenger/sandbox_service/decorator"
-	"github.com/YFatMR/go_messenger/sandbox_service/grpcc"
+	"github.com/YFatMR/go_messenger/sandbox_service/grpcapi"
 	"github.com/YFatMR/go_messenger/sandbox_service/sandbox"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	resourcesdk "go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -37,6 +38,13 @@ func main() {
 		panic(err)
 	}
 	defer logger.Sync()
+
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error("Panic!", zap.Any("msg", r))
+		}
+		panic("Panic")
+	}()
 
 	// Init tracing
 	logger.Info("Init metrics")
@@ -80,12 +88,12 @@ func main() {
 	sandboxService = decorator.NewOpentelemetryTracingSandboxServiceDecorator(sandboxService, tracer, false)
 	sandboxService = decorator.NewLoggingSandboxServiceDecorator(sandboxService, logger)
 
-	grpcHeaders := grpcc.HeadersFromConfig(config)
-	contextManager := grpcc.NewContextManager(grpcHeaders)
+	grpcHeaders := grpcapi.HeadersFromConfig(config)
+	contextManager := grpcapi.NewContextManager(grpcHeaders)
 	controller := sandbox.NewController(sandboxService, contextManager, logger)
 	controller = decorator.NewLoggingSandboxControllerDecorator(controller, logger)
 
-	sandboxServer := grpcc.NewSandboxServer(controller)
+	sandboxServer := grpcapi.NewSandboxServer(controller)
 
 	grpcServer := grpc.NewServer()
 	listener, err := net.Listen("tcp", serviceAddress)

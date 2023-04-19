@@ -16,6 +16,7 @@ export PATH="$PATH:$(go env GOPATH)/bin"
 # deps
 GOOGLE_API_PATH=$GOPATH/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.16.0/third_party/googleapis
 
+protoc-gen-go --version
 # generate go files
 protoc \
     -I "./internal" \
@@ -28,7 +29,8 @@ protoc \
     internal/front.proto \
     internal/user.proto \
     internal/common.proto \
-    internal/sandbox.proto
+    internal/sandbox.proto \
+    internal/dialog.proto
     # internal/auth.proto \
 
 # generate openapiv2 for REST endpoint

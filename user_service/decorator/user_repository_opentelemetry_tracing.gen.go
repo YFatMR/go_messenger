@@ -64,18 +64,18 @@ func (d *OpentelemetryTracingUserRepositoryDecorator) DeleteByID(ctx context.Con
 	return d.base.DeleteByID(ctx, userID)
 }
 
-// GetAccountByLogin implements apientity.UserRepository
-func (d *OpentelemetryTracingUserRepositoryDecorator) GetAccountByLogin(ctx context.Context, login string) (account *entity.Account, err error) {
+// GetAccountByEmail implements apientity.UserRepository
+func (d *OpentelemetryTracingUserRepositoryDecorator) GetAccountByEmail(ctx context.Context, email string) (account *entity.Account, err error) {
 
 	var span trace.Span
-	ctx, span = d.tracer.Start(ctx, "/GetAccountByLogin")
+	ctx, span = d.tracer.Start(ctx, "/GetAccountByEmail")
 	defer func() {
 		if err != nil && d.recordErrors {
 			span.RecordError(err)
 		}
 		span.End()
 	}()
-	return d.base.GetAccountByLogin(ctx, login)
+	return d.base.GetAccountByEmail(ctx, email)
 }
 
 // GetByID implements apientity.UserRepository

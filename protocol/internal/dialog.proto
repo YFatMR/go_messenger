@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package proto;
+option go_package = "./proto";
+
+import "common.proto";
+
+message DialogMessage {
+  DialogID dialogID = 1;
+  UserID senderID = 2;
+  string text = 3;
+  uint64 createdAt = 4;
+}
+
+message Dialog {
+  DialogID dialogID = 1;
+  string name = 2;
+  uint64 unreadMessagesCount = 3;
+  DialogMessage lastMessage = 4;
+}
+
+message GetDialogsRequest {
+  uint64 offset = 1;
+  uint64 limit = 2;
+}
+
+message GetDialogsResponse { repeated Dialog dialogs = 1; }
+
+message GetDialogMessagesRequest {
+  DialogID dialogID = 1;
+  uint64 offset = 2;
+  uint64 limit = 3;
+}
+
+message GetDialogMessagesResponse { repeated DialogMessage messages = 1; }
+
+message CreateDialogMessageRequest {
+  DialogID dialogID = 1;
+  string text = 2;
+}
+
+message CreateDialogMessageResponse { uint64 createdAt = 1; }
+
+service DialogService {
+  rpc CreateDialogWith(UserID) returns (Dialog) {}
+  rpc GetDialogs(GetDialogsRequest) returns (GetDialogsResponse) {}
+
+  // rpc CreateDialogMessage(CreateDialogMessageRequest)
+  //     returns (CreateDialogMessageResponse) {}
+  // rpc GetDialogMessages(GetDialogMessagesRequest) TODO: check that user id in
+  // dialog members
+  //     returns (GetDialogMessagesResponse) {}
+
+  rpc Ping(Void) returns (Pong) {}
+}

@@ -38,6 +38,7 @@ func TestMain(m *testing.M) {
 	grpcFrontServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_GRPC_FRONT_SERVICE_PORT")
 	userServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_USER_SERVICE_PORT")
 	sandboxServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_SANDBOX_SERVICE_PORT")
+	dialogServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_DIALOG_SERVICE_PORT")
 
 	testResponseTimeout := config.GetMillisecondsDurationRequired("TEST_RESPONSE_TIMEOUT_MILLISECONDS")
 	testSetupTimeout := config.GetMillisecondsDurationRequired("TEST_SETUP_TIMEOUT_MILLISECONDS")
@@ -70,6 +71,19 @@ func TestMain(m *testing.M) {
 		return sandboxClient.Ping(ctx, &proto.Void{})
 	}
 	err = pingService(ctx, pingSandboxServiceCallback, testServiceSetupRetryCount, testServiceSetupRetryInterval)
+	if err != nil {
+		panic(err)
+	}
+
+	// Setup dialog service
+	dialogClient, err := newGRPCDialogClient(ctxSetup, dialogServiceAddress, testResponseTimeout)
+	if err != nil {
+		panic(err)
+	}
+	pingDialogServiceCallback := func(ctx context.Context) (*proto.Pong, error) {
+		return dialogClient.Ping(ctx, &proto.Void{})
+	}
+	err = pingService(ctx, pingDialogServiceCallback, testServiceSetupRetryCount, testServiceSetupRetryInterval)
 	if err != nil {
 		panic(err)
 	}

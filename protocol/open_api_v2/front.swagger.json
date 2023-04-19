@@ -16,6 +16,76 @@
     "application/json"
   ],
   "paths": {
+    "/dialogs": {
+      "post": {
+        "operationId": "Front_CreateDialogWith",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoDialog"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoUserID"
+            }
+          }
+        ],
+        "tags": [
+          "Front"
+        ]
+      }
+    },
+    "/dialogs/{offset}/{limit}": {
+      "get": {
+        "operationId": "Front_GetDialogs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoGetDialogsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "offset",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "limit",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Front"
+        ]
+      }
+    },
     "/ping": {
       "get": {
         "operationId": "Front_Ping",
@@ -219,7 +289,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/protoCredential"
+              "$ref": "#/definitions/protoPublicCredential"
             }
           }
         ],
@@ -251,7 +321,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/protoCreateUserRequest"
+              "$ref": "#/definitions/protoCreateUserFrontRequest"
             }
           }
         ],
@@ -282,7 +352,8 @@
             "name": "ID",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "uint64"
           }
         ],
         "tags": [
@@ -292,28 +363,70 @@
     }
   },
   "definitions": {
-    "protoCreateUserRequest": {
+    "protoCreateUserFrontRequest": {
       "type": "object",
       "properties": {
         "credential": {
-          "$ref": "#/definitions/protoCredential"
+          "$ref": "#/definitions/protoPublicCredential"
         },
         "userData": {
           "$ref": "#/definitions/protoUserData"
         }
       }
     },
-    "protoCredential": {
+    "protoDialog": {
       "type": "object",
       "properties": {
-        "login": {
+        "dialogID": {
+          "$ref": "#/definitions/protoDialogID"
+        },
+        "name": {
           "type": "string"
         },
-        "password": {
+        "unreadMessagesCount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "lastMessage": {
+          "$ref": "#/definitions/protoDialogMessage"
+        }
+      }
+    },
+    "protoDialogID": {
+      "type": "object",
+      "properties": {
+        "ID": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "protoDialogMessage": {
+      "type": "object",
+      "properties": {
+        "dialogID": {
+          "$ref": "#/definitions/protoDialogID"
+        },
+        "senderID": {
+          "$ref": "#/definitions/protoUserID"
+        },
+        "text": {
           "type": "string"
         },
-        "role": {
-          "type": "string"
+        "createdAt": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "protoGetDialogsResponse": {
+      "type": "object",
+      "properties": {
+        "dialogs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protoDialog"
+          }
         }
       }
     },
@@ -372,6 +485,17 @@
         }
       }
     },
+    "protoPublicCredential": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
     "protoToken": {
       "type": "object",
       "properties": {
@@ -409,7 +533,8 @@
       "type": "object",
       "properties": {
         "ID": {
-          "type": "string"
+          "type": "string",
+          "format": "uint64"
         }
       }
     },

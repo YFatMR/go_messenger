@@ -59,13 +59,13 @@ func (s *sandboxService) RunProgram(ctx context.Context, programID *entity.Progr
 	return s.workerPool.AddTask(workerpool.Task{
 		Execute: func() {
 			ctx := context.Background()
-			output, err := s.codeRunner.RunGoCode(ctx, program.Source.SourceCode, userID.ID)
+			output, err := s.codeRunner.RunGoCode(ctx, program.Source.SourceCode, userID)
 			s.logger.Debug("Run program", zap.String("program ID", programID.ID))
 			if err != nil {
 				// TODO: mutex for logger
 				s.logger.Error(
 					"Can not run program", zap.Error(err), zap.String("program ID", programID.ID),
-					zap.String("user ID", userID.ID), zap.String(czap.TraceIDKey, traceID),
+					zap.Uint64("user ID", userID.ID), zap.String(czap.TraceIDKey, traceID),
 				)
 				return
 			}

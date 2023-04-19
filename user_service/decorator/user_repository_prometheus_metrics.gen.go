@@ -95,8 +95,8 @@ func (d *PrometheusMetricsUserRepositoryDecorator) DeleteByID(ctx context.Contex
 	return d.base.DeleteByID(ctx, userID)
 }
 
-// GetAccountByLogin implements apientity.UserRepository
-func (d *PrometheusMetricsUserRepositoryDecorator) GetAccountByLogin(ctx context.Context, login string) (account *entity.Account, err error) {
+// GetAccountByEmail implements apientity.UserRepository
+func (d *PrometheusMetricsUserRepositoryDecorator) GetAccountByEmail(ctx context.Context, email string) (account *entity.Account, err error) {
 
 	startTime := time.Now()
 	private_UserRepository_StartProcessTotal.Inc()
@@ -108,10 +108,10 @@ func (d *PrometheusMetricsUserRepositoryDecorator) GetAccountByLogin(ctx context
 			statusTag = private_UserRepository_errorStatusTag
 		}
 
-		private_UserRepository_DurationSeconds.WithLabelValues(statusTag, "get_account_by_login").Observe(functionDuration)
-		private_UserRepository_ProcessedTotal.WithLabelValues(statusTag, "get_account_by_login").Inc()
+		private_UserRepository_DurationSeconds.WithLabelValues(statusTag, "get_account_by_email").Observe(functionDuration)
+		private_UserRepository_ProcessedTotal.WithLabelValues(statusTag, "get_account_by_email").Inc()
 	}()
-	return d.base.GetAccountByLogin(ctx, login)
+	return d.base.GetAccountByEmail(ctx, email)
 }
 
 // GetByID implements apientity.UserRepository

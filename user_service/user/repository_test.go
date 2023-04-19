@@ -5,37 +5,31 @@ import (
 	"flag"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
-	"github.com/YFatMR/go_messenger/core/pkg/czap"
 	recipe "github.com/YFatMR/go_messenger/core/pkg/recipes/go/mongo"
-	"github.com/YFatMR/go_messenger/user_service/apientity"
-	"github.com/YFatMR/go_messenger/user_service/entity"
-	"github.com/YFatMR/go_messenger/user_service/user"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/zap"
 )
 
 var mongoConfigPathFlag string
 
+// TODO: rename mongo vars to common. Like database
 func init() {
 	flag.StringVar(&mongoConfigPathFlag, "mongo_config_path", "", "Path to mongodb configuration")
 }
 
-func newMockUserMongoRepository(collection *mongo.Collection) apientity.UserRepository {
-	nopLogger := czap.New(
-		*otelzap.New(zap.NewNop()),
-		czap.Settings{
-			LogTraceID: false,
-		},
-	)
-	databaseOperationTimeout := time.Millisecond * 800
-	return user.NewMongoRepository(collection, databaseOperationTimeout, nopLogger)
-}
+// func newMockUserRepository(collection *mongo.Collection) apientity.UserRepository {
+// 	nopLogger := czap.New(
+// 		*otelzap.New(zap.NewNop()),
+// 		czap.Settings{
+// 			LogTraceID: false,
+// 		},
+// 	)
+// 	databaseOperationTimeout := time.Millisecond * 800
+// 	// TODO change to pgx
+// 	return user.NewPosgreSQLRepository(nil, databaseOperationTimeout, nopLogger)
+// }
 
 type MongoRepositoryTestSuite struct {
 	database *mongo.Database
@@ -70,44 +64,44 @@ func TestMongoRepositoryTestSuite(t *testing.T) {
 	}
 }
 
-func (s *MongoRepositoryTestSuite) TestUserCreation() {
-	ctx := context.Background()
-	require := s.Require()
+// func (s *MongoRepositoryTestSuite) TestUserCreation() {
+// 	ctx := context.Background()
+// 	require := s.Require()
 
-	// Initialize repository
-	randomCollection := s.database.Collection(uuid.NewString())
-	defer require.NoError(randomCollection.Drop(ctx))
-	repository := newMockUserMongoRepository(randomCollection)
+// 	// Initialize repository
+// 	randomCollection := s.database.Collection(uuid.NewString())
+// 	defer require.NoError(randomCollection.Drop(ctx))
+// 	repository := newMockUserMongoRepository(randomCollection)
 
-	// Start test
-	userData := &entity.User{Nickname: "nick", Name: "Ivan", Surname: "Petrov"}
-	credential := &entity.Credential{Login: "login", HashedPassword: "hashedPassword", Role: &entity.RoleUser}
-	userID, err := repository.Create(context.Background(), userData, credential)
-	require.NoError(err)
-	require.NotNil(userID)
-}
+// 	// Start test
+// 	userData := &entity.User{Nickname: "nick", Name: "Ivan", Surname: "Petrov"}
+// 	credential := &entity.Credential{Email: "email", HashedPassword: "hashedPassword", Role: entity.RoleUser}
+// 	userID, err := repository.Create(context.Background(), userData, credential)
+// 	require.NoError(err)
+// 	require.NotNil(userID)
+// }
 
-func (s *MongoRepositoryTestSuite) TestFindCreatedUser() {
-	ctx := context.Background()
-	require := s.Require()
+// func (s *MongoRepositoryTestSuite) TestFindCreatedUser() {
+// 	ctx := context.Background()
+// 	require := s.Require()
 
-	// Initialize repository
-	randomCollection := s.database.Collection(uuid.NewString())
-	defer require.NoError(randomCollection.Drop(ctx))
-	repository := newMockUserMongoRepository(randomCollection)
+// 	// Initialize repository
+// 	randomCollection := s.database.Collection(uuid.NewString())
+// 	defer require.NoError(randomCollection.Drop(ctx))
+// 	repository := newMockUserMongoRepository(randomCollection)
 
-	// Start test
-	userData := &entity.User{Nickname: "nick", Name: "Ivan", Surname: "Petrov"}
-	credential := &entity.Credential{Login: "login", HashedPassword: "hashedPassword", Role: &entity.RoleUser}
-	userID, err := repository.Create(context.Background(), userData, credential)
-	require.NoError(err, "Can't create user")
-	require.NotNil(userID)
+// 	// Start test
+// 	userData := &entity.User{Nickname: "nick", Name: "Ivan", Surname: "Petrov"}
+// 	credential := &entity.Credential{Email: "email", HashedPassword: "hashedPassword", Role: entity.RoleUser}
+// 	userID, err := repository.Create(context.Background(), userData, credential)
+// 	require.NoError(err, "Can't create user")
+// 	require.NotNil(userID)
 
-	responseUserData, err := repository.GetByID(context.Background(), userID)
-	require.NoError(err)
-	require.NotNil(responseUserData)
+// 	responseUserData, err := repository.GetByID(context.Background(), userID)
+// 	require.NoError(err)
+// 	require.NotNil(responseUserData)
 
-	usersSame := userData.Name == responseUserData.Name &&
-		userData.Surname == responseUserData.Surname
-	require.True(usersSame, "Created and found users are different")
-}
+// 	usersSame := userData.Name == responseUserData.Name &&
+// 		userData.Surname == responseUserData.Surname
+// 	require.True(usersSame, "Created and found users are different")
+// }

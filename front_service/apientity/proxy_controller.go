@@ -26,4 +26,10 @@ type ProxyController interface {
 	LintProgram(ctx context.Context, request *proto.ProgramID) (
 		void *proto.Void, err error,
 	)
+	CreateDialogWith(ctx context.Context, request *proto.UserID) (
+		dialog *proto.Dialog, err error,
+	)
+	GetDialogs(ctx context.Context, request *proto.GetDialogsRequest) (
+		dialogs *proto.GetDialogsResponse, err error,
+	)
 }

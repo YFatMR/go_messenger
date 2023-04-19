@@ -5,15 +5,15 @@ import (
 )
 
 type UnsafeCredential struct {
-	Login    string
+	Email    string
 	Password string
-	Role     *UserRole
+	Role     UserRole
 }
 
 func UnsafeCredentialFromProtobuf(credential *proto.Credential) (
 	*UnsafeCredential, error,
 ) {
-	if credential == nil || credential.Login == "" || credential.Password == "" || credential.Role == "" {
+	if credential == nil || credential.Email == "" || credential.Password == "" || credential.Role == "" {
 		return nil, ErrWrongRequestFormat
 	}
 	role, err := UserRoleFromString(credential.Role)
@@ -21,8 +21,8 @@ func UnsafeCredentialFromProtobuf(credential *proto.Credential) (
 		return nil, err
 	}
 	return &UnsafeCredential{
-		Login:    credential.Login,
+		Email:    credential.Email,
 		Password: credential.Password,
-		Role:     role,
+		Role:     *role,
 	}, nil
 }

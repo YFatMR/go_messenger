@@ -16,7 +16,7 @@ type UserRepository interface {
 	DeleteByID(ctx context.Context, userID *entity.UserID) (
 		err error,
 	)
-	GetAccountByLogin(ctx context.Context, login string) (
+	GetAccountByEmail(ctx context.Context, email string) (
 		account *entity.Account, err error,
 	)
 }

@@ -61,17 +61,17 @@ func (d *LoggingUserRepositoryDecorator) DeleteByID(ctx context.Context, userID 
 	return d.base.DeleteByID(ctx, userID)
 }
 
-// GetAccountByLogin implements apientity.UserRepository
-func (d *LoggingUserRepositoryDecorator) GetAccountByLogin(ctx context.Context, login string) (account *entity.Account, err error) {
+// GetAccountByEmail implements apientity.UserRepository
+func (d *LoggingUserRepositoryDecorator) GetAccountByEmail(ctx context.Context, email string) (account *entity.Account, err error) {
 
-	d.logger.InfoContext(ctx, "LoggingUserRepositoryDecorator: calling GetAccountByLogin")
+	d.logger.InfoContext(ctx, "LoggingUserRepositoryDecorator: calling GetAccountByEmail")
 	defer func() {
 		if err != nil {
 			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
 		}
-		d.logger.InfoContext(ctx, "LoggingUserRepositoryDecorator: GetAccountByLogin finished")
+		d.logger.InfoContext(ctx, "LoggingUserRepositoryDecorator: GetAccountByEmail finished")
 	}()
-	return d.base.GetAccountByLogin(ctx, login)
+	return d.base.GetAccountByEmail(ctx, email)
 }
 
 // GetByID implements apientity.UserRepository

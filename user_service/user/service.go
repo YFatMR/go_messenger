@@ -53,19 +53,19 @@ func (s *userService) DeleteByID(ctx context.Context, userID *entity.UserID) err
 func (s *userService) GenerateToken(ctx context.Context, unsafeCredential *entity.UnsafeCredential) (
 	*entity.Token, error,
 ) {
-	account, err := s.userRepository.GetAccountByLogin(ctx, unsafeCredential.Login)
+	account, err := s.userRepository.GetAccountByEmail(ctx, unsafeCredential.Email)
 	if err != nil {
 		return nil, err
 	}
 	if err = s.passwordManager.VerifyPassword(account.HashedPassword, unsafeCredential.Password); err != nil {
-		s.logger.ErrorContext(ctx, "wrong password", zap.String("login", unsafeCredential.Login))
+		s.logger.ErrorContext(ctx, "wrong password", zap.String("email", unsafeCredential.Email))
 		return nil, ErrWrongCredential
 	}
 
 	payload := TokenPayloadFromAccount(account)
 	accessToken, err := s.jwtManager.GenerateAccessToken(ctx, payload)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "can't generate access token", zap.String("login", unsafeCredential.Login))
+		s.logger.ErrorContext(ctx, "can't generate access token", zap.String("email", unsafeCredential.Email))
 		return nil, err
 	}
 	return entity.TokenFromString(accessToken), nil

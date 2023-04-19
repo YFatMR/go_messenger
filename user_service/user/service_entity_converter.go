@@ -7,7 +7,7 @@ import (
 
 func TokenPayloadFromAccount(account *entity.Account) jwtmanager.TokenPayload {
 	return jwtmanager.TokenPayload{
-		UserID:   account.UserID,
+		UserID:   account.UserID.ID,
 		UserRole: account.Role.Name,
 	}
 }

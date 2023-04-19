@@ -23,7 +23,8 @@ func UserFromProtobuf(user *proto.UserData) (*User, error) {
 
 func UserToProtobuf(user *User) *proto.UserData {
 	return &proto.UserData{
-		Name:    user.Name,
-		Surname: user.Surname,
+		Name:     user.Name,
+		Surname:  user.Surname,
+		Nickname: user.Nickname,
 	}
 }

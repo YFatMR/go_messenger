@@ -26,6 +26,16 @@ func newGRPCUserClient(ctx context.Context, serviceAddress string, responseTimeo
 	return grpcclients.NewGRPCUserClient(ctx, serviceAddress, responseTimeout, opts)
 }
 
+func newGRPCDialogClient(ctx context.Context, serviceAddress string, responseTimeout time.Duration) (
+	proto.DialogServiceClient, error,
+) {
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+	}
+	return grpcclients.NewGRPCDialogClient(ctx, serviceAddress, responseTimeout, opts)
+}
+
 func newGRPCFrontClient(ctx context.Context, serviceAddress string, responseTimeout time.Duration) (
 	proto.FrontClient, error,
 ) {

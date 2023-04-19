@@ -22,14 +22,16 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FrontClient interface {
-	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserID, error)
-	GenerateToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error)
+	CreateUser(ctx context.Context, in *CreateUserFrontRequest, opts ...grpc.CallOption) (*UserID, error)
+	GenerateToken(ctx context.Context, in *PublicCredential, opts ...grpc.CallOption) (*Token, error)
 	GetUserByID(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*UserData, error)
 	GetProgramByID(ctx context.Context, in *ProgramID, opts ...grpc.CallOption) (*Program, error)
 	CreateProgram(ctx context.Context, in *ProgramSource, opts ...grpc.CallOption) (*ProgramID, error)
 	UpdateProgramSource(ctx context.Context, in *UpdateProgramSourceRequest, opts ...grpc.CallOption) (*Void, error)
 	RunProgram(ctx context.Context, in *ProgramID, opts ...grpc.CallOption) (*Void, error)
 	LintProgram(ctx context.Context, in *ProgramID, opts ...grpc.CallOption) (*Void, error)
+	CreateDialogWith(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*Dialog, error)
+	GetDialogs(ctx context.Context, in *GetDialogsRequest, opts ...grpc.CallOption) (*GetDialogsResponse, error)
 	Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error)
 }
 
@@ -41,7 +43,7 @@ func NewFrontClient(cc grpc.ClientConnInterface) FrontClient {
 	return &frontClient{cc}
 }
 
-func (c *frontClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserID, error) {
+func (c *frontClient) CreateUser(ctx context.Context, in *CreateUserFrontRequest, opts ...grpc.CallOption) (*UserID, error) {
 	out := new(UserID)
 	err := c.cc.Invoke(ctx, "/proto.Front/CreateUser", in, out, opts...)
 	if err != nil {
@@ -50,7 +52,7 @@ func (c *frontClient) CreateUser(ctx context.Context, in *CreateUserRequest, opt
 	return out, nil
 }
 
-func (c *frontClient) GenerateToken(ctx context.Context, in *Credential, opts ...grpc.CallOption) (*Token, error) {
+func (c *frontClient) GenerateToken(ctx context.Context, in *PublicCredential, opts ...grpc.CallOption) (*Token, error) {
 	out := new(Token)
 	err := c.cc.Invoke(ctx, "/proto.Front/GenerateToken", in, out, opts...)
 	if err != nil {
@@ -113,6 +115,24 @@ func (c *frontClient) LintProgram(ctx context.Context, in *ProgramID, opts ...gr
 	return out, nil
 }
 
+func (c *frontClient) CreateDialogWith(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*Dialog, error) {
+	out := new(Dialog)
+	err := c.cc.Invoke(ctx, "/proto.Front/CreateDialogWith", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *frontClient) GetDialogs(ctx context.Context, in *GetDialogsRequest, opts ...grpc.CallOption) (*GetDialogsResponse, error) {
+	out := new(GetDialogsResponse)
+	err := c.cc.Invoke(ctx, "/proto.Front/GetDialogs", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *frontClient) Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error) {
 	out := new(Pong)
 	err := c.cc.Invoke(ctx, "/proto.Front/Ping", in, out, opts...)
@@ -126,14 +146,16 @@ func (c *frontClient) Ping(ctx context.Context, in *Void, opts ...grpc.CallOptio
 // All implementations must embed UnimplementedFrontServer
 // for forward compatibility
 type FrontServer interface {
-	CreateUser(context.Context, *CreateUserRequest) (*UserID, error)
-	GenerateToken(context.Context, *Credential) (*Token, error)
+	CreateUser(context.Context, *CreateUserFrontRequest) (*UserID, error)
+	GenerateToken(context.Context, *PublicCredential) (*Token, error)
 	GetUserByID(context.Context, *UserID) (*UserData, error)
 	GetProgramByID(context.Context, *ProgramID) (*Program, error)
 	CreateProgram(context.Context, *ProgramSource) (*ProgramID, error)
 	UpdateProgramSource(context.Context, *UpdateProgramSourceRequest) (*Void, error)
 	RunProgram(context.Context, *ProgramID) (*Void, error)
 	LintProgram(context.Context, *ProgramID) (*Void, error)
+	CreateDialogWith(context.Context, *UserID) (*Dialog, error)
+	GetDialogs(context.Context, *GetDialogsRequest) (*GetDialogsResponse, error)
 	Ping(context.Context, *Void) (*Pong, error)
 	mustEmbedUnimplementedFrontServer()
 }
@@ -142,10 +164,10 @@ type FrontServer interface {
 type UnimplementedFrontServer struct {
 }
 
-func (UnimplementedFrontServer) CreateUser(context.Context, *CreateUserRequest) (*UserID, error) {
+func (UnimplementedFrontServer) CreateUser(context.Context, *CreateUserFrontRequest) (*UserID, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
 }
-func (UnimplementedFrontServer) GenerateToken(context.Context, *Credential) (*Token, error) {
+func (UnimplementedFrontServer) GenerateToken(context.Context, *PublicCredential) (*Token, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateToken not implemented")
 }
 func (UnimplementedFrontServer) GetUserByID(context.Context, *UserID) (*UserData, error) {
@@ -166,6 +188,12 @@ func (UnimplementedFrontServer) RunProgram(context.Context, *ProgramID) (*Void, 
 func (UnimplementedFrontServer) LintProgram(context.Context, *ProgramID) (*Void, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LintProgram not implemented")
 }
+func (UnimplementedFrontServer) CreateDialogWith(context.Context, *UserID) (*Dialog, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateDialogWith not implemented")
+}
+func (UnimplementedFrontServer) GetDialogs(context.Context, *GetDialogsRequest) (*GetDialogsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDialogs not implemented")
+}
 func (UnimplementedFrontServer) Ping(context.Context, *Void) (*Pong, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
@@ -183,7 +211,7 @@ func RegisterFrontServer(s grpc.ServiceRegistrar, srv FrontServer) {
 }
 
 func _Front_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateUserRequest)
+	in := new(CreateUserFrontRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -195,13 +223,13 @@ func _Front_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(in
 		FullMethod: "/proto.Front/CreateUser",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FrontServer).CreateUser(ctx, req.(*CreateUserRequest))
+		return srv.(FrontServer).CreateUser(ctx, req.(*CreateUserFrontRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Front_GenerateToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Credential)
+	in := new(PublicCredential)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -213,7 +241,7 @@ func _Front_GenerateToken_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: "/proto.Front/GenerateToken",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FrontServer).GenerateToken(ctx, req.(*Credential))
+		return srv.(FrontServer).GenerateToken(ctx, req.(*PublicCredential))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -326,6 +354,42 @@ func _Front_LintProgram_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Front_CreateDialogWith_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FrontServer).CreateDialogWith(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Front/CreateDialogWith",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FrontServer).CreateDialogWith(ctx, req.(*UserID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Front_GetDialogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDialogsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FrontServer).GetDialogs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Front/GetDialogs",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FrontServer).GetDialogs(ctx, req.(*GetDialogsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Front_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Void)
 	if err := dec(in); err != nil {
@@ -382,6 +446,14 @@ var Front_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LintProgram",
 			Handler:    _Front_LintProgram_Handler,
+		},
+		{
+			MethodName: "CreateDialogWith",
+			Handler:    _Front_CreateDialogWith_Handler,
+		},
+		{
+			MethodName: "GetDialogs",
+			Handler:    _Front_GetDialogs_Handler,
 		},
 		{
 			MethodName: "Ping",

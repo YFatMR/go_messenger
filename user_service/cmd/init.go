@@ -6,7 +6,7 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	"github.com/YFatMR/go_messenger/core/pkg/czap"
 	"github.com/YFatMR/go_messenger/core/pkg/jwtmanager"
-	"github.com/YFatMR/go_messenger/core/pkg/mongodb"
+	"github.com/YFatMR/go_messenger/core/pkg/pgxdb"
 	"github.com/YFatMR/go_messenger/user_service/apientity"
 	"github.com/YFatMR/go_messenger/user_service/decorator"
 	"github.com/YFatMR/go_messenger/user_service/user"
@@ -19,17 +19,37 @@ func UserRepositoryFromConfig(ctx context.Context, config *cviper.CustomViper, l
 ) (
 	apientity.UserRepository, error,
 ) {
-	databaseSettings := cviper.NewDatabaseSettingsFromConfig(config)
-	mongoCollection, err := mongodb.Connect(ctx, databaseSettings, logger)
+	operationTimeout := config.GetMillisecondsDurationRequired("DATABASE_OPERATION_TIMEOUT_MILLISECONDS")
+	postgresURL := config.GetStringRequired("DATABASE_URL")
+	connPool, err := pgxdb.Connect(ctx, postgresURL, logger)
 	if err != nil {
-		logger.Error("Can't establish connection with database", zap.Error(err))
+		logger.Error("Failed to create start databse")
 		return nil, err
 	}
-
 	collectDatabaseQueryMetrics := config.GetBoolRequired("ENABLE_DATABASE_QUERY_METRICS")
 	traceDatabaseQuery := config.GetBoolRequired("ENABLE_DATABASE_QUERY_TRACING")
 
-	repository := user.NewMongoRepository(mongoCollection, databaseSettings.GetOperationTimeout(), logger)
+	_, err = connPool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS users (
+			id BIGSERIAL PRIMARY KEY,
+			created_at TIMESTAMP DEFAULT NOW(),
+
+			email VARCHAR(256) NOT NULL,
+			hashed_password VARCHAR(256) NOT NULL,
+			role VARCHAR(256) NOT NULL,
+			nickname VARCHAR(128) NOT NULL,
+			name VARCHAR(256) NOT NULL,
+			surname VARCHAR(256) NOT NULL,
+
+			UNIQUE (email)
+		);`,
+	)
+	if err != nil {
+		logger.Error("Failed to create database tables", zap.Error(err))
+		return nil, err
+	}
+
+	repository := user.NewPosgreSQLRepository(connPool, operationTimeout, logger)
 	repository = decorator.NewLoggingUserRepositoryDecorator(repository, logger)
 	if collectDatabaseQueryMetrics {
 		repository = decorator.NewPrometheusMetricsUserRepositoryDecorator(repository)

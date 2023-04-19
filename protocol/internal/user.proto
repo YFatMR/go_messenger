@@ -12,14 +12,17 @@ message UserData {
 }
 
 message Credential {
-  string login = 1;
+  string email = 1;
   string password = 2;
   string role = 3;
 }
 
-message Token { string accessToken = 1; }
+message PublicCredential {
+  string email = 1;
+  string password = 2;
+}
 
-message UserID { string ID = 1; }
+message Token { string accessToken = 1; }
 
 message CreateUserRequest {
   Credential credential = 1;

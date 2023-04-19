@@ -1,4 +1,4 @@
-package grpcc
+package grpcapi
 
 import (
 	"context"
@@ -15,8 +15,8 @@ type FrontServer struct {
 
 func NewFrontServer(proxyController apientity.ProxyController,
 	unsafeProxyController apientity.UnsafeProxyController,
-) FrontServer {
-	return FrontServer{
+) proto.FrontServer {
+	return &FrontServer{
 		proxyController:       proxyController,
 		unsafeProxyController: unsafeProxyController,
 	}
@@ -24,13 +24,13 @@ func NewFrontServer(proxyController apientity.ProxyController,
 
 // unsafeProxyController - without authorization
 
-func (s *FrontServer) CreateUser(ctx context.Context, request *proto.CreateUserRequest) (
+func (s *FrontServer) CreateUser(ctx context.Context, request *proto.CreateUserFrontRequest) (
 	*proto.UserID, error,
 ) {
 	return s.unsafeProxyController.CreateUser(ctx, request)
 }
 
-func (s *FrontServer) GenerateToken(ctx context.Context, request *proto.Credential) (
+func (s *FrontServer) GenerateToken(ctx context.Context, request *proto.PublicCredential) (
 	*proto.Token, error,
 ) {
 	return s.unsafeProxyController.GenerateToken(ctx, request)
@@ -78,4 +78,16 @@ func (s *FrontServer) LintProgram(ctx context.Context, request *proto.ProgramID)
 	*proto.Void, error,
 ) {
 	return s.proxyController.LintProgram(ctx, request)
+}
+
+func (s *FrontServer) CreateDialogWith(ctx context.Context, request *proto.UserID) (
+	*proto.Dialog, error,
+) {
+	return s.proxyController.CreateDialogWith(ctx, request)
+}
+
+func (s *FrontServer) GetDialogs(ctx context.Context, request *proto.GetDialogsRequest) (
+	*proto.GetDialogsResponse, error,
+) {
+	return s.proxyController.GetDialogs(ctx, request)
 }

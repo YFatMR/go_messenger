@@ -3,6 +3,7 @@ package sandbox
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/YFatMR/go_messenger/core/pkg/ckafka"
@@ -59,7 +60,7 @@ func (c *KafkaClient) WriteProgramExecutionMessage(ctx context.Context, programI
 	err = c.writer.WriteMessages(
 		ctx,
 		kafka.Message{
-			Key:   []byte(userID.ID),
+			Key:   []byte(strconv.FormatUint(userID.ID, 10)),
 			Value: message,
 			Time:  time.Now(),
 		},

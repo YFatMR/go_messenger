@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
@@ -96,7 +97,7 @@ func (c *codeRunner) Stop() {
 	c.client.Close()
 }
 
-func (c *codeRunner) RunGoCode(ctx context.Context, sourceCode string, userID string) (
+func (c *codeRunner) RunGoCode(ctx context.Context, sourceCode string, userID *entity.UserID) (
 	*entity.ProgramOutput, error,
 ) {
 	if len(sourceCode) > c.limitations.InputSourceCodeByte {
@@ -107,8 +108,7 @@ func (c *codeRunner) RunGoCode(ctx context.Context, sourceCode string, userID st
 		)
 		return nil, ErrHugeInput
 	}
-	containerName := c.config.ContainerNamePrefix + userID
-
+	containerName := c.config.ContainerNamePrefix + strconv.FormatUint(userID.ID, 10)
 	exeContainer, err := c.createContainer(ctx, containerName)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Can not create container", zap.Error(err))

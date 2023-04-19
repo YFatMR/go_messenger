@@ -1,7 +1,8 @@
-package grpcc
+package grpcapi
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	"github.com/YFatMR/go_messenger/core/pkg/czap"
@@ -18,25 +19,47 @@ type AuthorizationField struct{}
 var AuthorizationFieldContextKey AuthorizationField
 
 type GRPCHeaders struct {
-	authorizationHeader string
-	userIDHeader        string
-	userRoleHeader      string
+	AuthorizationHeader string
+	UserIDHeader        string
+	UserRoleHeader      string
 }
 
 func NewGRPCHeaders(authorizationHeader string, userIDHeader string, userRoleHeader string) GRPCHeaders {
 	return GRPCHeaders{
-		authorizationHeader: authorizationHeader,
-		userIDHeader:        userIDHeader,
-		userRoleHeader:      userRoleHeader,
+		AuthorizationHeader: authorizationHeader,
+		UserIDHeader:        userIDHeader,
+		UserRoleHeader:      userRoleHeader,
 	}
 }
 
 func GRPCHeadersFromConfig(config *cviper.CustomViper) GRPCHeaders {
 	return GRPCHeaders{
-		authorizationHeader: config.GetStringRequired("GRPC_AUTHORIZARION_HEADER"),
-		userIDHeader:        config.GetStringRequired("GRPC_USER_ID_HEADER"),
-		userRoleHeader:      config.GetStringRequired("GRPC_USER_ROLE_HEADER"),
+		AuthorizationHeader: config.GetStringRequired("GRPC_AUTHORIZARION_HEADER"),
+		UserIDHeader:        config.GetStringRequired("GRPC_USER_ID_HEADER"),
+		UserRoleHeader:      config.GetStringRequired("GRPC_USER_ROLE_HEADER"),
 	}
+}
+
+func AccessTokenFromContext(ctx context.Context, authHeader string, logger *czap.Logger) (
+	string, error,
+) {
+	grpcMetadata, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		logger.ErrorContext(ctx, "Got bad context for auth")
+		return "", ErrAccessDenied
+	}
+
+	tokens := grpcMetadata.Get(authHeader)
+	if len(tokens) == 0 {
+		logger.ErrorContext(ctx, "Medatada has no token")
+		return "", ErrAccessDenied
+	} else if len(tokens) > 1 {
+		logger.ErrorContext(
+			ctx, "Medatada has a lot of tokens", zap.Int("tokens count", len(tokens)),
+		)
+		return "", ErrAccessDenied
+	}
+	return tokens[0], nil
 }
 
 func UnaryAuthInterceptor(jwtManager jwtmanager.Manager, headers GRPCHeaders,
@@ -65,22 +88,10 @@ func UnaryAuthInterceptor(jwtManager jwtmanager.Manager, headers GRPCHeaders,
 			return invoker(ctx, method, req, reply, cc, opts...)
 		}
 
-		grpcMetadata, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			logger.ErrorContext(ctx, "Got bad context", zap.String("method", method))
-			return invoker(ctx, method, req, reply, cc, opts...)
+		accessToken, err := AccessTokenFromContext(ctx, headers.AuthorizationHeader, logger)
+		if err != nil {
+			return err
 		}
-
-		tokens := grpcMetadata.Get(headers.authorizationHeader)
-		if len(tokens) == 0 {
-			logger.ErrorContext(ctx, "Medatada has no token", zap.String("method", method))
-			return ErrAccessDenied
-		} else if len(tokens) > 1 {
-			logger.ErrorContext(
-				ctx, "Medatada has a lot of tokens", zap.String("method", method), zap.Int("tokens count", len(tokens)),
-			)
-		}
-		accessToken := tokens[0]
 
 		claims, err := jwtManager.VerifyToken(ctx, accessToken)
 		if err != nil {
@@ -89,8 +100,8 @@ func UnaryAuthInterceptor(jwtManager jwtmanager.Manager, headers GRPCHeaders,
 
 		// add payload to metadata
 		ctxMetadata := metadata.Pairs(
-			headers.userIDHeader, claims.UserID,
-			headers.userRoleHeader, claims.UserRole,
+			headers.UserIDHeader, strconv.FormatUint(claims.UserID, 10),
+			headers.UserRoleHeader, claims.UserRole,
 		)
 
 		ctx = metadata.NewOutgoingContext(ctx, ctxMetadata)

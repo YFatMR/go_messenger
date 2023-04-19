@@ -1,4 +1,4 @@
-package grpcc
+package grpcapi
 
 import "errors"
 

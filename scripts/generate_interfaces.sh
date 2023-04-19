@@ -71,3 +71,14 @@ GENERATE_DECORATORS "${SANDBOX_SERVICE_INTERFACE_FOLDER}" "SandboxService" "sand
 GENERATE_DECORATORS "${SANDBOX_SERVICE_INTERFACE_FOLDER}" "SandboxController" "sandbox_controller_" "${SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER}" true false false "none"
 # Kafka client
 GENERATE_DECORATORS "${SANDBOX_SERVICE_INTERFACE_FOLDER}" "KafkaClient" "kafka_client_" "${SANDBOX_SERVICE_GENERATED_DECORATORS_FOLDER}" true false false "none"
+
+
+# Dialog service -> only logging
+DIALOG_SERVICE_INTERFACE_FOLDER="${ROOT_PROJECT_DIRECTORY}/dialog_service/apientity"
+DIALOG_SERVICE_GENERATED_DECORATORS_FOLDER="${ROOT_PROJECT_DIRECTORY}/dialog_service/decorator"
+# Repository
+GENERATE_DECORATORS "${DIALOG_SERVICE_INTERFACE_FOLDER}" "DialogRepository" "dialog_repository_" "${DIALOG_SERVICE_GENERATED_DECORATORS_FOLDER}" true false false "none"
+# Model
+GENERATE_DECORATORS "${DIALOG_SERVICE_INTERFACE_FOLDER}" "DialogModel" "dialog_model_" "${DIALOG_SERVICE_GENERATED_DECORATORS_FOLDER}" true false false "none"
+# Controller
+GENERATE_DECORATORS "${DIALOG_SERVICE_INTERFACE_FOLDER}" "DialogController" "dialog_controller_" "${DIALOG_SERVICE_GENERATED_DECORATORS_FOLDER}" true false false "none"

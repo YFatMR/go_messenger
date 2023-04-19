@@ -12,7 +12,7 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/czap"
 	"github.com/YFatMR/go_messenger/core/pkg/grpcclients"
 	"github.com/YFatMR/go_messenger/core/pkg/jwtmanager"
-	"github.com/YFatMR/go_messenger/front_server/grpcc"
+	"github.com/YFatMR/go_messenger/front_server/grpcapi"
 	"github.com/YFatMR/go_messenger/front_server/proxy"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
 	middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
@@ -40,6 +40,7 @@ func main() {
 	grpcFrontServiceAddress := config.GetStringRequired("GRPC_SERVICE_ADDRESS")
 	userServiceAddress := config.GetStringRequired("USER_SERVICE_ADDRESS")
 	sandboxServiceAddress := config.GetStringRequired("SANDBOX_SERVICE_ADDRESS")
+	dialogServiceAddress := config.GetStringRequired("DIALOG_SERVICE_ADDRESS")
 	jaegerEndpoint := config.GetStringRequired("JAEGER_COLLECTOR_ENDPOINT")
 	serviceName := config.GetStringRequired("SERVICE_NAME")
 	restServiceReadTimeout := config.GetSecondsDurationRequired("REST_FRONT_SERVICE_READ_TIMEOUT_SECONDS")
@@ -70,6 +71,13 @@ func main() {
 	}
 	defer logger.Sync()
 
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error("Panic!", zap.Any("msg", r))
+		}
+		panic("Panic")
+	}()
+
 	// Init tracing
 	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerEndpoint)))
 	if err != nil {
@@ -99,7 +107,7 @@ func main() {
 			IdleTimeout:       restServiceIdleTimeout,
 			ReadHeaderTimeout: restServiceReadHeaderTimeout,
 			Addr:              restFrontServiceAddress,
-			Handler:           mux,
+			Handler:           enableCors(mux),
 		}
 		logger.Info(
 			"Starting to register REST user server",
@@ -135,15 +143,15 @@ func main() {
 
 		logger.Info("Connecting to user service...", zap.String("address", userServiceAddress))
 
-		headers := grpcc.GRPCHeadersFromConfig(config)
+		headers := grpcapi.GRPCHeadersFromConfig(config)
 		jwtManager := jwtmanager.FromConfig(config, logger)
 
 		unaryInterceptors := []grpc.UnaryClientInterceptor{
 			otelgrpc.UnaryClientInterceptor(),
-			grpcc.UnaryAuthInterceptor(jwtManager, headers, logger),
+			grpcapi.UnaryAuthInterceptor(jwtManager, headers, logger),
 		}
 
-		userClientOpts := []grpc.DialOption{
+		grpcClientOpts := []grpc.DialOption{
 			grpc.WithKeepaliveParams(grpcKeepaliveParameters),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithUnaryInterceptor(
@@ -158,7 +166,7 @@ func main() {
 			),
 		}
 		userServiceClient, err := grpcclients.NewGRPCUserClient(
-			ctx, userServiceAddress, microservicesConnectionTimeout, userClientOpts,
+			ctx, userServiceAddress, microservicesConnectionTimeout, grpcClientOpts,
 		)
 		if err != nil {
 			logger.Error("Server stopped! Can't connect to user service", zap.String("address", userServiceAddress))
@@ -166,17 +174,24 @@ func main() {
 		}
 
 		sandboxServiceClient, err := grpcclients.NewGRPCSandboxClient(
-			ctx, sandboxServiceAddress, microservicesConnectionTimeout, userClientOpts,
+			ctx, sandboxServiceAddress, microservicesConnectionTimeout, grpcClientOpts,
 		)
 		if err != nil {
 			panic(err)
 		}
 
-		proxyController := proxy.NewController(userServiceClient, sandboxServiceClient, logger)
+		dialogServiceClient, err := grpcclients.NewGRPCDialogClient(
+			ctx, dialogServiceAddress, microservicesConnectionTimeout, grpcClientOpts,
+		)
+		if err != nil {
+			panic(err)
+		}
+
+		proxyController := proxy.NewController(userServiceClient, sandboxServiceClient, dialogServiceClient, logger)
 		unsafeProxyController := proxy.NewUnsafeController(userServiceClient, logger)
 
-		server := grpcc.NewFrontServer(proxyController, unsafeProxyController)
-		proto.RegisterFrontServer(grpcServer, &server)
+		server := grpcapi.NewFrontServer(proxyController, unsafeProxyController)
+		proto.RegisterFrontServer(grpcServer, server)
 
 		logger.Info("Starting serve gRPC front server")
 		if err := grpcServer.Serve(listener); err != nil {
