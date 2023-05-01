@@ -1,6 +1,8 @@
 package entity
 
-import "github.com/YFatMR/go_messenger/protocol/pkg/proto"
+import (
+	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
+)
 
 type DialogID struct {
 	ID uint64
@@ -14,6 +16,7 @@ type DialogMember struct {
 type Dialog struct {
 	DialogID            DialogID
 	Name                string
+	MessagesCount       uint64
 	UnreadMessagesCount uint64
 	LastMessage         DialogMessage
 }
@@ -33,19 +36,20 @@ func DialogIDToProtobuf(dialogID *DialogID) *proto.DialogID {
 	}
 }
 
-func DialogToProtobuf(dialog *Dialog) *proto.Dialog {
+func DialogToProtobuf(dialog *Dialog, selfID *UserID) *proto.Dialog {
 	return &proto.Dialog{
 		DialogID:            DialogIDToProtobuf(&dialog.DialogID),
 		Name:                dialog.Name,
+		MessagesCount:       dialog.MessagesCount,
 		UnreadMessagesCount: dialog.UnreadMessagesCount,
-		LastMessage:         DialogMessageToProtobuf(&dialog.LastMessage),
+		LastMessage:         DialogMessageToProtobuf(&dialog.LastMessage, selfID),
 	}
 }
 
-func DialogsToProtobuf(dialogs []*Dialog) []*proto.Dialog {
+func DialogsToProtobuf(dialogs []*Dialog, selfID *UserID) []*proto.Dialog {
 	result := make([]*proto.Dialog, 0, len(dialogs))
 	for _, dialog := range dialogs {
-		result = append(result, DialogToProtobuf(dialog))
+		result = append(result, DialogToProtobuf(dialog, selfID))
 	}
 	return result
 }

@@ -4,19 +4,22 @@ package proto;
 option go_package = "./proto";
 
 import "common.proto";
+import "google/protobuf/timestamp.proto";
 
 message DialogMessage {
-  DialogID dialogID = 1;
+  MessageID messageID = 1;
   UserID senderID = 2;
   string text = 3;
-  uint64 createdAt = 4;
+  google.protobuf.Timestamp createdAt = 4;
+  bool selfMessage = 5;
 }
 
 message Dialog {
   DialogID dialogID = 1;
   string name = 2;
-  uint64 unreadMessagesCount = 3;
-  DialogMessage lastMessage = 4;
+  uint64 messagesCount = 3;
+  uint64 unreadMessagesCount = 4;
+  DialogMessage lastMessage = 5;
 }
 
 message GetDialogsRequest {
@@ -39,17 +42,15 @@ message CreateDialogMessageRequest {
   string text = 2;
 }
 
-message CreateDialogMessageResponse { uint64 createdAt = 1; }
+message CreateDialogMessageResponse { google.protobuf.Timestamp createdAt = 1; }
 
 service DialogService {
   rpc CreateDialogWith(UserID) returns (Dialog) {}
   rpc GetDialogs(GetDialogsRequest) returns (GetDialogsResponse) {}
-
-  // rpc CreateDialogMessage(CreateDialogMessageRequest)
-  //     returns (CreateDialogMessageResponse) {}
-  // rpc GetDialogMessages(GetDialogMessagesRequest) TODO: check that user id in
-  // dialog members
-  //     returns (GetDialogMessagesResponse) {}
+  rpc CreateDialogMessage(CreateDialogMessageRequest)
+      returns (CreateDialogMessageResponse) {}
+  rpc GetDialogMessages(GetDialogMessagesRequest)
+      returns (GetDialogMessagesResponse) {}
 
   rpc Ping(Void) returns (Pong) {}
 }

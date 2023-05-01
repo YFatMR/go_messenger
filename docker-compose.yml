@@ -52,8 +52,6 @@ services:
     ports:
       - "8010:${FRONT_REST_SERVICE_PORT}"
       - "8020:${FRONT_GRPC_SERVICE_PORT}"
-    depends_on:
-      - user_service
     networks:
       - default
 
@@ -71,6 +69,7 @@ services:
       - DATABASE_URL=postgres://${USER_SERVICE_DATABASE_USERNAME}:${USER_SERVICE_DATABASE_PASSWORD}@user_service_db:5432/${USER_SERVICE_DATABASE_NAME}?sslmode=disable&pool_max_conns=10
       - ENABLE_DATABASE_QUERY_METRICS=true
       - ENABLE_DATABASE_QUERY_TRACING=true
+      - DATABASE_OPERATION_TIMEOUT_MILLISECONDS=2000
 
       - LOG_LEVEL=debug
       - LOG_PATH=${USER_SERVICE_LOG_PATH}
@@ -236,7 +235,7 @@ services:
       - POSTGRES_PASSWORD=${DIALOG_SERVICE_DATABSE_PASSWORD}
       - POSTGRES_DB=${DIALOG_SERVICE_DATABSE_NAME}
     ports:
-      - "9035:${DIALOG_SERVICE_DATABSE_PORT}"
+      - "9036:${DIALOG_SERVICE_DATABSE_PORT}"
     networks:
       - default
 

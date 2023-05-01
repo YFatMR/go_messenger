@@ -1,4 +1,4 @@
-package grpcc
+package grpcapi
 
 import (
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"

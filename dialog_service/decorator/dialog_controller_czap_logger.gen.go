@@ -35,6 +35,19 @@ func NewLoggingDialogControllerDecorator(base apientity.DialogController, logger
 	}
 }
 
+// CreateDialogMessage implements apientity.DialogController
+func (d *LoggingDialogControllerDecorator) CreateDialogMessage(ctx context.Context, request *proto.CreateDialogMessageRequest) (response *proto.CreateDialogMessageResponse, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling CreateDialogMessage")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: CreateDialogMessage finished")
+	}()
+	return d.base.CreateDialogMessage(ctx, request)
+}
+
 // CreateDialogWith implements apientity.DialogController
 func (d *LoggingDialogControllerDecorator) CreateDialogWith(ctx context.Context, request *proto.UserID) (dp1 *proto.Dialog, err error) {
 
@@ -46,6 +59,19 @@ func (d *LoggingDialogControllerDecorator) CreateDialogWith(ctx context.Context,
 		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: CreateDialogWith finished")
 	}()
 	return d.base.CreateDialogWith(ctx, request)
+}
+
+// GetDialogMessages implements apientity.DialogController
+func (d *LoggingDialogControllerDecorator) GetDialogMessages(ctx context.Context, request *proto.GetDialogMessagesRequest) (response *proto.GetDialogMessagesResponse, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling GetDialogMessages")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: GetDialogMessages finished")
+	}()
+	return d.base.GetDialogMessages(ctx, request)
 }
 
 // GetDialogs implements apientity.DialogController

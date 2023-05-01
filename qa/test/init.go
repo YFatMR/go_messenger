@@ -36,24 +36,24 @@ func newGRPCDialogClient(ctx context.Context, serviceAddress string, responseTim
 	return grpcclients.NewGRPCDialogClient(ctx, serviceAddress, responseTimeout, opts)
 }
 
-func newGRPCFrontClient(ctx context.Context, serviceAddress string, responseTimeout time.Duration) (
-	proto.FrontClient, error,
-) {
-	ctx, cancel := context.WithTimeout(ctx, responseTimeout)
-	defer cancel()
+// func newGRPCFrontClient(ctx context.Context, serviceAddress string, responseTimeout time.Duration) (
+// 	proto.FrontClient, error,
+// ) {
+// 	ctx, cancel := context.WithTimeout(ctx, responseTimeout)
+// 	defer cancel()
 
-	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-	}
+// 	opts := []grpc.DialOption{
+// 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+// 		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+// 	}
 
-	conn, err := grpc.DialContext(ctx, serviceAddress, opts...)
-	if err != nil {
-		return nil, err
-	}
+// 	conn, err := grpc.DialContext(ctx, serviceAddress, opts...)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return proto.NewFrontClient(conn), nil
-}
+// 	return proto.NewFrontClient(conn), nil
+// }
 
 func newGRPCSandboxClient(ctx context.Context, serviceAddress string, responseTimeout time.Duration) (
 	proto.SandboxClient, error,

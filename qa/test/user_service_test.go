@@ -5,18 +5,48 @@ package test
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"testing"
+	"time"
 
+	"github.com/YFatMR/go_messenger/core/pkg/configs/cviper"
 	"github.com/stretchr/testify/suite"
 )
 
 type UserTestSuite struct {
 	userManager UserManager
+	client      UserServiceHTTPClient
 	suite.Suite
 }
 
 func TestUserTestSuite(t *testing.T) {
-	suite.Run(t, new(UserTestSuite))
+	config := cviper.New()
+	config.SetConfigFile(envFile)
+	if err := config.ReadInConfig(); err != nil {
+		fmt.Printf("Error reading config file, %s", err)
+		panic(err)
+	}
+
+	qaHost := config.GetStringRequired("QA_HOST")
+	restFrontServiceAddress := "http://" + qaHost + ":" + config.GetStringRequired("PUBLIC_REST_FRONT_SERVICE_PORT")
+
+	client := UserServiceHTTPClient{
+		HttpClient: HttpClient{
+			BaseUrl: restFrontServiceAddress,
+			Client: http.Client{
+				Timeout: time.Second * 10,
+			},
+		},
+	}
+
+	obj := &UserTestSuite{
+		userManager: UserManager{
+			client: client,
+		},
+		client: client,
+	}
+	suite.Run(t, obj)
 }
 
 func (s *UserTestSuite) TestUserCreation() {
@@ -43,7 +73,7 @@ func (s *UserTestSuite) TestGetUserInfoWithValidToken() {
 	require.NoError(err)
 
 	ctx = s.userManager.NewContextWithToken(ctx, token)
-	_, err = frontServicegRPCClient.GetUserByID(ctx, autorizedUserID)
+	_, err = s.client.GetUserByID(autorizedUserID)
 	require.NoError(err)
 }
 
@@ -54,6 +84,6 @@ func (s *UserTestSuite) TestGetUserInfoWithoutToken() {
 	autorizedUserID, _, err := s.userManager.NewAuthorizedUser(ctx)
 	require.NoError(err)
 
-	_, err = frontServicegRPCClient.GetUserByID(ctx, autorizedUserID)
+	_, err = s.client.GetUserByID(autorizedUserID)
 	require.Error(err)
 }

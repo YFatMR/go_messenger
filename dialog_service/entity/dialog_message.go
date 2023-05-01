@@ -1,54 +1,63 @@
 package entity
 
 import (
+	"time"
+
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type DialogMessage struct {
-	SenderID  UserID
-	DialogID  DialogID
-	Text      string
-	CreatedAt uint64
+type MessageID struct {
+	ID uint64
 }
 
-// func DialogMessageFromProtobuf(request *proto.CreateDialogMessageRequest) (
-// 	*DialogMessage, error,
-// ) {
-// 	if request == nil || request.GetDialogID().GetID() == 0 || request.GetText() == "" ||
-// 		request.GetSenderID().GetID() == "" {
-// 		return nil, ErrWrongRequestFormat
-// 	}
+type DialogMessage struct {
+	MessageID MessageID
+	SenderID  UserID
+	Text      string
+	CreatedAt time.Time
+}
 
-// 	senderID, err := UserIDFromProtobuf(request.SenderID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	dialogID, err := DialogIDFromProtobuf(request.DialogID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return &DialogMessage{
-// 		SenderID: *senderID,
-// 		DialogID: *dialogID,
-// 		Text:     request.Text,
-// 	}, nil
-// }
-
-func DialogMessageToProtobuf(request *DialogMessage) *proto.DialogMessage {
-	return &proto.DialogMessage{
-		SenderID:  UserIDToProtobuf(&request.SenderID),
-		DialogID:  DialogIDToProtobuf(&request.DialogID),
-		Text:      request.Text,
-		CreatedAt: request.CreatedAt,
+func MessageIDToProtobuf(msg *MessageID) *proto.MessageID {
+	return &proto.MessageID{
+		ID: msg.ID,
 	}
 }
 
-func DialogMessagesToProtobuf(messages []*DialogMessage) []*proto.DialogMessage {
+func CopyDialogMessage(msg *DialogMessage) *DialogMessage {
+	return &DialogMessage{
+		MessageID: msg.MessageID,
+		SenderID:  msg.SenderID,
+		Text:      msg.Text,
+		CreatedAt: msg.CreatedAt,
+	}
+}
+
+func DialogMessageFromProtobuf(request *proto.CreateDialogMessageRequest) (
+	*DialogMessage, error,
+) {
+	if request == nil || request.GetDialogID().GetID() == 0 || request.GetText() == "" {
+		return nil, ErrWrongRequestFormat
+	}
+	return &DialogMessage{
+		Text: request.Text,
+	}, nil
+}
+
+func DialogMessageToProtobuf(request *DialogMessage, selfID *UserID) *proto.DialogMessage {
+	return &proto.DialogMessage{
+		MessageID:   MessageIDToProtobuf(&request.MessageID),
+		SenderID:    UserIDToProtobuf(&request.SenderID),
+		Text:        request.Text,
+		CreatedAt:   timestamppb.New(request.CreatedAt),
+		SelfMessage: selfID.ID == request.SenderID.ID,
+	}
+}
+
+func DialogMessagesToProtobuf(messages []*DialogMessage, selfID *UserID) []*proto.DialogMessage {
 	result := make([]*proto.DialogMessage, 0, len(messages))
 	for _, message := range messages {
-		result = append(result, DialogMessageToProtobuf(message))
+		result = append(result, DialogMessageToProtobuf(message, selfID))
 	}
 	return result
 }

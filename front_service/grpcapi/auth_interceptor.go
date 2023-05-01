@@ -14,9 +14,9 @@ import (
 
 // jwtManager := jwtmanager.FromConfig(config, logger)
 
-type AuthorizationField struct{}
+type RequireAuthorizationField struct{}
 
-var AuthorizationFieldContextKey AuthorizationField
+type AuthorizationField struct{}
 
 type GRPCHeaders struct {
 	AuthorizationHeader string
@@ -74,7 +74,7 @@ func UnaryAuthInterceptor(jwtManager jwtmanager.Manager, headers GRPCHeaders,
 		invoker grpc.UnaryInvoker,
 		opts ...grpc.CallOption,
 	) error {
-		authorization := ctx.Value(AuthorizationField{})
+		authorization := ctx.Value(RequireAuthorizationField{})
 		if authorization == nil {
 			logger.ErrorContext(
 				ctx, "gRPC method without authorization type. Please, add AuthorizationField to context.",
@@ -88,12 +88,8 @@ func UnaryAuthInterceptor(jwtManager jwtmanager.Manager, headers GRPCHeaders,
 			return invoker(ctx, method, req, reply, cc, opts...)
 		}
 
-		accessToken, err := AccessTokenFromContext(ctx, headers.AuthorizationHeader, logger)
-		if err != nil {
-			return err
-		}
-
-		claims, err := jwtManager.VerifyToken(ctx, accessToken)
+		accessToken := ctx.Value(AuthorizationField{})
+		claims, err := jwtManager.VerifyToken(ctx, accessToken.(string))
 		if err != nil {
 			return err
 		}

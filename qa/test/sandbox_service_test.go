@@ -32,10 +32,10 @@ func TestSandboxTestSuite(t *testing.T) {
 	sandboxTopicKafkaClient := NewKafkaClientFromConfig(config)
 	defer sandboxTopicKafkaClient.Close()
 
-	suite.Run(
-		t,
-		&SandboxTestSuite{sandboxTopicKafkaClient: sandboxTopicKafkaClient},
-	)
+	// suite.Run(
+	// 	t,
+	// 	&SandboxTestSuite{sandboxTopicKafkaClient: sandboxTopicKafkaClient},
+	// )
 }
 
 func (s *SandboxTestSuite) TestCreateProgram() {

@@ -48,6 +48,32 @@ func (d *LoggingDialogRepositoryDecorator) CreateDialog(ctx context.Context, use
 	return d.base.CreateDialog(ctx, userID1, userData1, userID2, userData2)
 }
 
+// CreateDialogMessage implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) CreateDialogMessage(ctx context.Context, dialogID *entity.DialogID, message *entity.DialogMessage) (msg *entity.DialogMessage, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling CreateDialogMessage")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: CreateDialogMessage finished")
+	}()
+	return d.base.CreateDialogMessage(ctx, dialogID, message)
+}
+
+// GetDialogMessages implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) GetDialogMessages(ctx context.Context, dialogID *entity.DialogID, offset uint64, limit uint64) (messages []*entity.DialogMessage, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling GetDialogMessages")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: GetDialogMessages finished")
+	}()
+	return d.base.GetDialogMessages(ctx, dialogID, offset, limit)
+}
+
 // GetDialogs implements apientity.DialogRepository
 func (d *LoggingDialogRepositoryDecorator) GetDialogs(ctx context.Context, userID *entity.UserID, offset uint64, limit uint64) (dialogs []*entity.Dialog, err error) {
 

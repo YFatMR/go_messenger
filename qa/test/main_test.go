@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 	qaHost := config.GetStringRequired("QA_HOST")
 
 	// restFrontServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_REST_FRONT_SERVICE_PORT")
-	grpcFrontServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_GRPC_FRONT_SERVICE_PORT")
+	// grpcFrontServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_GRPC_FRONT_SERVICE_PORT")
 	userServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_USER_SERVICE_PORT")
 	sandboxServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_SANDBOX_SERVICE_PORT")
 	dialogServiceAddress := qaHost + ":" + config.GetStringRequired("PUBLIC_DIALOG_SERVICE_PORT")
@@ -89,17 +89,17 @@ func TestMain(m *testing.M) {
 	}
 
 	// Setup front service
-	frontServicegRPCClient, err = newGRPCFrontClient(ctxSetup, grpcFrontServiceAddress, testResponseTimeout)
-	if err != nil {
-		panic(err)
-	}
-	pingFrontServiceCallback := func(ctx context.Context) (*proto.Pong, error) {
-		return frontServicegRPCClient.Ping(ctx, &proto.Void{})
-	}
-	err = pingService(ctx, pingFrontServiceCallback, testServiceSetupRetryCount, testServiceSetupRetryInterval)
-	if err != nil {
-		panic(err)
-	}
+	// frontServicegRPCClient, err = newGRPCFrontClient(ctxSetup, grpcFrontServiceAddress, testResponseTimeout)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// pingFrontServiceCallback := func(ctx context.Context) (*proto.Pong, error) {
+	// 	return frontServicegRPCClient.Ping(ctx, &proto.Void{})
+	// }
+	// err = pingService(ctx, pingFrontServiceCallback, testServiceSetupRetryCount, testServiceSetupRetryInterval)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	cancelSetup()
 

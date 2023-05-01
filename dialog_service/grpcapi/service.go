@@ -29,17 +29,17 @@ func (s *Server) GetDialogs(ctx context.Context, request *proto.GetDialogsReques
 	return s.controller.GetDialogs(ctx, request)
 }
 
-// func (s *Server) GetDialogMessages(ctx context.Context, request *proto.GetDialogMessagesRequest) (
-// 	*proto.GetDialogMessagesResponse, error,
-// ) {
-// 	return s.controller.GetDialogMessages(ctx, request)
-// }
+func (s *Server) CreateDialogMessage(ctx context.Context, request *proto.CreateDialogMessageRequest) (
+	*proto.CreateDialogMessageResponse, error,
+) {
+	return s.controller.CreateDialogMessage(ctx, request)
+}
 
-// func (s *Server) CreateDialogMessage(ctx context.Context, request *proto.CreateDialogMessageRequest) (
-// 	*proto.CreateDialogMessageResponse, error,
-// ) {
-// 	return s.controller.CreateDialogMessage(ctx, request)
-// }
+func (s *Server) GetDialogMessages(ctx context.Context, request *proto.GetDialogMessagesRequest) (
+	*proto.GetDialogMessagesResponse, error,
+) {
+	return s.controller.GetDialogMessages(ctx, request)
+}
 
 func (s *Server) Ping(ctx context.Context, request *proto.Void) (
 	*proto.Pong, error,

@@ -199,6 +199,53 @@ func (x *DialogID) GetID() uint64 {
 	return 0
 }
 
+type MessageID struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ID uint64 `protobuf:"varint,1,opt,name=ID,proto3" json:"ID,omitempty"`
+}
+
+func (x *MessageID) Reset() {
+	*x = MessageID{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_common_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MessageID) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MessageID) ProtoMessage() {}
+
+func (x *MessageID) ProtoReflect() protoreflect.Message {
+	mi := &file_common_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MessageID.ProtoReflect.Descriptor instead.
+func (*MessageID) Descriptor() ([]byte, []int) {
+	return file_common_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *MessageID) GetID() uint64 {
+	if x != nil {
+		return x.ID
+	}
+	return 0
+}
+
 type ImageID struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -210,7 +257,7 @@ type ImageID struct {
 func (x *ImageID) Reset() {
 	*x = ImageID{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_common_proto_msgTypes[4]
+		mi := &file_common_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -223,7 +270,7 @@ func (x *ImageID) String() string {
 func (*ImageID) ProtoMessage() {}
 
 func (x *ImageID) ProtoReflect() protoreflect.Message {
-	mi := &file_common_proto_msgTypes[4]
+	mi := &file_common_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -236,7 +283,7 @@ func (x *ImageID) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImageID.ProtoReflect.Descriptor instead.
 func (*ImageID) Descriptor() ([]byte, []int) {
-	return file_common_proto_rawDescGZIP(), []int{4}
+	return file_common_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ImageID) GetID() string {
@@ -256,10 +303,11 @@ var file_common_proto_rawDesc = []byte{
 	0x18, 0x0a, 0x06, 0x55, 0x73, 0x65, 0x72, 0x49, 0x44, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x02, 0x49, 0x44, 0x22, 0x1a, 0x0a, 0x08, 0x44, 0x69, 0x61,
 	0x6c, 0x6f, 0x67, 0x49, 0x44, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x04, 0x52, 0x02, 0x49, 0x44, 0x22, 0x19, 0x0a, 0x07, 0x49, 0x6d, 0x61, 0x67, 0x65, 0x49, 0x44,
-	0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x49, 0x44,
-	0x42, 0x09, 0x5a, 0x07, 0x2e, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x33,
+	0x04, 0x52, 0x02, 0x49, 0x44, 0x22, 0x1b, 0x0a, 0x09, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65,
+	0x49, 0x44, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x02,
+	0x49, 0x44, 0x22, 0x19, 0x0a, 0x07, 0x49, 0x6d, 0x61, 0x67, 0x65, 0x49, 0x44, 0x12, 0x0e, 0x0a,
+	0x02, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x49, 0x44, 0x42, 0x09, 0x5a,
+	0x07, 0x2e, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -274,13 +322,14 @@ func file_common_proto_rawDescGZIP() []byte {
 	return file_common_proto_rawDescData
 }
 
-var file_common_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_common_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_common_proto_goTypes = []interface{}{
-	(*Void)(nil),     // 0: proto.Void
-	(*Pong)(nil),     // 1: proto.Pong
-	(*UserID)(nil),   // 2: proto.UserID
-	(*DialogID)(nil), // 3: proto.DialogID
-	(*ImageID)(nil),  // 4: proto.ImageID
+	(*Void)(nil),      // 0: proto.Void
+	(*Pong)(nil),      // 1: proto.Pong
+	(*UserID)(nil),    // 2: proto.UserID
+	(*DialogID)(nil),  // 3: proto.DialogID
+	(*MessageID)(nil), // 4: proto.MessageID
+	(*ImageID)(nil),   // 5: proto.ImageID
 }
 var file_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -345,6 +394,18 @@ func file_common_proto_init() {
 			}
 		}
 		file_common_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MessageID); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_common_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ImageID); i {
 			case 0:
 				return &v.state
@@ -363,7 +424,7 @@ func file_common_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_common_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

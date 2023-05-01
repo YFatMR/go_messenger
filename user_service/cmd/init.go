@@ -34,14 +34,12 @@ func UserRepositoryFromConfig(ctx context.Context, config *cviper.CustomViper, l
 			id BIGSERIAL PRIMARY KEY,
 			created_at TIMESTAMP DEFAULT NOW(),
 
-			email VARCHAR(256) NOT NULL,
+			email VARCHAR(256) NOT NULL UNIQUE,
 			hashed_password VARCHAR(256) NOT NULL,
 			role VARCHAR(256) NOT NULL,
-			nickname VARCHAR(128) NOT NULL,
+			nickname VARCHAR(128) NOT NULL UNIQUE,
 			name VARCHAR(256) NOT NULL,
-			surname VARCHAR(256) NOT NULL,
-
-			UNIQUE (email)
+			surname VARCHAR(256) NOT NULL
 		);`,
 	)
 	if err != nil {

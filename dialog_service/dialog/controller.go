@@ -7,6 +7,7 @@ import (
 	"github.com/YFatMR/go_messenger/dialog_service/apientity"
 	"github.com/YFatMR/go_messenger/dialog_service/entity"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type dialogController struct {
@@ -41,7 +42,7 @@ func (c *dialogController) CreateDialogWith(ctx context.Context, request *proto.
 	if err != nil {
 		return nil, err
 	}
-	return entity.DialogToProtobuf(dialog), nil
+	return entity.DialogToProtobuf(dialog, userID1), nil
 }
 
 func (c *dialogController) GetDialogs(ctx context.Context, request *proto.GetDialogsRequest) (
@@ -52,7 +53,7 @@ func (c *dialogController) GetDialogs(ctx context.Context, request *proto.GetDia
 		return nil, err
 	}
 
-	if request.GetOffset() == 0 || request.GetLimit() == 0 {
+	if request.GetLimit() == 0 {
 		return nil, ErrParseRequest
 	}
 
@@ -60,52 +61,65 @@ func (c *dialogController) GetDialogs(ctx context.Context, request *proto.GetDia
 	if err != nil {
 		return nil, err
 	}
-
 	return &proto.GetDialogsResponse{
-		Dialogs: entity.DialogsToProtobuf(dialogs),
+		Dialogs: entity.DialogsToProtobuf(dialogs, userID),
 	}, nil
 }
 
-// func (c *dialogController) CreateDialogMessage(ctx context.Context, request *proto.CreateDialogMessageRequest) (
-// 	*proto.CreateDialogMessageResponse, error,
-// ) {
-// 	message, err := entity.DialogMessageFromProtobuf(request)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func (c *dialogController) CreateDialogMessage(ctx context.Context, request *proto.CreateDialogMessageRequest) (
+	*proto.CreateDialogMessageResponse, error,
+) {
+	senderID, err := c.contextManager.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-// 	err = c.model.CreateDialogMessage(ctx, message)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	message, err := entity.DialogMessageFromProtobuf(request)
+	if err != nil {
+		return nil, err
+	}
+	message.SenderID = *senderID
 
-// 	return &proto.CreateDialogMessageResponse{
-// 		CreationUnixTimestamp: message.CreationUnixTimestamp,
-// 	}, nil
-// }
+	dialogID, err := entity.DialogIDFromProtobuf(request.GetDialogID())
+	if err != nil {
+		return nil, err
+	}
 
-// func (c *dialogController) GetDialogMessages(ctx context.Context, request *proto.GetDialogMessagesRequest) (
-// 	*proto.GetDialogMessagesResponse, error,
-// ) {
-// 	userID1, err := entity.UserIDFromProtobuf(request.GetMemberID1())
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	message, err = c.model.CreateDialogMessage(ctx, dialogID, message)
+	if err != nil {
+		return nil, err
+	}
+	return &proto.CreateDialogMessageResponse{
+		CreatedAt: timestamppb.New(message.CreatedAt),
+	}, nil
+}
 
-// 	userID2, err := entity.UserIDFromProtobuf(request.GetMemberID2())
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func (c *dialogController) GetDialogMessages(ctx context.Context, request *proto.GetDialogMessagesRequest) (
+	*proto.GetDialogMessagesResponse, error,
+) {
+	senderID, err := c.contextManager.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-// 	messages, err := c.model.GetDialogMessages(ctx, userID1, userID2, request.Offset, request.Limit)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	dialogID, err := entity.DialogIDFromProtobuf(request.GetDialogID())
+	if err != nil {
+		return nil, err
+	}
+	if request.GetLimit() == 0 {
+		return nil, ErrWrongRequestFormat
+	}
 
-// 	return &proto.GetDialogMessagesResponse{
-// 		Messages: entity.DialogMessagesToProtobuf(messages),
-// 	}, nil
-// }
+	messages, err := c.model.GetDialogMessages(
+		ctx, dialogID, request.Offset, request.Limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &proto.GetDialogMessagesResponse{
+		Messages: entity.DialogMessagesToProtobuf(messages, senderID),
+	}, nil
+}
 
 func (c *dialogController) Ping(ctx context.Context, request *proto.Void) (
 	pong *proto.Pong, err error,

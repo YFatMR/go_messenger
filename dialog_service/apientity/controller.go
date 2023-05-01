@@ -13,12 +13,12 @@ type DialogController interface {
 	GetDialogs(ctx context.Context, request *proto.GetDialogsRequest) (
 		response *proto.GetDialogsResponse, err error,
 	)
-	// CreateDialogMessage(ctx context.Context, request *proto.CreateDialogMessageRequest) (
-	// 	response *proto.CreateDialogMessageResponse, err error,
-	// )
-	// GetDialogMessages(ctx context.Context, request *proto.GetDialogMessagesRequest) (
-	// 	response *proto.GetDialogMessagesResponse, err error,
-	// )
+	CreateDialogMessage(ctx context.Context, request *proto.CreateDialogMessageRequest) (
+		response *proto.CreateDialogMessageResponse, err error,
+	)
+	GetDialogMessages(ctx context.Context, request *proto.GetDialogMessagesRequest) (
+		response *proto.GetDialogMessagesResponse, err error,
+	)
 	Ping(ctx context.Context, request *proto.Void) (
 		pong *proto.Pong, err error,
 	)

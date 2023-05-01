@@ -35,11 +35,11 @@ func DialogRepositoryFromConfig(ctx context.Context, config *cviper.CustomViper,
 
 			user_id_1 BIGINT NOT NULL,
 			dialog_name_1 VARCHAR(512) NOT NULL,
-			unread_messages_count_1 BIGINT NOT NULL DEFAULT 0,
+			unread_messages_count_1 BIGINT DEFAULT 0,
 
 			user_id_2 BIGINT NOT NULL,
 			dialog_name_2 VARCHAR(512) NOT NULL,
-			unread_messages_count_2 BIGINT NOT NULL DEFAULT 0,
+			unread_messages_count_2 BIGINT DEFAULT 0,
 
 			UNIQUE (user_id_1, user_id_2)
 		);`,

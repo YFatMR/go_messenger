@@ -11,7 +11,7 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/czap"
 	"github.com/YFatMR/go_messenger/core/pkg/metrics/prometheus"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
-	"github.com/YFatMR/go_messenger/user_service/grpcc"
+	"github.com/YFatMR/go_messenger/user_service/grpcapi"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -83,7 +83,7 @@ func main() {
 	service := UserServiceFromConfig(config, logger, repository, tracer)
 	controller := UserControllerFromService(service, logger)
 
-	server := grpcc.NewServer(controller)
+	server := grpcapi.NewServer(controller)
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
 		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),

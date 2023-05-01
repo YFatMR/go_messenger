@@ -9,7 +9,8 @@ import (
 )
 
 func NewGRPCDialogClient(ctx context.Context, serviceAddress string, connectionTimeout time.Duration,
-	opts []grpc.DialOption) (
+	opts []grpc.DialOption,
+) (
 	proto.DialogServiceClient, error,
 ) {
 	ctx, cancel := context.WithTimeout(ctx, connectionTimeout)

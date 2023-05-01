@@ -24,6 +24,8 @@ const _ = grpc.SupportPackageIsVersion7
 type DialogServiceClient interface {
 	CreateDialogWith(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*Dialog, error)
 	GetDialogs(ctx context.Context, in *GetDialogsRequest, opts ...grpc.CallOption) (*GetDialogsResponse, error)
+	CreateDialogMessage(ctx context.Context, in *CreateDialogMessageRequest, opts ...grpc.CallOption) (*CreateDialogMessageResponse, error)
+	GetDialogMessages(ctx context.Context, in *GetDialogMessagesRequest, opts ...grpc.CallOption) (*GetDialogMessagesResponse, error)
 	Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error)
 }
 
@@ -53,6 +55,24 @@ func (c *dialogServiceClient) GetDialogs(ctx context.Context, in *GetDialogsRequ
 	return out, nil
 }
 
+func (c *dialogServiceClient) CreateDialogMessage(ctx context.Context, in *CreateDialogMessageRequest, opts ...grpc.CallOption) (*CreateDialogMessageResponse, error) {
+	out := new(CreateDialogMessageResponse)
+	err := c.cc.Invoke(ctx, "/proto.DialogService/CreateDialogMessage", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dialogServiceClient) GetDialogMessages(ctx context.Context, in *GetDialogMessagesRequest, opts ...grpc.CallOption) (*GetDialogMessagesResponse, error) {
+	out := new(GetDialogMessagesResponse)
+	err := c.cc.Invoke(ctx, "/proto.DialogService/GetDialogMessages", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dialogServiceClient) Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error) {
 	out := new(Pong)
 	err := c.cc.Invoke(ctx, "/proto.DialogService/Ping", in, out, opts...)
@@ -68,6 +88,8 @@ func (c *dialogServiceClient) Ping(ctx context.Context, in *Void, opts ...grpc.C
 type DialogServiceServer interface {
 	CreateDialogWith(context.Context, *UserID) (*Dialog, error)
 	GetDialogs(context.Context, *GetDialogsRequest) (*GetDialogsResponse, error)
+	CreateDialogMessage(context.Context, *CreateDialogMessageRequest) (*CreateDialogMessageResponse, error)
+	GetDialogMessages(context.Context, *GetDialogMessagesRequest) (*GetDialogMessagesResponse, error)
 	Ping(context.Context, *Void) (*Pong, error)
 	mustEmbedUnimplementedDialogServiceServer()
 }
@@ -81,6 +103,12 @@ func (UnimplementedDialogServiceServer) CreateDialogWith(context.Context, *UserI
 }
 func (UnimplementedDialogServiceServer) GetDialogs(context.Context, *GetDialogsRequest) (*GetDialogsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDialogs not implemented")
+}
+func (UnimplementedDialogServiceServer) CreateDialogMessage(context.Context, *CreateDialogMessageRequest) (*CreateDialogMessageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateDialogMessage not implemented")
+}
+func (UnimplementedDialogServiceServer) GetDialogMessages(context.Context, *GetDialogMessagesRequest) (*GetDialogMessagesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDialogMessages not implemented")
 }
 func (UnimplementedDialogServiceServer) Ping(context.Context, *Void) (*Pong, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
@@ -134,6 +162,42 @@ func _DialogService_GetDialogs_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DialogService_CreateDialogMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateDialogMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DialogServiceServer).CreateDialogMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.DialogService/CreateDialogMessage",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DialogServiceServer).CreateDialogMessage(ctx, req.(*CreateDialogMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DialogService_GetDialogMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDialogMessagesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DialogServiceServer).GetDialogMessages(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.DialogService/GetDialogMessages",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DialogServiceServer).GetDialogMessages(ctx, req.(*GetDialogMessagesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DialogService_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Void)
 	if err := dec(in); err != nil {
@@ -166,6 +230,14 @@ var DialogService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDialogs",
 			Handler:    _DialogService_GetDialogs_Handler,
+		},
+		{
+			MethodName: "CreateDialogMessage",
+			Handler:    _DialogService_CreateDialogMessage_Handler,
+		},
+		{
+			MethodName: "GetDialogMessages",
+			Handler:    _DialogService_GetDialogMessages_Handler,
 		},
 		{
 			MethodName: "Ping",

@@ -28,7 +28,7 @@ func (m *dialogModel) CreateDialog(ctx context.Context, userID1 *entity.UserID, 
 	*entity.Dialog, error,
 ) {
 	getUserData := func(userID *entity.UserID) (*entity.UserData, error) {
-		userDataPb, err := m.userServiceClient.GetUserByID(ctx, entity.UserIDToProtobuf(userID1))
+		userDataPb, err := m.userServiceClient.GetUserByID(ctx, entity.UserIDToProtobuf(userID))
 		if err != nil {
 			return nil, err
 		}
@@ -53,14 +53,18 @@ func (m *dialogModel) GetDialogs(ctx context.Context, userID *entity.UserID, off
 	return m.repository.GetDialogs(ctx, userID, offset, limit)
 }
 
-// func (m *dialogModel) CreateDialogMessage(ctx context.Context, message *entity.DialogMessage) error {
-// 	return m.repository.CreateDialogMessage(ctx, message)
-// }
+func (m *dialogModel) CreateDialogMessage(ctx context.Context, dialogID *entity.DialogID,
+	message *entity.DialogMessage,
+) (
+	*entity.DialogMessage, error,
+) {
+	return m.repository.CreateDialogMessage(ctx, dialogID, message)
+}
 
-// func (m *dialogModel) GetDialogMessages(ctx context.Context, userID1 *entity.UserID, userID2 *entity.UserID,
-// 	offset int64, limit int64,
-// ) (
-// 	[]*entity.DialogMessage, error,
-// ) {
-// 	return m.repository.GetDialogMessages(ctx, userID1, userID2, offset, limit)
-// }
+func (m *dialogModel) GetDialogMessages(ctx context.Context, dialogID *entity.DialogID,
+	offset uint64, limit uint64,
+) (
+	[]*entity.DialogMessage, error,
+) {
+	return m.repository.GetDialogMessages(ctx, dialogID, offset, limit)
+}
