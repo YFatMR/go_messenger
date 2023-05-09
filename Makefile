@@ -22,6 +22,7 @@ raw_build:
 	go build -o ${BINARY_DIRECTORY}/qa_test ${ROOT_PROJECT_DIRECTORY}/qa/test
 	go build -o ${BINARY_DIRECTORY}/sandbox_service ${ROOT_PROJECT_DIRECTORY}/sandbox_service/cmd
 	go build -o ${BINARY_DIRECTORY}/dialog_service ${ROOT_PROJECT_DIRECTORY}/dialog_service/cmd
+	go build -o ${BINARY_DIRECTORY}/comet_service ${ROOT_PROJECT_DIRECTORY}/comet_service/cmd
 
 build: gen
 	make raw_build
@@ -68,6 +69,14 @@ update-sandbox-image:
 	docker build --tag sandbox ${ROOT_PROJECT_DIRECTORY}/sandbox_service/sandbox/
 	docker save -o ${ROOT_PROJECT_DIRECTORY}/sandbox_service/docker/images/sandbox.tar sandbox:latest
 
+
+clear_all:
+	docker system prune --all --force --volumes
+	sudo -s
+	systemctl stop docker
+	rm -rf /var/lib/docker
+	systemctl start docker
+	exit
 
 # docker build --tag local_sandbox ${ROOT_PROJECT_DIRECTORY}/sandbox_service/sandbox/
 # docker image tag local_sandbox maximfafa/sandbox2:latest

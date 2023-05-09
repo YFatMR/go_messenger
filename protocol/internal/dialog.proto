@@ -17,9 +17,9 @@ message DialogMessage {
 message Dialog {
   DialogID dialogID = 1;
   string name = 2;
-  uint64 messagesCount = 3;
-  uint64 unreadMessagesCount = 4;
-  DialogMessage lastMessage = 5;
+  uint64 unreadMessagesCount = 3;
+  DialogMessage lastMessage = 4;
+  DialogMessage lastReadMessage = 5;
 }
 
 message GetDialogsRequest {
@@ -30,9 +30,15 @@ message GetDialogsRequest {
 message GetDialogsResponse { repeated Dialog dialogs = 1; }
 
 message GetDialogMessagesRequest {
+  enum OffsetType {
+    BEFORE = 0;
+    AFTER = 1;
+  }
+
   DialogID dialogID = 1;
-  uint64 offset = 2;
+  MessageID messageID = 2;
   uint64 limit = 3;
+  OffsetType offsetType = 4;
 }
 
 message GetDialogMessagesResponse { repeated DialogMessage messages = 1; }
@@ -42,15 +48,26 @@ message CreateDialogMessageRequest {
   string text = 2;
 }
 
-message CreateDialogMessageResponse { google.protobuf.Timestamp createdAt = 1; }
+message CreateDialogMessageResponse {
+  MessageID messageID = 1;
+  google.protobuf.Timestamp createdAt = 2;
+}
+
+message ReadAllMessagesBeforeRequest {
+  DialogID dialogID = 1;
+  MessageID messageID = 2;
+}
 
 service DialogService {
   rpc CreateDialogWith(UserID) returns (Dialog) {}
+  rpc GetDialogByID(DialogID) returns (Dialog) {}
   rpc GetDialogs(GetDialogsRequest) returns (GetDialogsResponse) {}
   rpc CreateDialogMessage(CreateDialogMessageRequest)
       returns (CreateDialogMessageResponse) {}
   rpc GetDialogMessages(GetDialogMessagesRequest)
       returns (GetDialogMessagesResponse) {}
+  rpc ReadAllMessagesBeforeAndIncl(ReadAllMessagesBeforeRequest)
+      returns (Void) {}
 
   rpc Ping(Void) returns (Pong) {}
 }

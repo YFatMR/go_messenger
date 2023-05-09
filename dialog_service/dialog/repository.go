@@ -2,6 +2,7 @@ package dialog
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/YFatMR/go_messenger/core/pkg/czap"
@@ -11,6 +12,26 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
+
+type nullableDialogMessage struct {
+	MessageID sql.NullInt64
+	SenderID  sql.NullInt64
+	Text      sql.NullString
+	CreatedAt sql.NullTime
+}
+
+func nullableDialogMessageToEntity(msg *nullableDialogMessage) *entity.DialogMessage {
+	return &entity.DialogMessage{
+		MessageID: entity.MessageID{
+			ID: uint64(msg.MessageID.Int64),
+		},
+		SenderID: entity.UserID{
+			ID: uint64(msg.SenderID.Int64),
+		},
+		Text:      msg.Text.String,
+		CreatedAt: msg.CreatedAt.Time,
+	}
+}
 
 type DialogRepositorySettings struct {
 	OperationTimeout time.Duration
@@ -31,8 +52,6 @@ func NewPosgreRepository(settings DialogRepositorySettings, connPool *pgxpool.Po
 	}
 }
 
-// name userID unreadMessagesCount
-
 func (r *dialogRepository) CreateDialog(ctx context.Context, userID1 *entity.UserID, userData1 *entity.UserData,
 	userID2 *entity.UserID, userData2 *entity.UserData,
 ) (*entity.Dialog, error) {
@@ -43,22 +62,120 @@ func (r *dialogRepository) CreateDialog(ctx context.Context, userID1 *entity.Use
 	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
 	defer cancel()
 
-	dialog := new(entity.Dialog)
-	err := r.connPool.QueryRow(
+	tx, err := r.connPool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		tx.Rollback(ctx)
+		r.logger.ErrorContext(ctx, "Can not start tranzaction", zap.Error(err))
+		return nil, err
+	}
+
+	dialogID := new(entity.DialogID)
+	err = tx.QueryRow(
 		ctx, `
 		INSERT INTO
-			dialogs (user_id_1, dialog_name_1, user_id_2, dialog_name_2)
-		VALUES
-			($1, $2, $3, $4)
+			dialogs
+		DEFAULT VALUES
 		RETURNING
-			id, dialog_name_1, unread_messages_count_1;`,
+			id;`,
+	).Scan(&dialogID.ID)
+	if err != nil {
+		tx.Rollback(ctx)
+		r.logger.ErrorContext(ctx, "Can not create dialog", zap.Error(err))
+		return nil, err
+	}
+
+	_, err = tx.Exec(
+		ctx, `
+		INSERT INTO
+			dialog_members (dialog_id, user_id, dialog_name)
+		VALUES
+			($1, $2, $3),
+			($1, $4, $5);`,
+		dialogID.ID,
 		userID1.ID, createDialogName(userData2),
 		userID2.ID, createDialogName(userData1),
-	).Scan(&dialog.DialogID.ID, &dialog.Name, &dialog.UnreadMessagesCount)
+	)
 	if err != nil {
-		r.logger.ErrorContext(ctx, "Unable to create dialog", zap.Error(err))
-		return nil, ErrCreateDialog
+		tx.Rollback(ctx)
+		r.logger.ErrorContext(ctx, "Can not create info about dialog_members", zap.Error(err))
+		return nil, err
 	}
+
+	if err = tx.Commit(ctx); err != nil {
+		tx.Rollback(ctx)
+		r.logger.ErrorContext(ctx, "Can not commit tranzaction for dialog creation", zap.Error(err))
+		return nil, err
+	}
+
+	dialog := &entity.Dialog{
+		DialogID:            *dialogID,
+		Name:                createDialogName(userData2),
+		UnreadMessagesCount: 0,
+	}
+	return dialog, nil
+}
+
+func (r *dialogRepository) GetDialog(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID) (
+	*entity.Dialog, error,
+) {
+	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
+	defer cancel()
+
+	lastMessage := new(entity.DialogMessage)
+	lastReadMessage := new(entity.DialogMessage)
+	dialog := new(entity.Dialog)
+
+	err := r.connPool.QueryRow(
+		ctx, `
+		SELECT
+			dm.dialog_id,
+			dm.dialog_name,
+			(
+				SELECT
+					COUNT(*)
+				FROM
+					messages AS tmp_msg1
+				WHERE
+					dm.user_id != tmp_msg1.sender_id AND
+					dm.dialog_id = tmp_msg1.dialog_id AND
+					COALESCE(
+						(SELECT tmp_msg2.created_at FROM messages as tmp_msg2 WHERE tmp_msg2.id = dm.last_read_message_id),
+						TO_DATE('0001-01-01','YYYY-MM-DD')
+					) < tmp_msg1.created_at
+			) AS unread_messages_count,
+			last_message.id,
+			last_message.created_at,
+			last_message.sender_id,
+			last_message.text,
+			last_read_message.id,
+			last_read_message.created_at,
+			last_read_message.sender_id,
+			last_read_message.text
+		FROM
+			dialog_members AS dm
+		INNER JOIN
+			messages as last_message
+		ON
+			last_message.dialog_id = dm.dialog_id AND
+			last_message.dialog_id = $1 AND last_message.id = (SELECT tmp_msg3.id FROM messages as tmp_msg3 WHERE tmp_msg3.dialog_id = dm.dialog_id ORDER BY created_at DESC LIMIT 1)
+		LEFT JOIN
+			messages as last_read_message
+		ON
+			last_read_message.dialog_id = dm.dialog_id AND
+			last_read_message.dialog_id = $1 AND last_read_message.id = dm.last_read_message_id
+		WHERE
+			dm.user_id = $2 AND dm.dialog_id = $1;`,
+		dialogID.ID,
+		userID.ID,
+	).Scan(&dialog.DialogID.ID, &dialog.Name, &dialog.UnreadMessagesCount,
+		&lastMessage.MessageID.ID, &lastMessage.CreatedAt, &lastMessage.SenderID.ID, &lastMessage.Text,
+		&lastReadMessage.MessageID.ID, &lastReadMessage.CreatedAt, &lastReadMessage.SenderID.ID, &lastReadMessage.Text)
+	if err != nil {
+		r.logger.ErrorContext(ctx, "Can not get dialog", zap.Error(err))
+		return nil, err
+	}
+	dialog.LastMessage = *lastMessage
+	dialog.LastReadMessage = *lastReadMessage
 	return dialog, nil
 }
 
@@ -68,78 +185,85 @@ func (r *dialogRepository) GetDialogs(ctx context.Context, userID *entity.UserID
 	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
 	defer cancel()
 
+	r.logger.DebugContext(
+		ctx, "Dialog information:",
+		zap.Uint64("uid", userID.ID),
+		zap.Uint64("limit", limit),
+		zap.Uint64("offset", offset),
+	)
+
 	raws, err := r.connPool.Query(
 		ctx, `
 		SELECT
-			d.id,
-			CASE WHEN d.user_id_1 = $1 THEN d.dialog_name_1 ELSE d.dialog_name_2 END AS dialog_name,
-			CASE WHEN d.user_id_1 = $1 THEN d.unread_messages_count_1 ELSE d.unread_messages_count_2 END AS unread_messages_count,
-			m2.messages_count,
-			m.id,
-			m.created_at,
-			m.sender_id,
-			m.text
+			dm.dialog_id,
+			dm.dialog_name,
+			(
+				SELECT
+					COUNT(*)
+				FROM
+					messages AS tmp_msg1
+				WHERE
+					dm.user_id != tmp_msg1.sender_id AND
+					dm.dialog_id = tmp_msg1.dialog_id AND
+					COALESCE(
+						(SELECT tmp_msg2.created_at FROM messages as tmp_msg2 WHERE tmp_msg2.id = dm.last_read_message_id),
+						TO_DATE('0001-01-01','YYYY-MM-DD')
+					) < tmp_msg1.created_at
+			) AS unread_messages_count,
+			last_message.id,
+			last_message.created_at,
+			last_message.sender_id,
+			last_message.text,
+			last_read_message.id,
+			last_read_message.created_at,
+			last_read_message.sender_id,
+			last_read_message.text
 		FROM
-			dialogs as d
+			dialog_members AS dm
 		INNER JOIN
-			messages as m
+			messages as last_message
 		ON
-			m.dialog_id = d.id AND m.created_at = (SELECT MAX(created_at) FROM messages AS tmp_m WHERE tmp_m.dialog_id = d.id)
-		INNER JOIN
-			(SELECT tmp_m3.dialog_id, COUNT(*) as messages_count FROM messages as tmp_m3 GROUP BY tmp_m3.dialog_id) as m2
+			last_message.dialog_id = dm.dialog_id AND
+			last_message.id = (SELECT tmp_msg3.id FROM messages as tmp_msg3 WHERE tmp_msg3.dialog_id = dm.dialog_id ORDER BY created_at DESC LIMIT 1)
+		LEFT JOIN
+			messages as last_read_message
 		ON
-			m2.dialog_id = d.id
+			last_read_message.dialog_id = dm.dialog_id AND
+			last_read_message.id = dm.last_read_message_id
 		WHERE
-			d.user_id_1 = $1 OR d.user_id_2 = $1
+			dm.user_id = $1
 		ORDER BY
-			m.created_at
+			last_message.created_at DESC
 		LIMIT $2 OFFSET $3;`,
 		userID.ID,
 		limit,
 		offset,
 	)
-
-	// raws, err := r.connPool.Query(
-	// 	ctx, `
-	// 	SELECT
-	// 		d.id,
-	// 		CASE WHEN d.user_id_1 = $1 THEN d.dialog_name_1 ELSE d.dialog_name_2 END AS dialog_name,
-	// 		CASE WHEN d.user_id_1 = $1 THEN d.unread_messages_count_1 ELSE d.unread_messages_count_2 END AS unread_messages_count
-	// 	FROM
-	// 		dialogs as d
-	// 	WHERE
-	// 		d.user_id_1 = $1 OR d.user_id_2 = $1
-	// 	LIMIT $2 OFFSET $3;`,
-	// 	userID.ID,
-	// 	limit,
-	// 	offset,
-	// )
 	if err != nil {
+		r.logger.ErrorContext(ctx, "Can not get dialogs", zap.Error(err))
 		return nil, err
 	}
 	defer raws.Close()
 
-	r.logger.DebugContext(ctx, "Dialog information:", zap.Uint64("uid", userID.ID), zap.Uint64("limit", limit), zap.Uint64("offset", offset))
-
 	var dialogs []*entity.Dialog
 	for raws.Next() {
-		message := new(entity.DialogMessage)
+		lastMessage := new(entity.DialogMessage)
+		nullableLastReadMessage := new(nullableDialogMessage)
 		dialog := new(entity.Dialog)
-
-		r.logger.DebugContext(ctx, "Dialog scabbing...")
-
 		err := raws.Scan(
-			&dialog.DialogID.ID, &dialog.Name, &dialog.UnreadMessagesCount, &dialog.MessagesCount,
-			&message.MessageID.ID, &message.CreatedAt, &message.SenderID.ID, &message.Text,
+			&dialog.DialogID.ID, &dialog.Name, &dialog.UnreadMessagesCount,
+			&lastMessage.MessageID.ID, &lastMessage.CreatedAt, &lastMessage.SenderID.ID, &lastMessage.Text,
+			&nullableLastReadMessage.MessageID, &nullableLastReadMessage.CreatedAt, &nullableLastReadMessage.SenderID,
+			&nullableLastReadMessage.Text,
 		)
-
-		// err := raws.Scan(
-		// 	&dialog.DialogID.ID, &dialog.Name, &dialog.UnreadMessagesCount,
-		// )
 		if err != nil {
+			r.logger.ErrorContext(ctx, "Can not scan raws", zap.Error(err))
 			return nil, err
 		}
-		dialog.LastMessage = *message
+
+		dialog.LastMessage = *lastMessage
+		dialog.LastReadMessage = *nullableDialogMessageToEntity(nullableLastReadMessage)
+
 		dialogs = append(dialogs, dialog)
 	}
 	return dialogs, nil
@@ -153,83 +277,83 @@ func (r *dialogRepository) CreateDialogMessage(ctx context.Context, dialogID *en
 	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
 	defer cancel()
 
-	tx, err := r.connPool.BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		r.logger.ErrorContext(ctx, "Unable to start transacrion to create message", zap.Error(err))
-		return nil, ErrCreateMessage
-	}
-
 	responseMessage := entity.CopyDialogMessage(message)
-	err = tx.QueryRow(
+	err := r.connPool.QueryRow(
 		ctx, `
 		INSERT INTO
 			messages (dialog_id, sender_id, text)
 		VALUES
 			($1, $2, $3)
 		RETURNING
-			created_at;`,
+			id, created_at;`,
 		dialogID.ID,
 		message.SenderID.ID,
 		message.Text,
-	).Scan(&responseMessage.CreatedAt)
+	).Scan(&responseMessage.MessageID.ID, &responseMessage.CreatedAt)
 	if err != nil {
 		r.logger.ErrorContext(ctx, "Unable to create message", zap.Error(err))
 		return nil, ErrCreateMessage
 	}
-
-	_, err = tx.Exec(
-		ctx, `
-		UPDATE dialogs
-		SET
-			unread_messages_count_1 =
-				CASE
-					WHEN user_id_1 = $1 THEN unread_messages_count_1
-					ELSE unread_messages_count_1 + 1
-				END,
-			unread_messages_count_2 =
-				CASE
-					WHEN user_id_2 = $1 THEN unread_messages_count_2
-					ELSE unread_messages_count_2 + 1
-				END
-		WHERE id = $2 AND (user_id_1 = $1 OR user_id_2 = $1);`,
-		message.SenderID.ID,
-		dialogID.ID,
-	)
-	if err != nil {
-		r.logger.ErrorContext(ctx, "Can not update unread messages count", zap.Error(err))
-		return nil, ErrCreateMessage
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		r.logger.ErrorContext(ctx, "Unable to commit transaction", zap.Error(err))
-	}
-
 	return responseMessage, nil
 }
 
 func (r *dialogRepository) GetDialogMessages(ctx context.Context, dialogID *entity.DialogID,
-	offset uint64, limit uint64,
+	messageID *entity.MessageID, limit uint64, offsetType entity.OffserType,
 ) (
 	[]*entity.DialogMessage, error,
 ) {
 	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
 	defer cancel()
 
-	raws, err := r.connPool.Query(
-		ctx, `
-		SELECT
-			id, created_at, sender_id, text
-		FROM
-			messages
-		WHERE
-			dialog_id = $1
-		ORDER BY
-			created_at
-		LIMIT $2 OFFSET $3`,
-		dialogID.ID,
-		limit,
-		offset,
-	)
+	getMessagesBefore := func() (pgx.Rows, error) {
+		return r.connPool.Query(
+			ctx, `
+				SELECT *
+				FROM (
+					SELECT
+						id, created_at, sender_id, text
+					FROM
+						messages
+					WHERE
+						dialog_id = $1 AND id < $2
+					ORDER BY
+						created_at DESC
+					LIMIT $3) as tmp
+				ORDER BY tmp.id`,
+			dialogID.ID,
+			messageID.ID,
+			limit,
+		)
+	}
+
+	getMessagesAfter := func() (pgx.Rows, error) {
+		return r.connPool.Query(
+			ctx, `
+				SELECT
+					id, created_at, sender_id, text
+				FROM
+					messages
+				WHERE
+					dialog_id = $1 AND id > $2
+				ORDER BY
+					created_at
+				LIMIT $3`,
+			dialogID.ID,
+			messageID.ID,
+			limit,
+		)
+	}
+
+	var raws pgx.Rows
+	var err error
+	if offsetType == entity.BEFORE {
+		r.logger.DebugContext(ctx, "Process BEFORE messages selection")
+		raws, err = getMessagesBefore()
+	} else {
+		r.logger.DebugContext(ctx, "Process AFTER messages selection")
+		raws, err = getMessagesAfter()
+	}
+
 	if err != nil {
 		r.logger.ErrorContext(ctx, "Unable to get messages", zap.Error(err))
 		return nil, ErrCreateMessage
@@ -249,4 +373,67 @@ func (r *dialogRepository) GetDialogMessages(ctx context.Context, dialogID *enti
 		messages = append(messages, message)
 	}
 	return messages, nil
+}
+
+func (r *dialogRepository) GetDialogMembers(ctx context.Context, dialogID *entity.DialogID) (
+	[]*entity.UserID, error,
+) {
+	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
+	defer cancel()
+
+	raws, err := r.connPool.Query(
+		ctx, `
+		SELECT
+			user_id
+		FROM
+			dialog_members
+		WHERE
+			dialog_id = $1`,
+		dialogID.ID,
+	)
+	if err != nil {
+		r.logger.ErrorContext(ctx, "Unable to get dialog members", zap.Error(err))
+		return nil, ErrCreateDialog
+	}
+
+	userIDs := make([]*entity.UserID, 0, 2)
+	for raws.Next() {
+		userID := new(entity.UserID)
+		err := raws.Scan(&userID.ID)
+		if err != nil {
+			r.logger.ErrorContext(ctx, "Unable to scan dialog members", zap.Error(err))
+			return nil, ErrCreateDialog
+		}
+		userIDs = append(userIDs, userID)
+	}
+	return userIDs, nil
+}
+
+// Include message
+func (r *dialogRepository) ReadAllMessagesBeforeAndIncl(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
+	messageID *entity.MessageID,
+) error {
+	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
+	defer cancel()
+
+	_, err := r.connPool.Exec(
+		ctx, `
+		UPDATE dialog_members dm
+		SET
+			last_read_message_id = CASE WHEN
+				(SELECT tmp_msg1.created_at FROM messages as tmp_msg1 WHERE tmp_msg1.id = dm.last_read_message_id) >
+				(SELECT tmp_msg2.created_at FROM messages as tmp_msg2 WHERE tmp_msg2.id = $2)
+				THEN dm.last_read_message_id
+				ELSE $2
+			END
+		WHERE user_id = $1 AND dialog_id = $3`,
+		userID.ID,
+		messageID.ID,
+		dialogID.ID,
+	)
+	if err != nil {
+		r.logger.ErrorContext(ctx, "Unable to update last read message", zap.Error(err))
+		return err
+	}
+	return nil
 }

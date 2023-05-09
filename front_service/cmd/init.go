@@ -9,7 +9,9 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/grpcclients"
 	"github.com/YFatMR/go_messenger/core/pkg/jwtmanager"
 	"github.com/YFatMR/go_messenger/front_server/grpcapi"
+	"github.com/YFatMR/go_messenger/front_server/websocketapi"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
+	"github.com/gorilla/websocket"
 	middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
@@ -112,5 +114,23 @@ func NewGRPCDialogServiceClientFromConfig(ctx context.Context, config *cviper.Cu
 	)
 	return grpcclients.NewGRPCDialogClient(
 		ctx, dialogServiceAddress, microservicesConnectionTimeout, grpcOpts,
+	)
+}
+
+func WebsocketClientFromConfig(config *cviper.CustomViper, logger *czap.Logger) *websocketapi.Client {
+	return websocketapi.NewClient(
+		jwtmanager.FromConfig(config, logger),
+		websocket.DefaultDialer,
+		&websocketapi.ClientSettings{
+			Addr: config.GetStringRequired("COMET_SERVICE_WS_ADDRESS"),
+		},
+		&websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
+		},
+		logger,
 	)
 }

@@ -23,9 +23,11 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DialogServiceClient interface {
 	CreateDialogWith(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*Dialog, error)
+	GetDialogByID(ctx context.Context, in *DialogID, opts ...grpc.CallOption) (*Dialog, error)
 	GetDialogs(ctx context.Context, in *GetDialogsRequest, opts ...grpc.CallOption) (*GetDialogsResponse, error)
 	CreateDialogMessage(ctx context.Context, in *CreateDialogMessageRequest, opts ...grpc.CallOption) (*CreateDialogMessageResponse, error)
 	GetDialogMessages(ctx context.Context, in *GetDialogMessagesRequest, opts ...grpc.CallOption) (*GetDialogMessagesResponse, error)
+	ReadAllMessagesBeforeAndIncl(ctx context.Context, in *ReadAllMessagesBeforeRequest, opts ...grpc.CallOption) (*Void, error)
 	Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error)
 }
 
@@ -40,6 +42,15 @@ func NewDialogServiceClient(cc grpc.ClientConnInterface) DialogServiceClient {
 func (c *dialogServiceClient) CreateDialogWith(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*Dialog, error) {
 	out := new(Dialog)
 	err := c.cc.Invoke(ctx, "/proto.DialogService/CreateDialogWith", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dialogServiceClient) GetDialogByID(ctx context.Context, in *DialogID, opts ...grpc.CallOption) (*Dialog, error) {
+	out := new(Dialog)
+	err := c.cc.Invoke(ctx, "/proto.DialogService/GetDialogByID", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +84,15 @@ func (c *dialogServiceClient) GetDialogMessages(ctx context.Context, in *GetDial
 	return out, nil
 }
 
+func (c *dialogServiceClient) ReadAllMessagesBeforeAndIncl(ctx context.Context, in *ReadAllMessagesBeforeRequest, opts ...grpc.CallOption) (*Void, error) {
+	out := new(Void)
+	err := c.cc.Invoke(ctx, "/proto.DialogService/ReadAllMessagesBeforeAndIncl", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dialogServiceClient) Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error) {
 	out := new(Pong)
 	err := c.cc.Invoke(ctx, "/proto.DialogService/Ping", in, out, opts...)
@@ -87,9 +107,11 @@ func (c *dialogServiceClient) Ping(ctx context.Context, in *Void, opts ...grpc.C
 // for forward compatibility
 type DialogServiceServer interface {
 	CreateDialogWith(context.Context, *UserID) (*Dialog, error)
+	GetDialogByID(context.Context, *DialogID) (*Dialog, error)
 	GetDialogs(context.Context, *GetDialogsRequest) (*GetDialogsResponse, error)
 	CreateDialogMessage(context.Context, *CreateDialogMessageRequest) (*CreateDialogMessageResponse, error)
 	GetDialogMessages(context.Context, *GetDialogMessagesRequest) (*GetDialogMessagesResponse, error)
+	ReadAllMessagesBeforeAndIncl(context.Context, *ReadAllMessagesBeforeRequest) (*Void, error)
 	Ping(context.Context, *Void) (*Pong, error)
 	mustEmbedUnimplementedDialogServiceServer()
 }
@@ -101,6 +123,9 @@ type UnimplementedDialogServiceServer struct {
 func (UnimplementedDialogServiceServer) CreateDialogWith(context.Context, *UserID) (*Dialog, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateDialogWith not implemented")
 }
+func (UnimplementedDialogServiceServer) GetDialogByID(context.Context, *DialogID) (*Dialog, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDialogByID not implemented")
+}
 func (UnimplementedDialogServiceServer) GetDialogs(context.Context, *GetDialogsRequest) (*GetDialogsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDialogs not implemented")
 }
@@ -109,6 +134,9 @@ func (UnimplementedDialogServiceServer) CreateDialogMessage(context.Context, *Cr
 }
 func (UnimplementedDialogServiceServer) GetDialogMessages(context.Context, *GetDialogMessagesRequest) (*GetDialogMessagesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDialogMessages not implemented")
+}
+func (UnimplementedDialogServiceServer) ReadAllMessagesBeforeAndIncl(context.Context, *ReadAllMessagesBeforeRequest) (*Void, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReadAllMessagesBeforeAndIncl not implemented")
 }
 func (UnimplementedDialogServiceServer) Ping(context.Context, *Void) (*Pong, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
@@ -140,6 +168,24 @@ func _DialogService_CreateDialogWith_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DialogServiceServer).CreateDialogWith(ctx, req.(*UserID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DialogService_GetDialogByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DialogID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DialogServiceServer).GetDialogByID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.DialogService/GetDialogByID",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DialogServiceServer).GetDialogByID(ctx, req.(*DialogID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -198,6 +244,24 @@ func _DialogService_GetDialogMessages_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DialogService_ReadAllMessagesBeforeAndIncl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReadAllMessagesBeforeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DialogServiceServer).ReadAllMessagesBeforeAndIncl(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.DialogService/ReadAllMessagesBeforeAndIncl",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DialogServiceServer).ReadAllMessagesBeforeAndIncl(ctx, req.(*ReadAllMessagesBeforeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DialogService_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Void)
 	if err := dec(in); err != nil {
@@ -228,6 +292,10 @@ var DialogService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DialogService_CreateDialogWith_Handler,
 		},
 		{
+			MethodName: "GetDialogByID",
+			Handler:    _DialogService_GetDialogByID_Handler,
+		},
+		{
 			MethodName: "GetDialogs",
 			Handler:    _DialogService_GetDialogs_Handler,
 		},
@@ -238,6 +306,10 @@ var DialogService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDialogMessages",
 			Handler:    _DialogService_GetDialogMessages_Handler,
+		},
+		{
+			MethodName: "ReadAllMessagesBeforeAndIncl",
+			Handler:    _DialogService_ReadAllMessagesBeforeAndIncl_Handler,
 		},
 		{
 			MethodName: "Ping",

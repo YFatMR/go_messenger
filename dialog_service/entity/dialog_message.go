@@ -11,6 +11,20 @@ type MessageID struct {
 	ID uint64
 }
 
+type OffserType string
+
+const (
+	BEFORE = OffserType("before")
+	AFTER  = OffserType("after")
+)
+
+func OffserTypeFromProtobuf(offset proto.GetDialogMessagesRequest_OffsetType) OffserType {
+	if offset == proto.GetDialogMessagesRequest_BEFORE {
+		return BEFORE
+	}
+	return AFTER
+}
+
 type DialogMessage struct {
 	MessageID MessageID
 	SenderID  UserID
@@ -22,6 +36,15 @@ func MessageIDToProtobuf(msg *MessageID) *proto.MessageID {
 	return &proto.MessageID{
 		ID: msg.ID,
 	}
+}
+
+func MessageIDFromProtobuf(msg *proto.MessageID) (*MessageID, error) {
+	if msg == nil || msg.GetID() == 0 {
+		return nil, ErrWrongRequestFormat
+	}
+	return &MessageID{
+		ID: msg.ID,
+	}, nil
 }
 
 func CopyDialogMessage(msg *DialogMessage) *DialogMessage {

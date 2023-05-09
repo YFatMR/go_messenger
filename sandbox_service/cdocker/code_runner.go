@@ -88,6 +88,7 @@ func CodeRunnerFromConfig(ctx context.Context, config *cviper.CustomViper, logge
 	// It check that the desired docker image has been found
 	_, _, err = dockerClient.ImageInspectWithRaw(ctx, dockerRunnerSettings.ImageName)
 	if err != nil {
+		logger.Error("Can not LoadDockerImageFromTAR", zap.Error(err))
 		return nil, err
 	}
 	return NewCodeRunner(dockerClient, dockerRunnerSettings, dockerRunnerLimitations, logger), nil

@@ -45,6 +45,26 @@ func (c *dialogController) CreateDialogWith(ctx context.Context, request *proto.
 	return entity.DialogToProtobuf(dialog, userID1), nil
 }
 
+func (c *dialogController) GetDialogByID(ctx context.Context, request *proto.DialogID) (
+	*proto.Dialog, error,
+) {
+	userID, err := c.contextManager.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dialogID, err := entity.DialogIDFromProtobuf(request)
+	if err != nil {
+		return nil, err
+	}
+
+	dialog, err := c.model.GetDialog(ctx, userID, dialogID)
+	if err != nil {
+		return nil, err
+	}
+	return entity.DialogToProtobuf(dialog, userID), nil
+}
+
 func (c *dialogController) GetDialogs(ctx context.Context, request *proto.GetDialogsRequest) (
 	*proto.GetDialogsResponse, error,
 ) {
@@ -91,6 +111,9 @@ func (c *dialogController) CreateDialogMessage(ctx context.Context, request *pro
 	}
 	return &proto.CreateDialogMessageResponse{
 		CreatedAt: timestamppb.New(message.CreatedAt),
+		MessageID: &proto.MessageID{
+			ID: message.MessageID.ID,
+		},
 	}, nil
 }
 
@@ -106,12 +129,20 @@ func (c *dialogController) GetDialogMessages(ctx context.Context, request *proto
 	if err != nil {
 		return nil, err
 	}
+
+	messageID, err := entity.MessageIDFromProtobuf(request.GetMessageID())
+	if err != nil {
+		return nil, err
+	}
+
+	offsetType := entity.OffserTypeFromProtobuf(request.GetOffsetType())
+
 	if request.GetLimit() == 0 {
 		return nil, ErrWrongRequestFormat
 	}
 
 	messages, err := c.model.GetDialogMessages(
-		ctx, dialogID, request.Offset, request.Limit,
+		ctx, dialogID, messageID, request.Limit, offsetType,
 	)
 	if err != nil {
 		return nil, err
@@ -119,6 +150,31 @@ func (c *dialogController) GetDialogMessages(ctx context.Context, request *proto
 	return &proto.GetDialogMessagesResponse{
 		Messages: entity.DialogMessagesToProtobuf(messages, senderID),
 	}, nil
+}
+
+func (c *dialogController) ReadAllMessagesBeforeAndIncl(ctx context.Context, request *proto.ReadAllMessagesBeforeRequest) (
+	*proto.Void, error,
+) {
+	senderID, err := c.contextManager.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dialogID, err := entity.DialogIDFromProtobuf(request.GetDialogID())
+	if err != nil {
+		return nil, err
+	}
+
+	messageID, err := entity.MessageIDFromProtobuf(request.GetMessageID())
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.model.ReadAllMessagesBeforeAndIncl(ctx, senderID, dialogID, messageID)
+	if err != nil {
+		return nil, err
+	}
+	return &proto.Void{}, nil
 }
 
 func (c *dialogController) Ping(ctx context.Context, request *proto.Void) (

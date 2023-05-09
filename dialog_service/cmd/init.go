@@ -11,6 +11,7 @@ import (
 	"github.com/YFatMR/go_messenger/dialog_service/decorator"
 	"github.com/YFatMR/go_messenger/dialog_service/dialog"
 	"github.com/YFatMR/go_messenger/dialog_service/grpcapi"
+	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
@@ -31,21 +32,30 @@ func DialogRepositoryFromConfig(ctx context.Context, config *cviper.CustomViper,
 	_, err = connPool.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS dialogs (
 			id BIGSERIAL PRIMARY KEY,
-			created_at TIMESTAMP DEFAULT NOW(),
-
-			user_id_1 BIGINT NOT NULL,
-			dialog_name_1 VARCHAR(512) NOT NULL,
-			unread_messages_count_1 BIGINT DEFAULT 0,
-
-			user_id_2 BIGINT NOT NULL,
-			dialog_name_2 VARCHAR(512) NOT NULL,
-			unread_messages_count_2 BIGINT DEFAULT 0,
-
-			UNIQUE (user_id_1, user_id_2)
+			created_at TIMESTAMP DEFAULT NOW()
 		);`,
 	)
 	if err != nil {
 		logger.Error("Failed to create database dialogs tables", zap.Error(err))
+		return nil, err
+	}
+
+	_, err = connPool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS dialog_members (
+			id BIGSERIAL PRIMARY KEY,
+
+			dialog_id BIGINT NOT NULL,
+			FOREIGN KEY (dialog_id) REFERENCES dialogs (id),
+
+			user_id BIGINT NOT NULL,
+			dialog_name VARCHAR(512) NOT NULL,
+			last_read_message_id BIGINT NOT NULL DEFAULT 0,
+
+			UNIQUE (dialog_id, user_id)
+		);`,
+	)
+	if err != nil {
+		logger.Error("Failed to create database dialog_members tables", zap.Error(err))
 		return nil, err
 	}
 
@@ -73,6 +83,25 @@ func DialogRepositoryFromConfig(ctx context.Context, config *cviper.CustomViper,
 	// Decorators
 	repository = decorator.NewLoggingDialogRepositoryDecorator(repository, logger)
 	return repository, nil
+}
+
+func KafkaClientFromConfig(config *cviper.CustomViper, logger *czap.Logger) apientity.KafkaClient {
+	writeOperationTimeout := config.GetMillisecondsDurationRequired("KAFKA_WRITER_WRITE_TIMEOUT_MILLISECONDS")
+	writer := &kafka.Writer{
+		Addr:         kafka.TCP(config.GetStringRequired("KAFKA_BROKER_ADDRESS")),
+		Topic:        config.GetStringRequired("KAFKA_NEW_MESSAGES_TOPIC"),
+		Balancer:     &kafka.LeastBytes{},
+		Compression:  kafka.Snappy,
+		WriteTimeout: writeOperationTimeout,
+		ReadTimeout:  config.GetMillisecondsDurationRequired("KAFKA_WRITER_READ_TIMEOUT_MILLISECONDS"),
+	}
+	return dialog.NewKafkaClient(
+		writer,
+		&dialog.KafkaClientSettings{
+			WriteOperationTimeout: writeOperationTimeout,
+		},
+		logger,
+	)
 }
 
 func DialogModelFromConfig(ctx context.Context, repository apientity.DialogRepository, config *cviper.CustomViper,
@@ -110,7 +139,9 @@ func DialogModelFromConfig(ctx context.Context, repository apientity.DialogRepos
 	if err != nil {
 		return nil, err
 	}
-	model := dialog.NewDialogModel(repository, userClient, logger)
+
+	kafkaClient := KafkaClientFromConfig(config, logger)
+	model := dialog.NewDialogModel(repository, userClient, kafkaClient, logger)
 	// Decorators
 	model = decorator.NewLoggingDialogModelDecorator(model, logger)
 	return model, nil

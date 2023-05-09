@@ -49,7 +49,7 @@ func (d *LoggingDialogControllerDecorator) CreateDialogMessage(ctx context.Conte
 }
 
 // CreateDialogWith implements apientity.DialogController
-func (d *LoggingDialogControllerDecorator) CreateDialogWith(ctx context.Context, request *proto.UserID) (dp1 *proto.Dialog, err error) {
+func (d *LoggingDialogControllerDecorator) CreateDialogWith(ctx context.Context, request *proto.UserID) (response *proto.Dialog, err error) {
 
 	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling CreateDialogWith")
 	defer func() {
@@ -59,6 +59,19 @@ func (d *LoggingDialogControllerDecorator) CreateDialogWith(ctx context.Context,
 		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: CreateDialogWith finished")
 	}()
 	return d.base.CreateDialogWith(ctx, request)
+}
+
+// GetDialogByID implements apientity.DialogController
+func (d *LoggingDialogControllerDecorator) GetDialogByID(ctx context.Context, dialogID *proto.DialogID) (response *proto.Dialog, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling GetDialogByID")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: GetDialogByID finished")
+	}()
+	return d.base.GetDialogByID(ctx, dialogID)
 }
 
 // GetDialogMessages implements apientity.DialogController
@@ -98,4 +111,17 @@ func (d *LoggingDialogControllerDecorator) Ping(ctx context.Context, request *pr
 		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: Ping finished")
 	}()
 	return d.base.Ping(ctx, request)
+}
+
+// ReadAllMessagesBeforeAndIncl implements apientity.DialogController
+func (d *LoggingDialogControllerDecorator) ReadAllMessagesBeforeAndIncl(ctx context.Context, request *proto.ReadAllMessagesBeforeRequest) (void *proto.Void, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling ReadAllMessagesBeforeAndIncl")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: ReadAllMessagesBeforeAndIncl finished")
+	}()
+	return d.base.ReadAllMessagesBeforeAndIncl(ctx, request)
 }

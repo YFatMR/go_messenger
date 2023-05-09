@@ -45,6 +45,39 @@ func (s *FrontServer) CreateDialogWith(w http.ResponseWriter, r *http.Request) {
 	w.Write(bytes)
 }
 
+func (s *FrontServer) GetDialogByID(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	ctx := r.Context()
+
+	// Json data to protobuf.
+	dualogID, err := strconv.ParseUint(r.URL.Query().Get("ID"), 10, 64)
+	if err != nil {
+		http.Error(w, "limit params error:"+err.Error(), http.StatusBadRequest)
+		return
+	}
+	request := proto.DialogID{
+		ID: dualogID,
+	}
+
+	ctx = context.WithValue(ctx, grpcapi.RequireAuthorizationField{}, true)
+	ctx = context.WithValue(ctx, grpcapi.AuthorizationField{}, r.Header.Get("Authorization"))
+	response, err := s.dialogServiceClient.GetDialogByID(ctx, &request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Response protobuf to json.
+	bytes, err := protojson.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(bytes)
+}
+
 func (s *FrontServer) GetDialogs(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	ctx := r.Context()
@@ -143,13 +176,24 @@ func (s *FrontServer) GetDialogMessages(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	offset, err := strconv.ParseUint(r.URL.Query().Get("offset"), 10, 64)
+	offsetTypeQuery := r.URL.Query().Get("offset_type")
+	if offsetTypeQuery == "" || (offsetTypeQuery != "before" && offsetTypeQuery != "after") {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	offsetType := proto.GetDialogMessagesRequest_BEFORE
+	if offsetTypeQuery == "after" {
+		offsetType = proto.GetDialogMessagesRequest_AFTER
+	}
+
+	vars := mux.Vars(r)
+	dialogID, err := strconv.ParseUint(vars["dialogID"], 10, 64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	vars := mux.Vars(r)
-	dialogID, err := strconv.ParseUint(vars["ID"], 10, 64)
+	messageID, err := strconv.ParseUint(vars["messageID"], 10, 64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -158,13 +202,62 @@ func (s *FrontServer) GetDialogMessages(w http.ResponseWriter, r *http.Request) 
 		DialogID: &proto.DialogID{
 			ID: dialogID,
 		},
-		Limit:  limit,
-		Offset: offset,
+		MessageID: &proto.MessageID{
+			ID: messageID,
+		},
+		Limit:      limit,
+		OffsetType: offsetType,
 	}
 
 	ctx = context.WithValue(ctx, grpcapi.RequireAuthorizationField{}, true)
 	ctx = context.WithValue(ctx, grpcapi.AuthorizationField{}, r.Header.Get("Authorization"))
 	response, err := s.dialogServiceClient.GetDialogMessages(ctx, &request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Response protobuf to json.
+	bytes, err := protojson.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(bytes)
+}
+
+func (s *FrontServer) ReadAllMessagesBefore(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	ctx := r.Context()
+
+	// Json data to protobuf.
+	vars := mux.Vars(r)
+	dialogID, err := strconv.ParseUint(vars["dialogID"], 10, 64)
+	if err != nil {
+		http.Error(w, "dialogID params error:"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	messageID, err := strconv.ParseUint(vars["messageID"], 10, 64)
+	if err != nil {
+		http.Error(w, "dialogID params error:"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	request := proto.ReadAllMessagesBeforeRequest{
+		DialogID: &proto.DialogID{
+			ID: dialogID,
+		},
+		MessageID: &proto.MessageID{
+			ID: messageID,
+		},
+	}
+
+	ctx = context.WithValue(ctx, grpcapi.RequireAuthorizationField{}, true)
+	ctx = context.WithValue(ctx, grpcapi.AuthorizationField{}, r.Header.Get("Authorization"))
+	response, err := s.dialogServiceClient.ReadAllMessagesBeforeAndIncl(ctx, &request)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

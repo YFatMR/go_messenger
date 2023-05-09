@@ -383,15 +383,14 @@
         "name": {
           "type": "string"
         },
-        "messagesCount": {
-          "type": "string",
-          "format": "uint64"
-        },
         "unreadMessagesCount": {
           "type": "string",
           "format": "uint64"
         },
         "lastMessage": {
+          "$ref": "#/definitions/protoDialogMessage"
+        },
+        "lastReadMessage": {
           "$ref": "#/definitions/protoDialogMessage"
         }
       }

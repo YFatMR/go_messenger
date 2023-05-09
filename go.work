@@ -1,6 +1,7 @@
 go 1.19
 
 use (
+	./comet_service
 	./core
 	./dialog_service
 	./front_service

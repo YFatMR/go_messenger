@@ -23,6 +23,12 @@ func (s *Server) CreateDialogWith(ctx context.Context, request *proto.UserID) (
 	return s.controller.CreateDialogWith(ctx, request)
 }
 
+func (s *Server) GetDialogByID(ctx context.Context, request *proto.DialogID) (
+	*proto.Dialog, error,
+) {
+	return s.controller.GetDialogByID(ctx, request)
+}
+
 func (s *Server) GetDialogs(ctx context.Context, request *proto.GetDialogsRequest) (
 	*proto.GetDialogsResponse, error,
 ) {
@@ -39,6 +45,12 @@ func (s *Server) GetDialogMessages(ctx context.Context, request *proto.GetDialog
 	*proto.GetDialogMessagesResponse, error,
 ) {
 	return s.controller.GetDialogMessages(ctx, request)
+}
+
+func (s *Server) ReadAllMessagesBeforeAndIncl(ctx context.Context, request *proto.ReadAllMessagesBeforeRequest) (
+	*proto.Void, error,
+) {
+	return s.controller.ReadAllMessagesBeforeAndIncl(ctx, request)
 }
 
 func (s *Server) Ping(ctx context.Context, request *proto.Void) (

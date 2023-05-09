@@ -16,9 +16,9 @@ type DialogMember struct {
 type Dialog struct {
 	DialogID            DialogID
 	Name                string
-	MessagesCount       uint64
 	UnreadMessagesCount uint64
 	LastMessage         DialogMessage
+	LastReadMessage     DialogMessage
 }
 
 func DialogIDFromProtobuf(dialogID *proto.DialogID) (*DialogID, error) {
@@ -40,9 +40,9 @@ func DialogToProtobuf(dialog *Dialog, selfID *UserID) *proto.Dialog {
 	return &proto.Dialog{
 		DialogID:            DialogIDToProtobuf(&dialog.DialogID),
 		Name:                dialog.Name,
-		MessagesCount:       dialog.MessagesCount,
 		UnreadMessagesCount: dialog.UnreadMessagesCount,
 		LastMessage:         DialogMessageToProtobuf(&dialog.LastMessage, selfID),
+		LastReadMessage:     DialogMessageToProtobuf(&dialog.LastReadMessage, selfID),
 	}
 }
 

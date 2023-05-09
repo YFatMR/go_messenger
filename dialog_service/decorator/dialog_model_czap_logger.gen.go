@@ -61,8 +61,21 @@ func (d *LoggingDialogModelDecorator) CreateDialogMessage(ctx context.Context, d
 	return d.base.CreateDialogMessage(ctx, dialogID, message)
 }
 
+// GetDialog implements apientity.DialogModel
+func (d *LoggingDialogModelDecorator) GetDialog(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID) (dialog *entity.Dialog, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: calling GetDialog")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: GetDialog finished")
+	}()
+	return d.base.GetDialog(ctx, userID, dialogID)
+}
+
 // GetDialogMessages implements apientity.DialogModel
-func (d *LoggingDialogModelDecorator) GetDialogMessages(ctx context.Context, dialogID *entity.DialogID, offset uint64, limit uint64) (messages []*entity.DialogMessage, err error) {
+func (d *LoggingDialogModelDecorator) GetDialogMessages(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID, limit uint64, offsetType entity.OffserType) (messages []*entity.DialogMessage, err error) {
 
 	d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: calling GetDialogMessages")
 	defer func() {
@@ -71,7 +84,7 @@ func (d *LoggingDialogModelDecorator) GetDialogMessages(ctx context.Context, dia
 		}
 		d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: GetDialogMessages finished")
 	}()
-	return d.base.GetDialogMessages(ctx, dialogID, offset, limit)
+	return d.base.GetDialogMessages(ctx, dialogID, messageID, limit, offsetType)
 }
 
 // GetDialogs implements apientity.DialogModel
@@ -85,4 +98,17 @@ func (d *LoggingDialogModelDecorator) GetDialogs(ctx context.Context, userID *en
 		d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: GetDialogs finished")
 	}()
 	return d.base.GetDialogs(ctx, userID, offset, limit)
+}
+
+// ReadAllMessagesBeforeAndIncl implements apientity.DialogModel
+func (d *LoggingDialogModelDecorator) ReadAllMessagesBeforeAndIncl(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID, messageID *entity.MessageID) (err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: calling ReadAllMessagesBeforeAndIncl")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: ReadAllMessagesBeforeAndIncl finished")
+	}()
+	return d.base.ReadAllMessagesBeforeAndIncl(ctx, userID, dialogID, messageID)
 }
