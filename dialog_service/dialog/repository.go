@@ -84,16 +84,39 @@ func (r *dialogRepository) CreateDialog(ctx context.Context, userID1 *entity.Use
 		return nil, err
 	}
 
+	lastMessage := &entity.DialogMessage{
+		SenderID: entity.UserID{
+			ID: 0,
+		},
+		Text: "Welcome!",
+	}
+	err = tx.QueryRow(
+		ctx, `
+		INSERT INTO
+			messages (dialog_id, sender_id, text)
+		VALUES
+			($1, $2, $3)
+		RETURNING
+			id, created_at;`,
+		dialogID.ID, lastMessage.SenderID.ID, lastMessage.Text,
+	).Scan(&lastMessage.MessageID.ID, &lastMessage.CreatedAt)
+
+	if err != nil {
+		tx.Rollback(ctx)
+		r.logger.ErrorContext(ctx, "Can not create first dialog message", zap.Error(err))
+		return nil, err
+	}
+
 	_, err = tx.Exec(
 		ctx, `
 		INSERT INTO
-			dialog_members (dialog_id, user_id, dialog_name)
+			dialog_members (dialog_id, user_id, dialog_name, last_read_message_id)
 		VALUES
-			($1, $2, $3),
-			($1, $4, $5);`,
+			($1, $2, $3, $4),
+			($1, $5, $6, $7);`,
 		dialogID.ID,
-		userID1.ID, createDialogName(userData2),
-		userID2.ID, createDialogName(userData1),
+		userID1.ID, createDialogName(userData2), lastMessage.MessageID.ID,
+		userID2.ID, createDialogName(userData1), lastMessage.MessageID.ID,
 	)
 	if err != nil {
 		tx.Rollback(ctx)
@@ -111,6 +134,8 @@ func (r *dialogRepository) CreateDialog(ctx context.Context, userID1 *entity.Use
 		DialogID:            *dialogID,
 		Name:                createDialogName(userData2),
 		UnreadMessagesCount: 0,
+		LastMessage:         *lastMessage,
+		LastReadMessage:     *lastMessage,
 	}
 	return dialog, nil
 }

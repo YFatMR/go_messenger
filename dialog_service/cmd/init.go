@@ -41,25 +41,6 @@ func DialogRepositoryFromConfig(ctx context.Context, config *cviper.CustomViper,
 	}
 
 	_, err = connPool.Exec(ctx, `
-		CREATE TABLE IF NOT EXISTS dialog_members (
-			id BIGSERIAL PRIMARY KEY,
-
-			dialog_id BIGINT NOT NULL,
-			FOREIGN KEY (dialog_id) REFERENCES dialogs (id),
-
-			user_id BIGINT NOT NULL,
-			dialog_name VARCHAR(512) NOT NULL,
-			last_read_message_id BIGINT NOT NULL DEFAULT 0,
-
-			UNIQUE (dialog_id, user_id)
-		);`,
-	)
-	if err != nil {
-		logger.Error("Failed to create database dialog_members tables", zap.Error(err))
-		return nil, err
-	}
-
-	_, err = connPool.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS messages (
 			id BIGSERIAL PRIMARY KEY,
 			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -72,6 +53,27 @@ func DialogRepositoryFromConfig(ctx context.Context, config *cviper.CustomViper,
 	)
 	if err != nil {
 		logger.Error("Failed to create database messages tables", zap.Error(err))
+		return nil, err
+	}
+
+	_, err = connPool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS dialog_members (
+			id BIGSERIAL PRIMARY KEY,
+
+			dialog_id BIGINT NOT NULL,
+			FOREIGN KEY (dialog_id) REFERENCES dialogs (id),
+
+			user_id BIGINT NOT NULL,
+			dialog_name VARCHAR(512) NOT NULL,
+
+			last_read_message_id BIGINT NOT NULL,
+			FOREIGN KEY (last_read_message_id) REFERENCES messages (id),
+
+			UNIQUE (dialog_id, user_id)
+		);`,
+	)
+	if err != nil {
+		logger.Error("Failed to create database dialog_members tables", zap.Error(err))
 		return nil, err
 	}
 
