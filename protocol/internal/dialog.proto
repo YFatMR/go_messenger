@@ -12,6 +12,7 @@ message DialogMessage {
   string text = 3;
   google.protobuf.Timestamp createdAt = 4;
   bool selfMessage = 5;
+  bool viewed = 6;
 }
 
 message Dialog {
@@ -32,7 +33,9 @@ message GetDialogsResponse { repeated Dialog dialogs = 1; }
 message GetDialogMessagesRequest {
   enum OffsetType {
     BEFORE = 0;
-    AFTER = 1;
+    BEFORE_INCLUDE = 1;
+    AFTER = 2;
+    AFTER_INCLUDE = 3;
   }
 
   DialogID dialogID = 1;
@@ -58,6 +61,34 @@ message ReadAllMessagesBeforeRequest {
   MessageID messageID = 2;
 }
 
+message CreateInstructionRequest {
+  DialogID dialogID = 1;
+  string title = 2;
+  repeated MessageID messagesID = 3;
+}
+
+message Instruction {
+  InstructionID instructionID = 1;
+  google.protobuf.Timestamp createdAt = 2;
+  string title = 3;
+  string text = 4;
+}
+
+message GetInstructionsRequest {
+  enum OffsetType {
+    BEFORE = 0;
+    BEFORE_INCLUDE = 1;
+    FIRST_REQUEST = 2;
+  }
+
+  DialogID dialogID = 1;
+  InstructionID instructionID = 2;
+  uint64 limit = 3;
+  OffsetType offsetType = 4;
+}
+
+message GetInstructionsResponse { repeated Instruction instructions = 1; }
+
 service DialogService {
   rpc CreateDialogWith(UserID) returns (Dialog) {}
   rpc GetDialogByID(DialogID) returns (Dialog) {}
@@ -66,8 +97,11 @@ service DialogService {
       returns (CreateDialogMessageResponse) {}
   rpc GetDialogMessages(GetDialogMessagesRequest)
       returns (GetDialogMessagesResponse) {}
-  rpc ReadAllMessagesBeforeAndIncl(ReadAllMessagesBeforeRequest)
+  rpc ReadAllMessagesBeforeAndInclude(ReadAllMessagesBeforeRequest)
       returns (Void) {}
+  rpc CreateInstruction(CreateInstructionRequest) returns (InstructionID) {}
+  rpc GetInstructions(GetInstructionsRequest)
+      returns (GetInstructionsResponse) {}
 
   rpc Ping(Void) returns (Pong) {}
 }

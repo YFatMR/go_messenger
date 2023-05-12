@@ -14,3 +14,5 @@ message DialogID { uint64 ID = 1; }
 message MessageID { uint64 ID = 1; }
 
 message ImageID { string ID = 1; }
+
+message InstructionID { uint64 ID = 1; }

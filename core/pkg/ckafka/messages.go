@@ -26,3 +26,11 @@ type DialogMessage struct {
 	Text      string    `json:"text"`
 	CreatedAt time.Time `json:"createdAt"`
 }
+
+type ViewedMessage struct {
+	SenderID         UserID    `json:"senderID"`
+	ReciverID        UserID    `json:"reciverID"`
+	DialogID         DialogID  `json:"dialogID"`
+	MessageID        MessageID `json:"messageID"`
+	MessageCreatedAt time.Time `json:"messageCreatedAt"`
+}

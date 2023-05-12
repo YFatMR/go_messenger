@@ -87,17 +87,69 @@ func (d *LoggingDialogRepositoryDecorator) GetDialogMembers(ctx context.Context,
 	return d.base.GetDialogMembers(ctx, dialogID)
 }
 
-// GetDialogMessages implements apientity.DialogRepository
-func (d *LoggingDialogRepositoryDecorator) GetDialogMessages(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID, limit uint64, offsetType entity.OffserType) (messages []*entity.DialogMessage, err error) {
+// GetDialogMessageByID implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) GetDialogMessageByID(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID) (message *entity.DialogMessage, err error) {
 
-	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling GetDialogMessages")
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling GetDialogMessageByID")
 	defer func() {
 		if err != nil {
 			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
 		}
-		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: GetDialogMessages finished")
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: GetDialogMessageByID finished")
 	}()
-	return d.base.GetDialogMessages(ctx, dialogID, messageID, limit, offsetType)
+	return d.base.GetDialogMessageByID(ctx, dialogID, messageID)
+}
+
+// GetDialogMessagesAfter implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) GetDialogMessagesAfter(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID, limit uint64) (messages []*entity.DialogMessage, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling GetDialogMessagesAfter")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: GetDialogMessagesAfter finished")
+	}()
+	return d.base.GetDialogMessagesAfter(ctx, dialogID, messageID, limit)
+}
+
+// GetDialogMessagesAfterAndInclude implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) GetDialogMessagesAfterAndInclude(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID, limit uint64) (messages []*entity.DialogMessage, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling GetDialogMessagesAfterAndInclude")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: GetDialogMessagesAfterAndInclude finished")
+	}()
+	return d.base.GetDialogMessagesAfterAndInclude(ctx, dialogID, messageID, limit)
+}
+
+// GetDialogMessagesBefore implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) GetDialogMessagesBefore(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID, limit uint64) (messages []*entity.DialogMessage, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling GetDialogMessagesBefore")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: GetDialogMessagesBefore finished")
+	}()
+	return d.base.GetDialogMessagesBefore(ctx, dialogID, messageID, limit)
+}
+
+// GetDialogMessagesBeforeAndInclude implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) GetDialogMessagesBeforeAndInclude(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID, limit uint64) (messages []*entity.DialogMessage, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling GetDialogMessagesBeforeAndInclude")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: GetDialogMessagesBeforeAndInclude finished")
+	}()
+	return d.base.GetDialogMessagesBeforeAndInclude(ctx, dialogID, messageID, limit)
 }
 
 // GetDialogs implements apientity.DialogRepository

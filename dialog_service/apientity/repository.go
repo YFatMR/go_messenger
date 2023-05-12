@@ -21,10 +21,30 @@ type DialogRepository interface {
 	CreateDialogMessage(ctx context.Context, dialogID *entity.DialogID, message *entity.DialogMessage) (
 		msg *entity.DialogMessage, err error,
 	)
-	GetDialogMessages(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID,
-		limit uint64, offsetType entity.OffserType,
+	GetDialogMessagesBefore(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID,
+		limit uint64,
 	) (
 		messages []*entity.DialogMessage, err error,
+	)
+	GetDialogMessagesBeforeAndInclude(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID,
+		limit uint64,
+	) (
+		messages []*entity.DialogMessage, err error,
+	)
+	GetDialogMessagesAfter(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID,
+		limit uint64,
+	) (
+		messages []*entity.DialogMessage, err error,
+	)
+	GetDialogMessagesAfterAndInclude(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID,
+		limit uint64,
+	) (
+		messages []*entity.DialogMessage, err error,
+	)
+	GetDialogMessageByID(ctx context.Context, dialogID *entity.DialogID,
+		messageID *entity.MessageID,
+	) (
+		message *entity.DialogMessage, err error,
 	)
 	GetDialogMembers(ctx context.Context, dialogID *entity.DialogID) (
 		userIDs []*entity.UserID, err error,

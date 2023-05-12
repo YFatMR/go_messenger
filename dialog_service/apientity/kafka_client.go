@@ -10,5 +10,8 @@ type KafkaClient interface {
 	WriteNewDialogMessage(ctx context.Context, inMsg *ckafka.DialogMessage) (
 		err error,
 	)
+	WriteNewViewedMessage(ctx context.Context, inMsg *ckafka.ViewedMessage) (
+		err error,
+	)
 	Stop()
 }

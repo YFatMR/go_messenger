@@ -113,15 +113,15 @@ func (d *LoggingDialogControllerDecorator) Ping(ctx context.Context, request *pr
 	return d.base.Ping(ctx, request)
 }
 
-// ReadAllMessagesBeforeAndIncl implements apientity.DialogController
-func (d *LoggingDialogControllerDecorator) ReadAllMessagesBeforeAndIncl(ctx context.Context, request *proto.ReadAllMessagesBeforeRequest) (void *proto.Void, err error) {
+// ReadAllMessagesBeforeAndInclude implements apientity.DialogController
+func (d *LoggingDialogControllerDecorator) ReadAllMessagesBeforeAndInclude(ctx context.Context, request *proto.ReadAllMessagesBeforeRequest) (void *proto.Void, err error) {
 
-	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling ReadAllMessagesBeforeAndIncl")
+	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling ReadAllMessagesBeforeAndInclude")
 	defer func() {
 		if err != nil {
 			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
 		}
-		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: ReadAllMessagesBeforeAndIncl finished")
+		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: ReadAllMessagesBeforeAndInclude finished")
 	}()
-	return d.base.ReadAllMessagesBeforeAndIncl(ctx, request)
+	return d.base.ReadAllMessagesBeforeAndInclude(ctx, request)
 }

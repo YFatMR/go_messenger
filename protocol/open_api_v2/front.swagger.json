@@ -422,6 +422,9 @@
         },
         "selfMessage": {
           "type": "boolean"
+        },
+        "viewed": {
+          "type": "boolean"
         }
       }
     },

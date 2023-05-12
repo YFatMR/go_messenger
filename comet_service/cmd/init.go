@@ -7,12 +7,23 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func NewKafkaReaderFromConfig(config *cviper.CustomViper) *kafka.Reader {
+func NewMessageKafkaReaderFromConfig(config *cviper.CustomViper) *kafka.Reader {
 	kafkaAddress := config.GetStringRequired("KAFKA_BROKER_ADDRESS")
 	readerConfig := kafka.ReaderConfig{
 		Brokers:  []string{kafkaAddress},
 		Topic:    config.GetStringRequired("KAFKA_NEW_MESSAGES_TOPIC"),
 		GroupID:  config.GetStringRequired("KAFKA_NEW_MESSAGES_CONSUMER_GROUP_NAME"),
+		MaxBytes: 10e4, // 10MB
+	}
+	return kafka.NewReader(readerConfig)
+}
+
+func ViewedMessageKafkaReaderFromConfig(config *cviper.CustomViper) *kafka.Reader {
+	kafkaAddress := config.GetStringRequired("KAFKA_BROKER_ADDRESS")
+	readerConfig := kafka.ReaderConfig{
+		Brokers:  []string{kafkaAddress},
+		Topic:    config.GetStringRequired("KAFKA_VIEWED_MESSAGES_TOPIC"),
+		GroupID:  config.GetStringRequired("KAFKA_VIEWED_MESSAGES_CONSUMER_GROUP_NAME"),
 		MaxBytes: 10e4, // 10MB
 	}
 	return kafka.NewReader(readerConfig)

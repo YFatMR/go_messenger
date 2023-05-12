@@ -47,10 +47,10 @@ func (s *Server) GetDialogMessages(ctx context.Context, request *proto.GetDialog
 	return s.controller.GetDialogMessages(ctx, request)
 }
 
-func (s *Server) ReadAllMessagesBeforeAndIncl(ctx context.Context, request *proto.ReadAllMessagesBeforeRequest) (
+func (s *Server) ReadAllMessagesBeforeAndInclude(ctx context.Context, request *proto.ReadAllMessagesBeforeRequest) (
 	*proto.Void, error,
 ) {
-	return s.controller.ReadAllMessagesBeforeAndIncl(ctx, request)
+	return s.controller.ReadAllMessagesBeforeAndInclude(ctx, request)
 }
 
 func (s *Server) Ping(ctx context.Context, request *proto.Void) (

@@ -3,7 +3,9 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/YFatMR/go_messenger/front_server/grpcapi"
@@ -170,21 +172,31 @@ func (s *FrontServer) GetDialogMessages(w http.ResponseWriter, r *http.Request) 
 	defer r.Body.Close()
 	ctx := r.Context()
 
+	offsetTypeFromURL := func(url *url.URL) (proto.GetDialogMessagesRequest_OffsetType, error) {
+		switch url.Query().Get("offset_type") {
+		case "before":
+			return proto.GetDialogMessagesRequest_BEFORE, nil
+		case "before_include":
+			return proto.GetDialogMessagesRequest_BEFORE_INCLUDE, nil
+		case "after":
+			return proto.GetDialogMessagesRequest_AFTER, nil
+		case "after_include":
+			return proto.GetDialogMessagesRequest_AFTER_INCLUDE, nil
+		}
+		return proto.GetDialogMessagesRequest_BEFORE, fmt.Errorf("unexpected offset_type params value")
+	}
+
 	// Json data to protobuf.
 	limit, err := strconv.ParseUint(r.URL.Query().Get("limit"), 10, 64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	offsetTypeQuery := r.URL.Query().Get("offset_type")
-	if offsetTypeQuery == "" || (offsetTypeQuery != "before" && offsetTypeQuery != "after") {
+
+	offsetType, err := offsetTypeFromURL(r.URL)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
-	}
-
-	offsetType := proto.GetDialogMessagesRequest_BEFORE
-	if offsetTypeQuery == "after" {
-		offsetType = proto.GetDialogMessagesRequest_AFTER
 	}
 
 	vars := mux.Vars(r)
@@ -257,7 +269,7 @@ func (s *FrontServer) ReadAllMessagesBefore(w http.ResponseWriter, r *http.Reque
 
 	ctx = context.WithValue(ctx, grpcapi.RequireAuthorizationField{}, true)
 	ctx = context.WithValue(ctx, grpcapi.AuthorizationField{}, r.Header.Get("Authorization"))
-	response, err := s.dialogServiceClient.ReadAllMessagesBeforeAndIncl(ctx, &request)
+	response, err := s.dialogServiceClient.ReadAllMessagesBeforeAndInclude(ctx, &request)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

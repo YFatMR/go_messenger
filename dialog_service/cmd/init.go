@@ -44,6 +44,7 @@ func DialogRepositoryFromConfig(ctx context.Context, config *cviper.CustomViper,
 		CREATE TABLE IF NOT EXISTS messages (
 			id BIGSERIAL PRIMARY KEY,
 			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			viewed BOOLEAN DEFAULT FALSE,
 
 			dialog_id BIGINT NOT NULL,
 			FOREIGN KEY (dialog_id) REFERENCES dialogs (id),
@@ -65,9 +66,6 @@ func DialogRepositoryFromConfig(ctx context.Context, config *cviper.CustomViper,
 
 			user_id BIGINT NOT NULL,
 			dialog_name VARCHAR(512) NOT NULL,
-
-			last_read_message_id BIGINT NOT NULL,
-			FOREIGN KEY (last_read_message_id) REFERENCES messages (id),
 
 			UNIQUE (dialog_id, user_id)
 		);`,
@@ -91,7 +89,6 @@ func KafkaClientFromConfig(config *cviper.CustomViper, logger *czap.Logger) apie
 	writeOperationTimeout := config.GetMillisecondsDurationRequired("KAFKA_WRITER_WRITE_TIMEOUT_MILLISECONDS")
 	writer := &kafka.Writer{
 		Addr:         kafka.TCP(config.GetStringRequired("KAFKA_BROKER_ADDRESS")),
-		Topic:        config.GetStringRequired("KAFKA_NEW_MESSAGES_TOPIC"),
 		Balancer:     &kafka.LeastBytes{},
 		Compression:  kafka.Snappy,
 		WriteTimeout: writeOperationTimeout,
@@ -101,6 +98,8 @@ func KafkaClientFromConfig(config *cviper.CustomViper, logger *czap.Logger) apie
 		writer,
 		&dialog.KafkaClientSettings{
 			WriteOperationTimeout: writeOperationTimeout,
+			NewMessagesTopic:      config.GetStringRequired("KAFKA_NEW_MESSAGES_TOPIC"),
+			ViewedMessagesTopic:   config.GetStringRequired("KAFKA_VIEWED_MESSAGES_TOPIC"),
 		},
 		logger,
 	)

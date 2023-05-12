@@ -152,7 +152,7 @@ func (c *dialogController) GetDialogMessages(ctx context.Context, request *proto
 	}, nil
 }
 
-func (c *dialogController) ReadAllMessagesBeforeAndIncl(ctx context.Context, request *proto.ReadAllMessagesBeforeRequest) (
+func (c *dialogController) ReadAllMessagesBeforeAndInclude(ctx context.Context, request *proto.ReadAllMessagesBeforeRequest) (
 	*proto.Void, error,
 ) {
 	senderID, err := c.contextManager.UserIDFromContext(ctx)

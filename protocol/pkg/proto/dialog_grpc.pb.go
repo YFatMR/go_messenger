@@ -27,7 +27,9 @@ type DialogServiceClient interface {
 	GetDialogs(ctx context.Context, in *GetDialogsRequest, opts ...grpc.CallOption) (*GetDialogsResponse, error)
 	CreateDialogMessage(ctx context.Context, in *CreateDialogMessageRequest, opts ...grpc.CallOption) (*CreateDialogMessageResponse, error)
 	GetDialogMessages(ctx context.Context, in *GetDialogMessagesRequest, opts ...grpc.CallOption) (*GetDialogMessagesResponse, error)
-	ReadAllMessagesBeforeAndIncl(ctx context.Context, in *ReadAllMessagesBeforeRequest, opts ...grpc.CallOption) (*Void, error)
+	ReadAllMessagesBeforeAndInclude(ctx context.Context, in *ReadAllMessagesBeforeRequest, opts ...grpc.CallOption) (*Void, error)
+	CreateInstruction(ctx context.Context, in *CreateInstructionRequest, opts ...grpc.CallOption) (*InstructionID, error)
+	GetInstructions(ctx context.Context, in *GetInstructionsRequest, opts ...grpc.CallOption) (*GetInstructionsResponse, error)
 	Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error)
 }
 
@@ -84,9 +86,27 @@ func (c *dialogServiceClient) GetDialogMessages(ctx context.Context, in *GetDial
 	return out, nil
 }
 
-func (c *dialogServiceClient) ReadAllMessagesBeforeAndIncl(ctx context.Context, in *ReadAllMessagesBeforeRequest, opts ...grpc.CallOption) (*Void, error) {
+func (c *dialogServiceClient) ReadAllMessagesBeforeAndInclude(ctx context.Context, in *ReadAllMessagesBeforeRequest, opts ...grpc.CallOption) (*Void, error) {
 	out := new(Void)
-	err := c.cc.Invoke(ctx, "/proto.DialogService/ReadAllMessagesBeforeAndIncl", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.DialogService/ReadAllMessagesBeforeAndInclude", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dialogServiceClient) CreateInstruction(ctx context.Context, in *CreateInstructionRequest, opts ...grpc.CallOption) (*InstructionID, error) {
+	out := new(InstructionID)
+	err := c.cc.Invoke(ctx, "/proto.DialogService/CreateInstruction", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dialogServiceClient) GetInstructions(ctx context.Context, in *GetInstructionsRequest, opts ...grpc.CallOption) (*GetInstructionsResponse, error) {
+	out := new(GetInstructionsResponse)
+	err := c.cc.Invoke(ctx, "/proto.DialogService/GetInstructions", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +131,9 @@ type DialogServiceServer interface {
 	GetDialogs(context.Context, *GetDialogsRequest) (*GetDialogsResponse, error)
 	CreateDialogMessage(context.Context, *CreateDialogMessageRequest) (*CreateDialogMessageResponse, error)
 	GetDialogMessages(context.Context, *GetDialogMessagesRequest) (*GetDialogMessagesResponse, error)
-	ReadAllMessagesBeforeAndIncl(context.Context, *ReadAllMessagesBeforeRequest) (*Void, error)
+	ReadAllMessagesBeforeAndInclude(context.Context, *ReadAllMessagesBeforeRequest) (*Void, error)
+	CreateInstruction(context.Context, *CreateInstructionRequest) (*InstructionID, error)
+	GetInstructions(context.Context, *GetInstructionsRequest) (*GetInstructionsResponse, error)
 	Ping(context.Context, *Void) (*Pong, error)
 	mustEmbedUnimplementedDialogServiceServer()
 }
@@ -135,8 +157,14 @@ func (UnimplementedDialogServiceServer) CreateDialogMessage(context.Context, *Cr
 func (UnimplementedDialogServiceServer) GetDialogMessages(context.Context, *GetDialogMessagesRequest) (*GetDialogMessagesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDialogMessages not implemented")
 }
-func (UnimplementedDialogServiceServer) ReadAllMessagesBeforeAndIncl(context.Context, *ReadAllMessagesBeforeRequest) (*Void, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ReadAllMessagesBeforeAndIncl not implemented")
+func (UnimplementedDialogServiceServer) ReadAllMessagesBeforeAndInclude(context.Context, *ReadAllMessagesBeforeRequest) (*Void, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReadAllMessagesBeforeAndInclude not implemented")
+}
+func (UnimplementedDialogServiceServer) CreateInstruction(context.Context, *CreateInstructionRequest) (*InstructionID, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateInstruction not implemented")
+}
+func (UnimplementedDialogServiceServer) GetInstructions(context.Context, *GetInstructionsRequest) (*GetInstructionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetInstructions not implemented")
 }
 func (UnimplementedDialogServiceServer) Ping(context.Context, *Void) (*Pong, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
@@ -244,20 +272,56 @@ func _DialogService_GetDialogMessages_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DialogService_ReadAllMessagesBeforeAndIncl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _DialogService_ReadAllMessagesBeforeAndInclude_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ReadAllMessagesBeforeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DialogServiceServer).ReadAllMessagesBeforeAndIncl(ctx, in)
+		return srv.(DialogServiceServer).ReadAllMessagesBeforeAndInclude(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.DialogService/ReadAllMessagesBeforeAndIncl",
+		FullMethod: "/proto.DialogService/ReadAllMessagesBeforeAndInclude",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DialogServiceServer).ReadAllMessagesBeforeAndIncl(ctx, req.(*ReadAllMessagesBeforeRequest))
+		return srv.(DialogServiceServer).ReadAllMessagesBeforeAndInclude(ctx, req.(*ReadAllMessagesBeforeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DialogService_CreateInstruction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateInstructionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DialogServiceServer).CreateInstruction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.DialogService/CreateInstruction",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DialogServiceServer).CreateInstruction(ctx, req.(*CreateInstructionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DialogService_GetInstructions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetInstructionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DialogServiceServer).GetInstructions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.DialogService/GetInstructions",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DialogServiceServer).GetInstructions(ctx, req.(*GetInstructionsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -308,8 +372,16 @@ var DialogService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DialogService_GetDialogMessages_Handler,
 		},
 		{
-			MethodName: "ReadAllMessagesBeforeAndIncl",
-			Handler:    _DialogService_ReadAllMessagesBeforeAndIncl_Handler,
+			MethodName: "ReadAllMessagesBeforeAndInclude",
+			Handler:    _DialogService_ReadAllMessagesBeforeAndInclude_Handler,
+		},
+		{
+			MethodName: "CreateInstruction",
+			Handler:    _DialogService_CreateInstruction_Handler,
+		},
+		{
+			MethodName: "GetInstructions",
+			Handler:    _DialogService_GetInstructions_Handler,
 		},
 		{
 			MethodName: "Ping",

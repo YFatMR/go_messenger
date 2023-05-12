@@ -15,6 +15,8 @@ import (
 
 type KafkaClientSettings struct {
 	WriteOperationTimeout time.Duration
+	NewMessagesTopic      string
+	ViewedMessagesTopic   string
 }
 
 type KafkaClient struct {
@@ -48,12 +50,38 @@ func (c *KafkaClient) WriteNewDialogMessage(ctx context.Context, inMsg *ckafka.D
 		ctx,
 		kafka.Message{
 			Key:   []byte(strconv.FormatUint(inMsg.DialogID.ID, 10)),
+			Topic: c.settings.NewMessagesTopic,
 			Value: message,
 			Time:  time.Now(),
 		},
 	)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "Unable to write message", zap.Error(err))
+		c.logger.ErrorContext(ctx, "WriteNewDialogMessage: Unable to write message", zap.Error(err))
+		return ErrMessageWriting
+	}
+	return nil
+}
+
+func (c *KafkaClient) WriteNewViewedMessage(ctx context.Context, inMsg *ckafka.ViewedMessage) error {
+	message, err := json.Marshal(inMsg)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Unable to create message", zap.Error(err))
+		return ErrMessageCreation
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, c.settings.WriteOperationTimeout)
+	defer cancel()
+	err = c.writer.WriteMessages(
+		ctx,
+		kafka.Message{
+			Key:   []byte(strconv.FormatUint(inMsg.DialogID.ID, 10)),
+			Topic: c.settings.ViewedMessagesTopic,
+			Value: message,
+			Time:  time.Now(),
+		},
+	)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "WriteNewViewedMessage: Unable to write message", zap.Error(err))
 		return ErrMessageWriting
 	}
 	return nil

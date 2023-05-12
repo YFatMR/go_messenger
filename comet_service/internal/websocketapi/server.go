@@ -14,8 +14,14 @@ import (
 	"go.uber.org/zap"
 )
 
-type Message struct {
-	Message string `json:"message"`
+type WSDialogMessage struct {
+	ckafka.DialogMessage
+	Type string `json:"type"`
+}
+
+type WSViewedMessage struct {
+	ckafka.ViewedMessage
+	Type string `json:"type"`
 }
 
 type ServerSettings struct {
@@ -23,31 +29,38 @@ type ServerSettings struct {
 }
 
 type Server struct {
-	logger                 *czap.Logger
-	upgrader               *websocket.Upgrader
-	newMessagesKafkaReader *kafka.Reader
-	clientsMutex           sync.Mutex
-	clients                map[uint64]*websocket.Conn
-	settings               ServerSettings
+	logger                    *czap.Logger
+	upgrader                  *websocket.Upgrader
+	newMessagesKafkaReader    *kafka.Reader
+	viewedMessagesKafkaReader *kafka.Reader
+	clientsMutex              sync.Mutex
+	clients                   map[uint64]*websocket.Conn
+	settings                  ServerSettings
 }
 
-func NewServer(upgrader *websocket.Upgrader, newMessagesKafkaReader *kafka.Reader, logger *czap.Logger) *Server {
+func NewServer(upgrader *websocket.Upgrader, newMessagesKafkaReader *kafka.Reader,
+	viewedMessagesKafkaReader *kafka.Reader, logger *czap.Logger,
+) *Server {
 	server := &Server{
-		upgrader:               upgrader,
-		clients:                make(map[uint64]*websocket.Conn),
-		newMessagesKafkaReader: newMessagesKafkaReader,
+		upgrader:                  upgrader,
+		clients:                   make(map[uint64]*websocket.Conn),
+		newMessagesKafkaReader:    newMessagesKafkaReader,
+		viewedMessagesKafkaReader: viewedMessagesKafkaReader,
 		settings: ServerSettings{
 			ClientWriterBufferSize: 5,
 		},
 		logger: logger,
 	}
 	go func() {
-		server.listenEvents(context.TODO())
+		server.listenNewMessages(context.TODO())
+	}()
+	go func() {
+		server.listenViewedMessages(context.TODO())
 	}()
 	return server
 }
 
-func (ws *Server) listenEvents(ctx context.Context) {
+func (ws *Server) listenNewMessages(ctx context.Context) {
 	// listen kafka new message events & notify WS writer/reader
 	for {
 		message, err := ws.newMessagesKafkaReader.ReadMessage(ctx)
@@ -66,13 +79,60 @@ func (ws *Server) listenEvents(ctx context.Context) {
 			ws.clientsMutex.Lock()
 			defer ws.clientsMutex.Unlock()
 
-			wsConn, ok := ws.clients[parsedMessage.ReciverID.ID]
+			wsMessage := WSDialogMessage{
+				DialogMessage: parsedMessage,
+				Type:          "new_message",
+			}
+
+			wsConn, ok := ws.clients[wsMessage.ReciverID.ID]
 			if !ok {
-				ws.logger.DebugContext(ctx, "Can not send message. Reciver not in online", zap.Uint64("reciverID", parsedMessage.ReciverID.ID))
+				ws.logger.DebugContext(ctx, "Can not send message. Reciver not in online", zap.Uint64("reciverID", wsMessage.ReciverID.ID))
 				return
 			}
 
-			rawMessage, err := json.Marshal(parsedMessage)
+			rawMessage, err := json.Marshal(wsMessage)
+			if err != nil {
+				ws.logger.ErrorContext(ctx, "Error to parse struct", zap.Error(err))
+				return
+			}
+			wsConn.WriteMessage(websocket.TextMessage, rawMessage)
+		}()
+	}
+}
+
+func (ws *Server) listenViewedMessages(ctx context.Context) {
+	for {
+		message, err := ws.viewedMessagesKafkaReader.ReadMessage(ctx)
+		ws.logger.DebugContext(ctx, "Got kafka message")
+		if err != nil {
+			ws.logger.ErrorContext(ctx, "Got kafka message error", zap.Error(err))
+			continue
+		}
+		parsedMessage := ckafka.ViewedMessage{}
+		if err = json.Unmarshal(message.Value, &parsedMessage); err != nil {
+			ws.logger.ErrorContext(ctx, "Can't parse kafka message", zap.Error(err))
+			continue
+		}
+
+		func() {
+			ws.clientsMutex.Lock()
+			defer ws.clientsMutex.Unlock()
+
+			wsMessage := WSViewedMessage{
+				ViewedMessage: parsedMessage,
+				Type:          "viewed",
+			}
+
+			wsConn, ok := ws.clients[wsMessage.ReciverID.ID]
+			if !ok {
+				ws.logger.DebugContext(
+					ctx, "Can not send message. Reciver not in online",
+					zap.Uint64("reciverID", wsMessage.ReciverID.ID),
+				)
+				return
+			}
+
+			rawMessage, err := json.Marshal(wsMessage)
 			if err != nil {
 				ws.logger.ErrorContext(ctx, "Error to parse struct", zap.Error(err))
 				return

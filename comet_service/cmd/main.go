@@ -46,8 +46,9 @@ func main() {
 			return true
 		},
 	}
-	newMessageKafkaReader := NewKafkaReaderFromConfig(config)
-	websocketServer := websocketapi.NewServer(upgrader, newMessageKafkaReader, logger)
+	newMessageKafkaReader := NewMessageKafkaReaderFromConfig(config)
+	viewedMessageKafkaReader := ViewedMessageKafkaReaderFromConfig(config)
+	websocketServer := websocketapi.NewServer(upgrader, newMessageKafkaReader, viewedMessageKafkaReader, logger)
 
 	router := mux.NewRouter()
 	router.HandleFunc("/", websocketServer.Handle)

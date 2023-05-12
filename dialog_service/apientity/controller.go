@@ -22,7 +22,7 @@ type DialogController interface {
 	GetDialogMessages(ctx context.Context, request *proto.GetDialogMessagesRequest) (
 		response *proto.GetDialogMessagesResponse, err error,
 	)
-	ReadAllMessagesBeforeAndIncl(ctx context.Context, request *proto.ReadAllMessagesBeforeRequest) (
+	ReadAllMessagesBeforeAndInclude(ctx context.Context, request *proto.ReadAllMessagesBeforeRequest) (
 		void *proto.Void, err error,
 	)
 	Ping(ctx context.Context, request *proto.Void) (

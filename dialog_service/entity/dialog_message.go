@@ -14,15 +14,21 @@ type MessageID struct {
 type OffserType string
 
 const (
-	BEFORE = OffserType("before")
-	AFTER  = OffserType("after")
+	BEFORE         = OffserType("before")
+	BEFORE_INCLUDE = OffserType("before_include")
+	AFTER          = OffserType("after")
+	AFTER_INCLUDE  = OffserType("after_include")
 )
 
 func OffserTypeFromProtobuf(offset proto.GetDialogMessagesRequest_OffsetType) OffserType {
 	if offset == proto.GetDialogMessagesRequest_BEFORE {
 		return BEFORE
+	} else if offset == proto.GetDialogMessagesRequest_BEFORE_INCLUDE {
+		return BEFORE_INCLUDE
+	} else if offset == proto.GetDialogMessagesRequest_AFTER {
+		return AFTER
 	}
-	return AFTER
+	return AFTER_INCLUDE
 }
 
 type DialogMessage struct {
@@ -30,6 +36,7 @@ type DialogMessage struct {
 	SenderID  UserID
 	Text      string
 	CreatedAt time.Time
+	Viewed    bool
 }
 
 func MessageIDToProtobuf(msg *MessageID) *proto.MessageID {
@@ -53,6 +60,7 @@ func CopyDialogMessage(msg *DialogMessage) *DialogMessage {
 		SenderID:  msg.SenderID,
 		Text:      msg.Text,
 		CreatedAt: msg.CreatedAt,
+		Viewed:    msg.Viewed,
 	}
 }
 
@@ -74,6 +82,7 @@ func DialogMessageToProtobuf(request *DialogMessage, selfID *UserID) *proto.Dial
 		Text:        request.Text,
 		CreatedAt:   timestamppb.New(request.CreatedAt),
 		SelfMessage: selfID.ID == request.SenderID.ID,
+		Viewed:      request.Viewed,
 	}
 }
 

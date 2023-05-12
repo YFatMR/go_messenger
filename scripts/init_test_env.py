@@ -93,8 +93,6 @@ def create_dialog_with_messages(user_data1: UserData, user_data2: UserData, mess
 lst = [create_user_with_token(i) for i in range(60)]
 
 for i in range(1, len(lst)):
-    cnt = 10
-    if i < 5:
-        cnt = 60
+    cnt = 60
     create_dialog_with_messages(lst[0], lst[i], cnt)
 print("OK!")
