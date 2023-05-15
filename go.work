@@ -8,5 +8,6 @@ use (
 	./protocol
 	./qa
 	./sandbox_service
+	./sandbox_worker_service
 	./user_service
 )

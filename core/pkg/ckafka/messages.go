@@ -2,15 +2,24 @@ package ckafka
 
 import "time"
 
-type ProgramExecutionMessage struct {
-	ProgramID string `json:"programId"`
-}
-
-type MessageID struct {
+type UserID struct {
 	ID uint64 `json:"ID"`
 }
 
-type UserID struct {
+type CodeRunnerMessage struct {
+	SenderID   UserID `json:"senderID"`
+	ProgramID  string `json:"programID"`
+	SourceCode string `json:"sourceCode"`
+	Language   string `json:"languageWithVersion"`
+}
+
+type CodeRunnerResultMessage struct {
+	ProgramID string `json:"programID"`
+	Stdout    string `json:"stdout"`
+	Stderr    string `json:"stderr"`
+}
+
+type MessageID struct {
 	ID uint64 `json:"ID"`
 }
 
@@ -25,6 +34,7 @@ type DialogMessage struct {
 	DialogID  DialogID  `json:"dialogID"`
 	Text      string    `json:"text"`
 	CreatedAt time.Time `json:"createdAt"`
+	Type      uint64    `json:"type"`
 }
 
 type ViewedMessage struct {

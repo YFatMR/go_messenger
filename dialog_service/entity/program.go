@@ -1,5 +1,5 @@
 package entity
 
-type UserID struct {
+type ProgramID struct {
 	ID uint64
 }

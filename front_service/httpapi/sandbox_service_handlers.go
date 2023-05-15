@@ -40,37 +40,37 @@ func (s *FrontServer) GetProgramByID(w http.ResponseWriter, r *http.Request) {
 	w.Write(bytes)
 }
 
-func (s *FrontServer) CreateProgram(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-	ctx := r.Context()
-	decoder := json.NewDecoder(r.Body)
+// func (s *FrontServer) CreateProgram(w http.ResponseWriter, r *http.Request) {
+// 	defer r.Body.Close()
+// 	ctx := r.Context()
+// 	decoder := json.NewDecoder(r.Body)
 
-	// Json data to protobuf.
-	var request proto.ProgramSource
-	err := decoder.Decode(&request)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+// 	// Json data to protobuf.
+// 	var request proto.ProgramSource
+// 	err := decoder.Decode(&request)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
 
-	ctx = context.WithValue(ctx, grpcapi.RequireAuthorizationField{}, true)
-	ctx = context.WithValue(ctx, grpcapi.AuthorizationField{}, r.Header.Get("Authorization"))
-	response, err := s.sandboxServiceClient.CreateProgram(ctx, &request)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+// 	ctx = context.WithValue(ctx, grpcapi.RequireAuthorizationField{}, true)
+// 	ctx = context.WithValue(ctx, grpcapi.AuthorizationField{}, r.Header.Get("Authorization"))
+// 	response, err := s.sandboxServiceClient.CreateProgram(ctx, &request)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
 
-	// Response protobuf to json.
-	bytes, err := protojson.Marshal(response)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(bytes)
-}
+// 	// Response protobuf to json.
+// 	bytes, err := protojson.Marshal(response)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.WriteHeader(http.StatusOK)
+// 	w.Write(bytes)
+// }
 
 func (s *FrontServer) UpdateProgramSource(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()

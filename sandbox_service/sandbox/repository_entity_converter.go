@@ -11,15 +11,16 @@ func programIDFromInsertOneResult(result *mongo.InsertOneResult) *entity.Program
 }
 
 func programSourceFromDocument(document *ProgramDocument) *entity.ProgramSource {
+	language, _ := entity.LanguageFromString(document.Language)
 	return &entity.ProgramSource{
 		SourceCode: document.SourceCode,
-		Language:   document.Language,
+		Language:   language,
 	}
 }
 
 func programSourceToDocument(programSource *entity.ProgramSource) *ProgramDocument {
 	return &ProgramDocument{
-		Language:   programSource.Language,
+		Language:   string(programSource.Language),
 		SourceCode: programSource.SourceCode,
 	}
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/ctrace"
 	"github.com/YFatMR/go_messenger/core/pkg/czap"
 	"github.com/YFatMR/go_messenger/protocol/pkg/proto"
-	"github.com/YFatMR/go_messenger/sandbox_service/cdocker"
 	"github.com/YFatMR/go_messenger/sandbox_service/decorator"
 	"github.com/YFatMR/go_messenger/sandbox_service/grpcapi"
 	"github.com/YFatMR/go_messenger/sandbox_service/sandbox"
@@ -66,13 +65,6 @@ func main() {
 	}()
 	tracer := otel.Tracer(serviceName)
 
-	codeRunner, err := cdocker.CodeRunnerFromConfig(ctx, config, logger)
-	if err != nil {
-		panic(err)
-	}
-	defer codeRunner.Stop()
-	workerPool := WorkerPoolFromCongig(config)
-
 	sandboxRepository, err := sandbox.RepositoryFromConfig(ctx, config, logger)
 	if err != nil {
 		panic(err)
@@ -84,7 +76,7 @@ func main() {
 
 	kafkaClient := sandbox.KafkaClientFromConfig(config, logger)
 	defer kafkaClient.Stop()
-	sandboxService := sandbox.NewService(sandboxRepository, codeRunner, workerPool, kafkaClient, logger)
+	sandboxService := sandbox.NewService(sandboxRepository, kafkaClient, logger)
 	sandboxService = decorator.NewOpentelemetryTracingSandboxServiceDecorator(sandboxService, tracer, false)
 	sandboxService = decorator.NewLoggingSandboxServiceDecorator(sandboxService, logger)
 

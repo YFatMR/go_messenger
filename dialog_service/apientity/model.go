@@ -16,15 +16,31 @@ type DialogModel interface {
 	GetDialogs(ctx context.Context, userID *entity.UserID, offset uint64, limit uint64) (
 		dialogs []*entity.Dialog, err error,
 	)
-	CreateDialogMessage(ctx context.Context, dialogID *entity.DialogID, message *entity.DialogMessage) (
+	CreateDialogMessage(ctx context.Context, request *entity.CreateDialogMessageRequest) (
 		msg *entity.DialogMessage, err error,
 	)
+	CreateDialogMessageWithCode(ctx context.Context, request *entity.CreateDialogMessageWithCodeRequest) (
+		*entity.DialogMessage, error,
+	)
 	GetDialogMessages(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID,
-		limit uint64, offsetType entity.OffserType,
+		limit uint64, offsetType entity.DialogMessagesOffserType,
 	) (
 		messages []*entity.DialogMessage, err error,
 	)
 	ReadAllMessagesBeforeAndIncl(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
 		messageID *entity.MessageID,
 	) error
+	CreateInstruction(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID, instructionTitle string,
+		instructionText string,
+	) (
+		instructionID *entity.InstructionID, err error,
+	)
+	GetInstructions(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID, limit uint64) (
+		instructions []*entity.Instruction, err error,
+	)
+	GetInstructionsByID(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
+		instructionID *entity.InstructionID, offsetType entity.InstructionOffserType, limit uint64,
+	) (
+		instructions []*entity.Instruction, err error,
+	)
 }

@@ -48,17 +48,43 @@ func (d *LoggingDialogRepositoryDecorator) CreateDialog(ctx context.Context, use
 	return d.base.CreateDialog(ctx, userID1, userData1, userID2, userData2)
 }
 
-// CreateDialogMessage implements apientity.DialogRepository
-func (d *LoggingDialogRepositoryDecorator) CreateDialogMessage(ctx context.Context, dialogID *entity.DialogID, message *entity.DialogMessage) (msg *entity.DialogMessage, err error) {
+// CreateDialogMessageWithCode implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) CreateDialogMessageWithCode(ctx context.Context, request *entity.CreateDialogMessageWithCodeRequest) (dp1 *entity.DialogMessage, err error) {
 
-	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling CreateDialogMessage")
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling CreateDialogMessageWithCode")
 	defer func() {
 		if err != nil {
 			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
 		}
-		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: CreateDialogMessage finished")
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: CreateDialogMessageWithCode finished")
 	}()
-	return d.base.CreateDialogMessage(ctx, dialogID, message)
+	return d.base.CreateDialogMessageWithCode(ctx, request)
+}
+
+// CreateDialogMessageWithURLs implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) CreateDialogMessageWithURLs(ctx context.Context, request *entity.CreateDialogMessageRequest, urls []string) (dp1 *entity.DialogMessage, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling CreateDialogMessageWithURLs")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: CreateDialogMessageWithURLs finished")
+	}()
+	return d.base.CreateDialogMessageWithURLs(ctx, request, urls)
+}
+
+// CreateInstruction implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) CreateInstruction(ctx context.Context, creatorID *entity.UserID, dialogID *entity.DialogID, instructionTitle string, instructionText string) (instructionID *entity.InstructionID, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling CreateInstruction")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: CreateInstruction finished")
+	}()
+	return d.base.CreateInstruction(ctx, creatorID, dialogID, instructionTitle, instructionText)
 }
 
 // GetDialog implements apientity.DialogRepository
@@ -152,6 +178,19 @@ func (d *LoggingDialogRepositoryDecorator) GetDialogMessagesBeforeAndInclude(ctx
 	return d.base.GetDialogMessagesBeforeAndInclude(ctx, dialogID, messageID, limit)
 }
 
+// GetDialogMessagesByID implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) GetDialogMessagesByID(ctx context.Context, dialogID *entity.DialogID, messagesID []*entity.MessageID) (messages []*entity.DialogMessage, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling GetDialogMessagesByID")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: GetDialogMessagesByID finished")
+	}()
+	return d.base.GetDialogMessagesByID(ctx, dialogID, messagesID)
+}
+
 // GetDialogs implements apientity.DialogRepository
 func (d *LoggingDialogRepositoryDecorator) GetDialogs(ctx context.Context, userID *entity.UserID, offset uint64, limit uint64) (dialogs []*entity.Dialog, err error) {
 
@@ -163,6 +202,32 @@ func (d *LoggingDialogRepositoryDecorator) GetDialogs(ctx context.Context, userI
 		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: GetDialogs finished")
 	}()
 	return d.base.GetDialogs(ctx, userID, offset, limit)
+}
+
+// GetInstructions implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) GetInstructions(ctx context.Context, dialogID *entity.DialogID, limit uint64) (instructions []*entity.Instruction, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling GetInstructions")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: GetInstructions finished")
+	}()
+	return d.base.GetInstructions(ctx, dialogID, limit)
+}
+
+// GetInstructionsBefore implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) GetInstructionsBefore(ctx context.Context, dialogID *entity.DialogID, instructionID *entity.InstructionID, limit uint64) (instructions []*entity.Instruction, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling GetInstructionsBefore")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: GetInstructionsBefore finished")
+	}()
+	return d.base.GetInstructionsBefore(ctx, dialogID, instructionID, limit)
 }
 
 // ReadAllMessagesBeforeAndIncl implements apientity.DialogRepository

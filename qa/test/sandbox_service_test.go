@@ -104,7 +104,7 @@ func (s *SandboxTestSuite) TestRunHelloWorld() {
 	message, err := s.sandboxTopicKafkaClient.WaitMessage(ctx)
 	require.NoError(err)
 
-	var programExecutionMessage ckafka.ProgramExecutionMessage
+	var programExecutionMessage ckafka.CodeRunnerMessage
 	err = json.Unmarshal(message.Value, &programExecutionMessage)
 	require.NoError(err)
 

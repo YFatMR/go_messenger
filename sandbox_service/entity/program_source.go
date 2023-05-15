@@ -4,7 +4,7 @@ import "github.com/YFatMR/go_messenger/protocol/pkg/proto"
 
 type ProgramSource struct {
 	SourceCode string
-	Language   string //  TODO: Enum
+	Language   Languages
 }
 
 func ProgramSourceFromProtobuf(programSource *proto.ProgramSource) (
@@ -13,8 +13,13 @@ func ProgramSourceFromProtobuf(programSource *proto.ProgramSource) (
 	if programSource == nil {
 		return nil, ErrWrongRequestFormat
 	}
+	language, err := LanguageFromString(programSource.GetLanguage())
+	if err != nil {
+		return nil, err
+	}
+
 	return &ProgramSource{
-		Language:   programSource.GetLanguage(),
+		Language:   language,
 		SourceCode: programSource.GetSourceCode(),
 	}, nil
 }
@@ -24,7 +29,7 @@ func ProgramSourceToProtobuf(programSource *ProgramSource) *proto.ProgramSource 
 		return &proto.ProgramSource{}
 	}
 	return &proto.ProgramSource{
-		Language:   programSource.Language,
+		Language:   string(programSource.Language),
 		SourceCode: programSource.SourceCode,
 	}
 }

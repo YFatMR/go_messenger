@@ -35,6 +35,12 @@ func (s *Server) GetDialogs(ctx context.Context, request *proto.GetDialogsReques
 	return s.controller.GetDialogs(ctx, request)
 }
 
+func (s *Server) CreateDialogMessageWithCode(ctx context.Context, request *proto.CreateDialogMessageWithCodeRequest) (
+	*proto.CreateDialogMessageResponse, error,
+) {
+	return s.controller.CreateDialogMessageWithCode(ctx, request)
+}
+
 func (s *Server) CreateDialogMessage(ctx context.Context, request *proto.CreateDialogMessageRequest) (
 	*proto.CreateDialogMessageResponse, error,
 ) {
@@ -51,6 +57,24 @@ func (s *Server) ReadAllMessagesBeforeAndInclude(ctx context.Context, request *p
 	*proto.Void, error,
 ) {
 	return s.controller.ReadAllMessagesBeforeAndInclude(ctx, request)
+}
+
+func (s *Server) CreateInstruction(ctx context.Context, request *proto.CreateInstructionRequest) (
+	*proto.InstructionID, error,
+) {
+	return s.controller.CreateInstruction(ctx, request)
+}
+
+func (s *Server) GetInstructions(ctx context.Context, request *proto.GetInstructionsRequest) (
+	*proto.GetInstructionsResponse, error,
+) {
+	return s.controller.GetInstructions(ctx, request)
+}
+
+func (s *Server) GetInstructionsByID(ctx context.Context, request *proto.GetInstructionsByIDRequest) (
+	*proto.GetInstructionsResponse, error,
+) {
+	return s.controller.GetInstructionsByID(ctx, request)
 }
 
 func (s *Server) Ping(ctx context.Context, request *proto.Void) (

@@ -92,7 +92,7 @@ func main() {
 	router.HandleFunc("/v1/users", server.CreateUser).Methods(http.MethodPost)
 
 	router.HandleFunc("/v1/programs/{ID}", server.GetProgramByID).Methods(http.MethodGet)
-	router.HandleFunc("/v1/programs", server.CreateProgram).Methods(http.MethodPost)
+	// router.HandleFunc("/v1/programs", server.CreateProgram).Methods(http.MethodPost)
 	router.HandleFunc("/v1/programs/{ID}/run", server.RunProgram).Methods(http.MethodPatch)
 	router.HandleFunc("/v1/programs/{ID}/lint", server.LintProgram).Methods(http.MethodPatch)
 	router.HandleFunc("/v1/programs/{ID}/source", server.LintProgram).Methods(http.MethodPatch)
@@ -102,7 +102,11 @@ func main() {
 	router.HandleFunc("/v1/dialogs", server.GetDialogs).Methods(http.MethodGet)
 	router.HandleFunc("/v1/dialogs/{ID}/messages", server.CreateDialogMessage).Methods(http.MethodPost)
 	router.HandleFunc("/v1/dialogs/{dialogID}/messages/{messageID}", server.GetDialogMessages).Methods(http.MethodGet)
-	router.HandleFunc("/v1/dialogs/{dialogID}/messages/{messageID}", server.ReadAllMessagesBefore).Methods(http.MethodPut)
+	router.HandleFunc("/v1/dialogs/{dialogID}/messages/{messageID}", server.ReadAllMessagesBefore).
+		Methods(http.MethodPut)
+
+	router.HandleFunc("/v1/dialogs/{dialogID}/instructions", server.CreateInstruction).Methods(http.MethodPost)
+	router.HandleFunc("/v1/dialogs/{dialogID}/instructions", server.GetInstructions).Methods(http.MethodGet)
 
 	router.HandleFunc("/v1/ws", server.WebsocketHandler)
 

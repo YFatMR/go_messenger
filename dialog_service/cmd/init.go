@@ -41,19 +41,84 @@ func DialogRepositoryFromConfig(ctx context.Context, config *cviper.CustomViper,
 	}
 
 	_, err = connPool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS instructions (
+			id BIGSERIAL PRIMARY KEY,
+
+			dialog_id BIGINT NOT NULL,
+			FOREIGN KEY (dialog_id) REFERENCES dialogs (id),
+
+			title VARCHAR(256) NOT NULL,
+			text VARCHAR(2048) NOT NULL,
+
+			creator_id BIGINT NOT NULL,
+			created_at TIMESTAMP NOT NULL DEFAULT NOW()
+		);`,
+	)
+	if err != nil {
+		logger.Error("Failed to create database instructions tables", zap.Error(err))
+		return nil, err
+	}
+
+	_, err = connPool.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS messages (
 			id BIGSERIAL PRIMARY KEY,
 			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 			viewed BOOLEAN DEFAULT FALSE,
 
+			type BIGINT NOT NULL,
+
 			dialog_id BIGINT NOT NULL,
 			FOREIGN KEY (dialog_id) REFERENCES dialogs (id),
 			sender_id BIGINT NOT NULL,
-			text VARCHAR(1000) NOT NULL
+			text VARCHAR(4096) NOT NULL
 		);`,
 	)
 	if err != nil {
 		logger.Error("Failed to create database messages tables", zap.Error(err))
+		return nil, err
+	}
+
+	_, err = connPool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS programs (
+			id BIGSERIAL PRIMARY KEY,
+			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			creator_id BIGINT NOT NULL,
+
+			title VARCHAR(256) NOT NULL,
+			text VARCHAR(4096) NOT NULL,
+
+			dialog_id BIGINT NOT NULL,
+			FOREIGN KEY (dialog_id) REFERENCES dialogs (id),
+
+			message_id BIGINT NOT NULL,
+			FOREIGN KEY (message_id) REFERENCES messages (id),
+
+			stdout VARCHAR(4096) NOT NULL DEFAULT '',
+			stderr VARCHAR(4096) NOT NULL DEFAULT ''
+		);`,
+	)
+	if err != nil {
+		logger.Error("Failed to create database programs tables", zap.Error(err))
+		return nil, err
+	}
+
+	_, err = connPool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS urls (
+			id BIGSERIAL PRIMARY KEY,
+			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			creator_id BIGINT NOT NULL,
+
+			dialog_id BIGINT NOT NULL,
+			FOREIGN KEY (dialog_id) REFERENCES dialogs (id),
+
+			message_id BIGINT NOT NULL,
+			FOREIGN KEY (message_id) REFERENCES messages (id),
+
+			url VARCHAR(512) NOT NULL
+		);`,
+	)
+	if err != nil {
+		logger.Error("Failed to create database urls tables", zap.Error(err))
 		return nil, err
 	}
 

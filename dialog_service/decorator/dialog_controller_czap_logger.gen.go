@@ -48,6 +48,19 @@ func (d *LoggingDialogControllerDecorator) CreateDialogMessage(ctx context.Conte
 	return d.base.CreateDialogMessage(ctx, request)
 }
 
+// CreateDialogMessageWithCode implements apientity.DialogController
+func (d *LoggingDialogControllerDecorator) CreateDialogMessageWithCode(ctx context.Context, request *proto.CreateDialogMessageWithCodeRequest) (cp1 *proto.CreateDialogMessageResponse, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling CreateDialogMessageWithCode")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: CreateDialogMessageWithCode finished")
+	}()
+	return d.base.CreateDialogMessageWithCode(ctx, request)
+}
+
 // CreateDialogWith implements apientity.DialogController
 func (d *LoggingDialogControllerDecorator) CreateDialogWith(ctx context.Context, request *proto.UserID) (response *proto.Dialog, err error) {
 
@@ -59,6 +72,19 @@ func (d *LoggingDialogControllerDecorator) CreateDialogWith(ctx context.Context,
 		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: CreateDialogWith finished")
 	}()
 	return d.base.CreateDialogWith(ctx, request)
+}
+
+// CreateInstruction implements apientity.DialogController
+func (d *LoggingDialogControllerDecorator) CreateInstruction(ctx context.Context, request *proto.CreateInstructionRequest) (response *proto.InstructionID, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling CreateInstruction")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: CreateInstruction finished")
+	}()
+	return d.base.CreateInstruction(ctx, request)
 }
 
 // GetDialogByID implements apientity.DialogController
@@ -98,6 +124,32 @@ func (d *LoggingDialogControllerDecorator) GetDialogs(ctx context.Context, reque
 		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: GetDialogs finished")
 	}()
 	return d.base.GetDialogs(ctx, request)
+}
+
+// GetInstructions implements apientity.DialogController
+func (d *LoggingDialogControllerDecorator) GetInstructions(ctx context.Context, request *proto.GetInstructionsRequest) (response *proto.GetInstructionsResponse, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling GetInstructions")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: GetInstructions finished")
+	}()
+	return d.base.GetInstructions(ctx, request)
+}
+
+// GetInstructionsByID implements apientity.DialogController
+func (d *LoggingDialogControllerDecorator) GetInstructionsByID(ctx context.Context, request *proto.GetInstructionsByIDRequest) (response *proto.GetInstructionsResponse, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling GetInstructionsByID")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: GetInstructionsByID finished")
+	}()
+	return d.base.GetInstructionsByID(ctx, request)
 }
 
 // Ping implements apientity.DialogController

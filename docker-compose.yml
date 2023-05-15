@@ -114,7 +114,6 @@ services:
       - default
 
   # sandbox_service:
-  #   privileged: true
   #   build:
   #     context: ${PROJECT_ROOT_PATH}
   #     dockerfile: ${PROJECT_ROOT_PATH}/sandbox_service/Dockerfile
@@ -125,20 +124,6 @@ services:
   #     - SERVICE_ADDRESS=sandbox_service:${SANDBOX_SERVICE_PORT}
   #     - SERVICE_NAME=sandbox_service
 
-  #     - WORKER_POOL_WORKERS_COUNT=4
-
-  #     - DOCKER_CODE_RUNNER_IMAGE_NAME=sandbox:latest
-  #     - DOCKER_CODE_RUNNER_IMAGE_PATH=/app/sandbox.tar
-  #     - DOCKER_CODE_RUNNER_CLIENT_VERSION=1.41
-  #     - DOCKER_CODE_RUNNER_MEMORY_LIMITATION_BYTES=134217728 # 128 Mbytes
-  #     - DOCKER_CODE_RUNNER_NETWORK_DISABLED=true
-  #     - DOCKER_CODE_RUNNER_CONTAINER_NAME_PREFIX=tmp_
-  #     - DOCKER_CODE_RUNNER_GO_IMAGE_SOURCE_DIRECTORY=/app
-  #     - DOCKER_CODE_RUNNER_PROGRAM_EXECUTION_TIMEOUT_MILLISECONDS=5000
-  #     - DOCKER_CODE_RUNNER_INPUT_SOURCE_CODE_LIMITATION_BYTE=8000
-  #     - DOCKER_CODE_RUNNER_OUTPUT_STDOUT_LIMITATION_BYTE=6000
-  #     - DOCKER_CODE_RUNNER_OUTPUT_STDERR_LIMITATION_BYTE=6000
-
   #     - GRPC_USER_ID_HEADER=${GRPC_USER_ID_HEADER}
   #     - GRPC_USER_ROLE_HEADER=${GRPC_USER_ROLE_HEADER}
 
@@ -146,7 +131,7 @@ services:
   #     - LOG_PATH=${SANDBOX_SERVICE_LOG_PATH}
 
   #     - KAFKA_BROKER_ADDRESS=kafka_broker:${KAFKA_BROKER_PORT}
-  #     - KAFKA_CODE_RUNNER_TOPIC=code_runner_results
+  #     - KAFKA_PYTHON_3_9_CODE_RUNNER_TOPIC=${KAFKA_PYTHON_3_9_CODE_RUNNER_TOPIC}
   #     - KAFKA_NEW_MESSAGES_TOPIC=${KAFKA_NEW_MESSAGES_TOPIC}
   #     - KAFKA_WRITER_WRITE_TIMEOUT_MILLISECONDS=10000
   #     - KAFKA_WRITER_READ_TIMEOUT_MILLISECONDS=10000
@@ -164,12 +149,35 @@ services:
   #     - type: bind
   #       source: ${PROJECT_ROOT_PATH}/_log/sandbox_service.log
   #       target: ${SANDBOX_SERVICE_LOG_PATH}
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  #     - ${PROJECT_ROOT_PATH}/sandbox_service/docker/images/sandbox.tar:/app/sandbox.tar
   #   ports:
   #     - "9042:${SANDBOX_SERVICE_PORT}"
   #   networks:
   #     - default
+
+  sandbox_worker_service:
+    build:
+      context: ${PROJECT_ROOT_PATH}
+      dockerfile: ${PROJECT_ROOT_PATH}/sandbox_worker_service/docker_images/python/Dockerfile
+    container_name: sandbox_worker_service
+    hostname: sandbox_worker_service
+    environment:
+      - LOG_LEVEL=debug
+      - LOG_PATH=${SANDBOX_WORKER_SERVICE_LOG_PATH}
+
+      - KAFKA_READER_BROKER_ADDRESS=kafka_broker:${KAFKA_BROKER_PORT}
+      - KAFKA_READER_TOPIC=${KAFKA_PYTHON_3_9_CODE_RUNNER_TOPIC}
+      - KAFKA_READER_CONSUMER_GROUP_NAME=sandbox_worker_group
+
+      - KAFKA_WRITER_BROKER_ADDRESS=kafka_broker:${KAFKA_BROKER_PORT}
+      - KAFKA_WRITER_TOPIC=${KAFKA_PYTHON_CODE_RUNNER_RESULT_TOPIC}
+      - KAFKA_WRITER_WRITE_TIMEOUT_MILLISECONDS=10000
+      - KAFKA_WRITER_READ_TIMEOUT_MILLISECONDS=10000
+    volumes:
+      - type: bind
+        source: ${PROJECT_ROOT_PATH}/_log/sandbox_worker_service.log
+        target: ${SANDBOX_WORKER_SERVICE_LOG_PATH}
+    networks:
+      - default
 
   # sandbox_service_mongodb:
   #   image: mongo:latest

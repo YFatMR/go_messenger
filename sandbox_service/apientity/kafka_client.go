@@ -7,7 +7,9 @@ import (
 )
 
 type KafkaClient interface {
-	WriteProgramExecutionMessage(ctx context.Context, programID *entity.ProgramID, userID *entity.UserID) (
+	WriteCodeRunnerMessage(ctx context.Context, userID *entity.UserID, programID *entity.ProgramID,
+		sourceCode string, language entity.Languages,
+	) (
 		err error,
 	)
 	Stop()

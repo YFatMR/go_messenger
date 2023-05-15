@@ -2,6 +2,7 @@ package dialog
 
 import (
 	"context"
+	"regexp"
 
 	"github.com/YFatMR/go_messenger/core/pkg/ckafka"
 	"github.com/YFatMR/go_messenger/core/pkg/czap"
@@ -27,6 +28,21 @@ func NewDialogModel(repository apientity.DialogRepository, userServiceClient pro
 		kafkaClient:       kafkaClient,
 		logger:            logger,
 	}
+}
+
+func (m *dialogModel) isUserDialogMember(ctx context.Context, dialogID *entity.DialogID, userID *entity.UserID) (
+	bool, error,
+) {
+	members, err := m.repository.GetDialogMembers(ctx, dialogID)
+	if err != nil {
+		return false, err
+	}
+	for _, member := range members {
+		if member.ID == userID.ID {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (m *dialogModel) CreateDialog(ctx context.Context, userID1 *entity.UserID, userID2 *entity.UserID) (
@@ -64,20 +80,22 @@ func (m *dialogModel) GetDialogs(ctx context.Context, userID *entity.UserID, off
 	return m.repository.GetDialogs(ctx, userID, offset, limit)
 }
 
-func (m *dialogModel) CreateDialogMessage(ctx context.Context, dialogID *entity.DialogID,
-	inMessage *entity.DialogMessage,
-) (
+func (m *dialogModel) CreateDialogMessage(ctx context.Context, request *entity.CreateDialogMessageRequest) (
 	*entity.DialogMessage, error,
 ) {
-	members, err := m.repository.GetDialogMembers(ctx, dialogID)
+	members, err := m.repository.GetDialogMembers(ctx, &request.DialogID)
 	if err != nil {
 		return nil, err
 	}
-	if members[0].ID != inMessage.SenderID.ID && members[1].ID != inMessage.SenderID.ID {
+	if members[0].ID != request.SenderID.ID && members[1].ID != request.SenderID.ID {
 		return nil, ErrFobidden
 	}
 
-	message, err := m.repository.CreateDialogMessage(ctx, dialogID, inMessage)
+	messageURLs := func(messageText string) []string {
+		re := regexp.MustCompile(`https?://[^\s]+`)
+		return re.FindAllString(messageText, -1)
+	}(request.Text)
+	message, err := m.repository.CreateDialogMessageWithURLs(ctx, request, messageURLs)
 	if err != nil {
 		return nil, err
 	}
@@ -99,33 +117,77 @@ func (m *dialogModel) CreateDialogMessage(ctx context.Context, dialogID *entity.
 			}(),
 		},
 		DialogID: ckafka.DialogID{
-			ID: dialogID.ID,
+			ID: request.DialogID.ID,
 		},
 		Text:      message.Text,
 		CreatedAt: message.CreatedAt,
+		Type:      message.Type,
+	})
+	return message, nil
+}
+
+func (m *dialogModel) CreateDialogMessageWithCode(ctx context.Context,
+	request *entity.CreateDialogMessageWithCodeRequest) (
+	*entity.DialogMessage, error,
+) {
+	members, err := m.repository.GetDialogMembers(ctx, &request.DialogID)
+	if err != nil {
+		return nil, err
+	}
+	if members[0].ID != request.SenderID.ID && members[1].ID != request.SenderID.ID {
+		return nil, ErrFobidden
+	}
+
+	message, err := m.repository.CreateDialogMessageWithCode(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+
+	// async writing
+	go m.kafkaClient.WriteNewDialogMessage(context.TODO(), &ckafka.DialogMessage{
+		MessageID: ckafka.MessageID{
+			ID: message.MessageID.ID,
+		},
+		SenderID: ckafka.UserID{
+			ID: message.SenderID.ID,
+		},
+		ReciverID: ckafka.UserID{
+			ID: func() uint64 {
+				if members[0].ID == message.SenderID.ID {
+					return members[1].ID
+				}
+				return members[0].ID
+			}(),
+		},
+		DialogID: ckafka.DialogID{
+			ID: request.DialogID.ID,
+		},
+		Text:      message.Text,
+		CreatedAt: message.CreatedAt,
+		Type:      message.Type,
 	})
 	return message, nil
 }
 
 func (m *dialogModel) GetDialogMessages(ctx context.Context, dialogID *entity.DialogID,
-	messageID *entity.MessageID, limit uint64, offsetType entity.OffserType,
+	messageID *entity.MessageID, limit uint64, offsetType entity.DialogMessagesOffserType,
 ) (
 	[]*entity.DialogMessage, error,
 ) {
 	switch offsetType {
-	case entity.BEFORE:
+	case entity.DIALOG_MESSAGE_OFFSET_BEFORE:
 		return m.repository.GetDialogMessagesBefore(ctx, dialogID, messageID, limit)
-	case entity.BEFORE_INCLUDE:
+	case entity.DIALOG_MESSAGE_OFFSET_BEFORE_INCLUDE:
 		return m.repository.GetDialogMessagesBeforeAndInclude(ctx, dialogID, messageID, limit)
-	case entity.AFTER:
+	case entity.DIALOG_MESSAGE_OFFSET_AFTER:
 		return m.repository.GetDialogMessagesAfter(ctx, dialogID, messageID, limit)
 	default:
 		return m.repository.GetDialogMessagesAfterAndInclude(ctx, dialogID, messageID, limit)
 	}
 }
 
-func (m *dialogModel) ReadAllMessagesBeforeAndIncl(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
-	messageID *entity.MessageID,
+func (m *dialogModel) ReadAllMessagesBeforeAndIncl(ctx context.Context, userID *entity.UserID,
+	dialogID *entity.DialogID, messageID *entity.MessageID,
 ) error {
 	if err := m.repository.ReadAllMessagesBeforeAndIncl(ctx, userID, dialogID, messageID); err != nil {
 		return err
@@ -156,4 +218,49 @@ func (m *dialogModel) ReadAllMessagesBeforeAndIncl(ctx context.Context, userID *
 		})
 	}()
 	return nil
+}
+
+func (m *dialogModel) CreateInstruction(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
+	instructionTitle string, instructionText string,
+) (
+	*entity.InstructionID, error,
+) {
+	isMember, err := m.isUserDialogMember(ctx, dialogID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !isMember {
+		return nil, ErrFobidden
+	}
+	return m.repository.CreateInstruction(ctx, userID, dialogID, instructionTitle, instructionText)
+}
+
+func (m *dialogModel) GetInstructions(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
+	limit uint64,
+) (
+	instructions []*entity.Instruction, err error,
+) {
+	isMember, err := m.isUserDialogMember(ctx, dialogID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !isMember {
+		return nil, ErrFobidden
+	}
+	return m.repository.GetInstructions(ctx, dialogID, limit)
+}
+
+func (m *dialogModel) GetInstructionsByID(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
+	instructionID *entity.InstructionID, offsetType entity.InstructionOffserType, limit uint64,
+) (
+	instructions []*entity.Instruction, err error,
+) {
+	isMember, err := m.isUserDialogMember(ctx, dialogID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !isMember {
+		return nil, ErrFobidden
+	}
+	return m.repository.GetInstructionsBefore(ctx, dialogID, instructionID, limit)
 }

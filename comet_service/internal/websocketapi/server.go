@@ -16,12 +16,12 @@ import (
 
 type WSDialogMessage struct {
 	ckafka.DialogMessage
-	Type string `json:"type"`
+	WSType string `json:"wsType"`
 }
 
 type WSViewedMessage struct {
 	ckafka.ViewedMessage
-	Type string `json:"type"`
+	WSType string `json:"wsType"`
 }
 
 type ServerSettings struct {
@@ -81,7 +81,7 @@ func (ws *Server) listenNewMessages(ctx context.Context) {
 
 			wsMessage := WSDialogMessage{
 				DialogMessage: parsedMessage,
-				Type:          "new_message",
+				WSType:        "new_message",
 			}
 
 			wsConn, ok := ws.clients[wsMessage.ReciverID.ID]
@@ -120,7 +120,7 @@ func (ws *Server) listenViewedMessages(ctx context.Context) {
 
 			wsMessage := WSViewedMessage{
 				ViewedMessage: parsedMessage,
-				Type:          "viewed",
+				WSType:        "viewed",
 			}
 
 			wsConn, ok := ws.clients[wsMessage.ReciverID.ID]
@@ -167,7 +167,11 @@ func (ws *Server) Handle(w http.ResponseWriter, r *http.Request) {
 		ws.clientsMutex.Lock()
 		defer ws.clientsMutex.Unlock()
 
-		// Reacreate connection or fobidden?
+		// Reacreate connection
+		oldConn, ok := ws.clients[userID]
+		if ok {
+			oldConn.Close()
+		}
 		ws.clients[userID] = conn
 	}()
 	client := newClient(conn, ws.logger)

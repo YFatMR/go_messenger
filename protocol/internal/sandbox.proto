@@ -5,12 +5,18 @@ option go_package = "./proto";
 
 import "common.proto";
 
+message ProgramID { string ID = 1; }
+
 message ProgramSource {
   string language = 1;
   string sourceCode = 2;
 }
 
-message ProgramID { string ID = 1; }
+message CreateProgramRequest {
+  string sourceCode = 1;
+  DialogID dialogID = 2;
+  MessageID messageID = 3;
+}
 
 message ProgramOutput {
   string stdout = 1;
@@ -19,9 +25,10 @@ message ProgramOutput {
 
 message Program {
   ProgramID programID = 1;
-  ProgramSource source = 2;
-  ProgramOutput codeRunnerOutput = 3;
-  ProgramOutput linterOutput = 4;
+  string language = 2;
+  string sourceCode = 3;
+  ProgramOutput codeRunnerOutput = 4;
+  ProgramOutput linterOutput = 5;
 }
 
 message UpdateProgramSourceRequest {
@@ -31,7 +38,7 @@ message UpdateProgramSourceRequest {
 
 service Sandbox {
   rpc GetProgramByID(ProgramID) returns (Program) {}
-  rpc CreateProgram(ProgramSource) returns (ProgramID) {}
+  rpc CreateProgram(CreateProgramRequest) returns (ProgramID) {}
   rpc UpdateProgramSource(UpdateProgramSourceRequest) returns (Void) {}
   rpc RunProgram(ProgramID) returns (Void) {}
   rpc LintProgram(ProgramID) returns (Void) {}

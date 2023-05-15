@@ -90,7 +90,7 @@ def create_dialog_with_messages(user_data1: UserData, user_data2: UserData, mess
         create_message(d, d_id, msg[random.randrange(len(msg))] + f" {i}")
 
 
-lst = [create_user_with_token(i) for i in range(60)]
+lst = [create_user_with_token(i) for i in range(5)]
 
 for i in range(1, len(lst)):
     cnt = 60

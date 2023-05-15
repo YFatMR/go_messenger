@@ -2,6 +2,7 @@ package dialog
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/YFatMR/go_messenger/core/pkg/czap"
 	"github.com/YFatMR/go_messenger/dialog_service/apientity"
@@ -94,18 +95,40 @@ func (c *dialogController) CreateDialogMessage(ctx context.Context, request *pro
 		return nil, err
 	}
 
-	message, err := entity.DialogMessageFromProtobuf(request)
+	newRequest, err := entity.CreateDialogMessageRequestFromProtobuf(request)
 	if err != nil {
 		return nil, err
 	}
-	message.SenderID = *senderID
+	newRequest.SenderID = *senderID
 
-	dialogID, err := entity.DialogIDFromProtobuf(request.GetDialogID())
+	message, err := c.model.CreateDialogMessage(ctx, newRequest)
+	if err != nil {
+		return nil, err
+	}
+	return &proto.CreateDialogMessageResponse{
+		CreatedAt: timestamppb.New(message.CreatedAt),
+		MessageID: &proto.MessageID{
+			ID: message.MessageID.ID,
+		},
+	}, nil
+}
+
+func (c *dialogController) CreateDialogMessageWithCode(ctx context.Context,
+	request *proto.CreateDialogMessageWithCodeRequest) (
+	*proto.CreateDialogMessageResponse, error,
+) {
+	senderID, err := c.contextManager.UserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	message, err = c.model.CreateDialogMessage(ctx, dialogID, message)
+	newRequest, err := entity.CreateDialogMessageWithCodeRequestFromProtobuf(request)
+	if err != nil {
+		return nil, err
+	}
+	newRequest.SenderID = *senderID
+
+	message, err := c.model.CreateDialogMessageWithCode(ctx, newRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +158,7 @@ func (c *dialogController) GetDialogMessages(ctx context.Context, request *proto
 		return nil, err
 	}
 
-	offsetType := entity.OffserTypeFromProtobuf(request.GetOffsetType())
+	offsetType := entity.DialogMessagesOffserTypeFromProtobuf(request.GetOffsetType())
 
 	if request.GetLimit() == 0 {
 		return nil, ErrWrongRequestFormat
@@ -175,6 +198,91 @@ func (c *dialogController) ReadAllMessagesBeforeAndInclude(ctx context.Context, 
 		return nil, err
 	}
 	return &proto.Void{}, nil
+}
+
+func (c *dialogController) CreateInstruction(ctx context.Context, request *proto.CreateInstructionRequest) (
+	*proto.InstructionID, error,
+) {
+	userID, err := c.contextManager.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dialogID, err := entity.DialogIDFromProtobuf(request.GetDialogID())
+	if err != nil {
+		return nil, err
+	}
+
+	if request.GetTitle() == "" {
+		return nil, fmt.Errorf("empty title")
+	}
+
+	if request.GetText() == "" {
+		return nil, fmt.Errorf("empty text")
+	}
+
+	instructionID, err := c.model.CreateInstruction(ctx, userID, dialogID, request.Title, request.Text)
+	if err != nil {
+		return nil, err
+	}
+	return entity.InstructionIDToProtobuf(instructionID), nil
+}
+
+func (c *dialogController) GetInstructions(ctx context.Context, request *proto.GetInstructionsRequest) (
+	*proto.GetInstructionsResponse, error,
+) {
+	userID, err := c.contextManager.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dialogID, err := entity.DialogIDFromProtobuf(request.GetDialogID())
+	if err != nil {
+		return nil, err
+	}
+
+	if request.GetLimit() <= 0 {
+		return nil, fmt.Errorf("incorrect limit params")
+	}
+
+	instructions, err := c.model.GetInstructions(ctx, userID, dialogID, request.Limit)
+	if err != nil {
+		return nil, err
+	}
+	return &proto.GetInstructionsResponse{
+		Instructions: entity.InstructionsToProtobuf(instructions),
+	}, nil
+}
+
+func (c *dialogController) GetInstructionsByID(ctx context.Context, request *proto.GetInstructionsByIDRequest) (
+	*proto.GetInstructionsResponse, error,
+) {
+	userID, err := c.contextManager.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dialogID, err := entity.DialogIDFromProtobuf(request.GetDialogID())
+	if err != nil {
+		return nil, err
+	}
+
+	instructionID, err := entity.InstructionIDFromProtobuf(request.GetInstructionID())
+	if err != nil {
+		return nil, err
+	}
+	offsetType := entity.InstructionOffserTypeFromProtobuf(request.GetOffsetType())
+	if request.GetLimit() <= 0 {
+		return nil, fmt.Errorf("incorrect limit params")
+	}
+
+	instructions, err := c.model.GetInstructionsByID(ctx, userID, dialogID, instructionID, offsetType, request.Limit)
+	if err != nil {
+		return nil, err
+	}
+	return &proto.GetInstructionsResponse{
+		Instructions: entity.InstructionsToProtobuf(instructions),
+	}, nil
 }
 
 func (c *dialogController) Ping(ctx context.Context, request *proto.Void) (

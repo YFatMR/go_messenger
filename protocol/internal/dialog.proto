@@ -6,6 +6,12 @@ option go_package = "./proto";
 import "common.proto";
 import "google/protobuf/timestamp.proto";
 
+enum DialogMessageType {
+  NIL = 0;
+  NORMAL = 1;
+  CODE = 2;
+}
+
 message DialogMessage {
   MessageID messageID = 1;
   UserID senderID = 2;
@@ -13,6 +19,7 @@ message DialogMessage {
   google.protobuf.Timestamp createdAt = 4;
   bool selfMessage = 5;
   bool viewed = 6;
+  DialogMessageType type = 7;
 }
 
 message Dialog {
@@ -51,6 +58,12 @@ message CreateDialogMessageRequest {
   string text = 2;
 }
 
+message CreateDialogMessageWithCodeRequest {
+  DialogID dialogID = 1;
+  string title = 2;
+  string text = 3;
+}
+
 message CreateDialogMessageResponse {
   MessageID messageID = 1;
   google.protobuf.Timestamp createdAt = 2;
@@ -64,7 +77,7 @@ message ReadAllMessagesBeforeRequest {
 message CreateInstructionRequest {
   DialogID dialogID = 1;
   string title = 2;
-  repeated MessageID messagesID = 3;
+  string text = 3;
 }
 
 message Instruction {
@@ -75,11 +88,12 @@ message Instruction {
 }
 
 message GetInstructionsRequest {
-  enum OffsetType {
-    BEFORE = 0;
-    BEFORE_INCLUDE = 1;
-    FIRST_REQUEST = 2;
-  }
+  DialogID dialogID = 1;
+  uint64 limit = 2;
+}
+
+message GetInstructionsByIDRequest {
+  enum OffsetType { AFTER = 0; }
 
   DialogID dialogID = 1;
   InstructionID instructionID = 2;
@@ -95,12 +109,16 @@ service DialogService {
   rpc GetDialogs(GetDialogsRequest) returns (GetDialogsResponse) {}
   rpc CreateDialogMessage(CreateDialogMessageRequest)
       returns (CreateDialogMessageResponse) {}
+  rpc CreateDialogMessageWithCode(CreateDialogMessageWithCodeRequest)
+      returns (CreateDialogMessageResponse) {}
   rpc GetDialogMessages(GetDialogMessagesRequest)
       returns (GetDialogMessagesResponse) {}
   rpc ReadAllMessagesBeforeAndInclude(ReadAllMessagesBeforeRequest)
       returns (Void) {}
   rpc CreateInstruction(CreateInstructionRequest) returns (InstructionID) {}
   rpc GetInstructions(GetInstructionsRequest)
+      returns (GetInstructionsResponse) {}
+  rpc GetInstructionsByID(GetInstructionsByIDRequest)
       returns (GetInstructionsResponse) {}
 
   rpc Ping(Void) returns (Pong) {}

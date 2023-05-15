@@ -18,9 +18,14 @@ type DialogRepository interface {
 	GetDialogs(ctx context.Context, userID *entity.UserID, offset uint64, limit uint64) (
 		dialogs []*entity.Dialog, err error,
 	)
-	CreateDialogMessage(ctx context.Context, dialogID *entity.DialogID, message *entity.DialogMessage) (
-		msg *entity.DialogMessage, err error,
+
+	CreateDialogMessageWithURLs(ctx context.Context, request *entity.CreateDialogMessageRequest, urls []string) (
+		*entity.DialogMessage, error,
 	)
+	CreateDialogMessageWithCode(ctx context.Context, request *entity.CreateDialogMessageWithCodeRequest) (
+		*entity.DialogMessage, error,
+	)
+
 	GetDialogMessagesBefore(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID,
 		limit uint64,
 	) (
@@ -41,10 +46,11 @@ type DialogRepository interface {
 	) (
 		messages []*entity.DialogMessage, err error,
 	)
-	GetDialogMessageByID(ctx context.Context, dialogID *entity.DialogID,
-		messageID *entity.MessageID,
-	) (
+	GetDialogMessageByID(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID) (
 		message *entity.DialogMessage, err error,
+	)
+	GetDialogMessagesByID(ctx context.Context, dialogID *entity.DialogID, messagesID []*entity.MessageID) (
+		messages []*entity.DialogMessage, err error,
 	)
 	GetDialogMembers(ctx context.Context, dialogID *entity.DialogID) (
 		userIDs []*entity.UserID, err error,
@@ -52,4 +58,18 @@ type DialogRepository interface {
 	ReadAllMessagesBeforeAndIncl(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
 		messageID *entity.MessageID,
 	) error
+
+	CreateInstruction(ctx context.Context, creatorID *entity.UserID, dialogID *entity.DialogID,
+		instructionTitle string, instructionText string,
+	) (
+		instructionID *entity.InstructionID, err error,
+	)
+	GetInstructions(ctx context.Context, dialogID *entity.DialogID, limit uint64) (
+		instructions []*entity.Instruction, err error,
+	)
+	GetInstructionsBefore(ctx context.Context, dialogID *entity.DialogID,
+		instructionID *entity.InstructionID, limit uint64,
+	) (
+		instructions []*entity.Instruction, err error,
+	)
 }

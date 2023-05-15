@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SandboxClient interface {
 	GetProgramByID(ctx context.Context, in *ProgramID, opts ...grpc.CallOption) (*Program, error)
-	CreateProgram(ctx context.Context, in *ProgramSource, opts ...grpc.CallOption) (*ProgramID, error)
+	CreateProgram(ctx context.Context, in *CreateProgramRequest, opts ...grpc.CallOption) (*ProgramID, error)
 	UpdateProgramSource(ctx context.Context, in *UpdateProgramSourceRequest, opts ...grpc.CallOption) (*Void, error)
 	RunProgram(ctx context.Context, in *ProgramID, opts ...grpc.CallOption) (*Void, error)
 	LintProgram(ctx context.Context, in *ProgramID, opts ...grpc.CallOption) (*Void, error)
@@ -47,7 +47,7 @@ func (c *sandboxClient) GetProgramByID(ctx context.Context, in *ProgramID, opts 
 	return out, nil
 }
 
-func (c *sandboxClient) CreateProgram(ctx context.Context, in *ProgramSource, opts ...grpc.CallOption) (*ProgramID, error) {
+func (c *sandboxClient) CreateProgram(ctx context.Context, in *CreateProgramRequest, opts ...grpc.CallOption) (*ProgramID, error) {
 	out := new(ProgramID)
 	err := c.cc.Invoke(ctx, "/proto.Sandbox/CreateProgram", in, out, opts...)
 	if err != nil {
@@ -97,7 +97,7 @@ func (c *sandboxClient) Ping(ctx context.Context, in *Void, opts ...grpc.CallOpt
 // for forward compatibility
 type SandboxServer interface {
 	GetProgramByID(context.Context, *ProgramID) (*Program, error)
-	CreateProgram(context.Context, *ProgramSource) (*ProgramID, error)
+	CreateProgram(context.Context, *CreateProgramRequest) (*ProgramID, error)
 	UpdateProgramSource(context.Context, *UpdateProgramSourceRequest) (*Void, error)
 	RunProgram(context.Context, *ProgramID) (*Void, error)
 	LintProgram(context.Context, *ProgramID) (*Void, error)
@@ -112,7 +112,7 @@ type UnimplementedSandboxServer struct {
 func (UnimplementedSandboxServer) GetProgramByID(context.Context, *ProgramID) (*Program, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProgramByID not implemented")
 }
-func (UnimplementedSandboxServer) CreateProgram(context.Context, *ProgramSource) (*ProgramID, error) {
+func (UnimplementedSandboxServer) CreateProgram(context.Context, *CreateProgramRequest) (*ProgramID, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateProgram not implemented")
 }
 func (UnimplementedSandboxServer) UpdateProgramSource(context.Context, *UpdateProgramSourceRequest) (*Void, error) {
@@ -159,7 +159,7 @@ func _Sandbox_GetProgramByID_Handler(srv interface{}, ctx context.Context, dec f
 }
 
 func _Sandbox_CreateProgram_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProgramSource)
+	in := new(CreateProgramRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func _Sandbox_CreateProgram_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: "/proto.Sandbox/CreateProgram",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SandboxServer).CreateProgram(ctx, req.(*ProgramSource))
+		return srv.(SandboxServer).CreateProgram(ctx, req.(*CreateProgramRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

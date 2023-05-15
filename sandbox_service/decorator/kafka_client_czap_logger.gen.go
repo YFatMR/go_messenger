@@ -44,15 +44,15 @@ func (d *LoggingKafkaClientDecorator) Stop() {
 	return
 }
 
-// WriteProgramExecutionMessage implements apientity.KafkaClient
-func (d *LoggingKafkaClientDecorator) WriteProgramExecutionMessage(ctx context.Context, programID *entity.ProgramID, userID *entity.UserID) (err error) {
+// WriteCodeRunnerMessage implements apientity.KafkaClient
+func (d *LoggingKafkaClientDecorator) WriteCodeRunnerMessage(ctx context.Context, userID *entity.UserID, programID *entity.ProgramID, sourceCode string, language entity.Languages) (err error) {
 
-	d.logger.InfoContext(ctx, "LoggingKafkaClientDecorator: calling WriteProgramExecutionMessage")
+	d.logger.InfoContext(ctx, "LoggingKafkaClientDecorator: calling WriteCodeRunnerMessage")
 	defer func() {
 		if err != nil {
 			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
 		}
-		d.logger.InfoContext(ctx, "LoggingKafkaClientDecorator: WriteProgramExecutionMessage finished")
+		d.logger.InfoContext(ctx, "LoggingKafkaClientDecorator: WriteCodeRunnerMessage finished")
 	}()
-	return d.base.WriteProgramExecutionMessage(ctx, programID, userID)
+	return d.base.WriteCodeRunnerMessage(ctx, userID, programID, sourceCode, language)
 }

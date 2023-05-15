@@ -425,8 +425,20 @@
         },
         "viewed": {
           "type": "boolean"
+        },
+        "type": {
+          "$ref": "#/definitions/protoDialogMessageType"
         }
       }
+    },
+    "protoDialogMessageType": {
+      "type": "string",
+      "enum": [
+        "NIL",
+        "NORMAL",
+        "CODE"
+      ],
+      "default": "NIL"
     },
     "protoGetDialogsResponse": {
       "type": "object",
@@ -462,8 +474,11 @@
         "programID": {
           "$ref": "#/definitions/protoProgramID"
         },
-        "source": {
-          "$ref": "#/definitions/protoProgramSource"
+        "language": {
+          "type": "string"
+        },
+        "sourceCode": {
+          "type": "string"
         },
         "codeRunnerOutput": {
           "$ref": "#/definitions/protoProgramOutput"

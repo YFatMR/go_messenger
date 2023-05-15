@@ -26,10 +26,12 @@ type DialogServiceClient interface {
 	GetDialogByID(ctx context.Context, in *DialogID, opts ...grpc.CallOption) (*Dialog, error)
 	GetDialogs(ctx context.Context, in *GetDialogsRequest, opts ...grpc.CallOption) (*GetDialogsResponse, error)
 	CreateDialogMessage(ctx context.Context, in *CreateDialogMessageRequest, opts ...grpc.CallOption) (*CreateDialogMessageResponse, error)
+	CreateDialogMessageWithCode(ctx context.Context, in *CreateDialogMessageWithCodeRequest, opts ...grpc.CallOption) (*CreateDialogMessageResponse, error)
 	GetDialogMessages(ctx context.Context, in *GetDialogMessagesRequest, opts ...grpc.CallOption) (*GetDialogMessagesResponse, error)
 	ReadAllMessagesBeforeAndInclude(ctx context.Context, in *ReadAllMessagesBeforeRequest, opts ...grpc.CallOption) (*Void, error)
 	CreateInstruction(ctx context.Context, in *CreateInstructionRequest, opts ...grpc.CallOption) (*InstructionID, error)
 	GetInstructions(ctx context.Context, in *GetInstructionsRequest, opts ...grpc.CallOption) (*GetInstructionsResponse, error)
+	GetInstructionsByID(ctx context.Context, in *GetInstructionsByIDRequest, opts ...grpc.CallOption) (*GetInstructionsResponse, error)
 	Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error)
 }
 
@@ -77,6 +79,15 @@ func (c *dialogServiceClient) CreateDialogMessage(ctx context.Context, in *Creat
 	return out, nil
 }
 
+func (c *dialogServiceClient) CreateDialogMessageWithCode(ctx context.Context, in *CreateDialogMessageWithCodeRequest, opts ...grpc.CallOption) (*CreateDialogMessageResponse, error) {
+	out := new(CreateDialogMessageResponse)
+	err := c.cc.Invoke(ctx, "/proto.DialogService/CreateDialogMessageWithCode", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dialogServiceClient) GetDialogMessages(ctx context.Context, in *GetDialogMessagesRequest, opts ...grpc.CallOption) (*GetDialogMessagesResponse, error) {
 	out := new(GetDialogMessagesResponse)
 	err := c.cc.Invoke(ctx, "/proto.DialogService/GetDialogMessages", in, out, opts...)
@@ -113,6 +124,15 @@ func (c *dialogServiceClient) GetInstructions(ctx context.Context, in *GetInstru
 	return out, nil
 }
 
+func (c *dialogServiceClient) GetInstructionsByID(ctx context.Context, in *GetInstructionsByIDRequest, opts ...grpc.CallOption) (*GetInstructionsResponse, error) {
+	out := new(GetInstructionsResponse)
+	err := c.cc.Invoke(ctx, "/proto.DialogService/GetInstructionsByID", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dialogServiceClient) Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error) {
 	out := new(Pong)
 	err := c.cc.Invoke(ctx, "/proto.DialogService/Ping", in, out, opts...)
@@ -130,10 +150,12 @@ type DialogServiceServer interface {
 	GetDialogByID(context.Context, *DialogID) (*Dialog, error)
 	GetDialogs(context.Context, *GetDialogsRequest) (*GetDialogsResponse, error)
 	CreateDialogMessage(context.Context, *CreateDialogMessageRequest) (*CreateDialogMessageResponse, error)
+	CreateDialogMessageWithCode(context.Context, *CreateDialogMessageWithCodeRequest) (*CreateDialogMessageResponse, error)
 	GetDialogMessages(context.Context, *GetDialogMessagesRequest) (*GetDialogMessagesResponse, error)
 	ReadAllMessagesBeforeAndInclude(context.Context, *ReadAllMessagesBeforeRequest) (*Void, error)
 	CreateInstruction(context.Context, *CreateInstructionRequest) (*InstructionID, error)
 	GetInstructions(context.Context, *GetInstructionsRequest) (*GetInstructionsResponse, error)
+	GetInstructionsByID(context.Context, *GetInstructionsByIDRequest) (*GetInstructionsResponse, error)
 	Ping(context.Context, *Void) (*Pong, error)
 	mustEmbedUnimplementedDialogServiceServer()
 }
@@ -154,6 +176,9 @@ func (UnimplementedDialogServiceServer) GetDialogs(context.Context, *GetDialogsR
 func (UnimplementedDialogServiceServer) CreateDialogMessage(context.Context, *CreateDialogMessageRequest) (*CreateDialogMessageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateDialogMessage not implemented")
 }
+func (UnimplementedDialogServiceServer) CreateDialogMessageWithCode(context.Context, *CreateDialogMessageWithCodeRequest) (*CreateDialogMessageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateDialogMessageWithCode not implemented")
+}
 func (UnimplementedDialogServiceServer) GetDialogMessages(context.Context, *GetDialogMessagesRequest) (*GetDialogMessagesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDialogMessages not implemented")
 }
@@ -165,6 +190,9 @@ func (UnimplementedDialogServiceServer) CreateInstruction(context.Context, *Crea
 }
 func (UnimplementedDialogServiceServer) GetInstructions(context.Context, *GetInstructionsRequest) (*GetInstructionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetInstructions not implemented")
+}
+func (UnimplementedDialogServiceServer) GetInstructionsByID(context.Context, *GetInstructionsByIDRequest) (*GetInstructionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetInstructionsByID not implemented")
 }
 func (UnimplementedDialogServiceServer) Ping(context.Context, *Void) (*Pong, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
@@ -254,6 +282,24 @@ func _DialogService_CreateDialogMessage_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DialogService_CreateDialogMessageWithCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateDialogMessageWithCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DialogServiceServer).CreateDialogMessageWithCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.DialogService/CreateDialogMessageWithCode",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DialogServiceServer).CreateDialogMessageWithCode(ctx, req.(*CreateDialogMessageWithCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DialogService_GetDialogMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetDialogMessagesRequest)
 	if err := dec(in); err != nil {
@@ -326,6 +372,24 @@ func _DialogService_GetInstructions_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DialogService_GetInstructionsByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetInstructionsByIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DialogServiceServer).GetInstructionsByID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.DialogService/GetInstructionsByID",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DialogServiceServer).GetInstructionsByID(ctx, req.(*GetInstructionsByIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DialogService_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Void)
 	if err := dec(in); err != nil {
@@ -368,6 +432,10 @@ var DialogService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DialogService_CreateDialogMessage_Handler,
 		},
 		{
+			MethodName: "CreateDialogMessageWithCode",
+			Handler:    _DialogService_CreateDialogMessageWithCode_Handler,
+		},
+		{
 			MethodName: "GetDialogMessages",
 			Handler:    _DialogService_GetDialogMessages_Handler,
 		},
@@ -382,6 +450,10 @@ var DialogService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetInstructions",
 			Handler:    _DialogService_GetInstructions_Handler,
+		},
+		{
+			MethodName: "GetInstructionsByID",
+			Handler:    _DialogService_GetInstructionsByID_Handler,
 		},
 		{
 			MethodName: "Ping",
