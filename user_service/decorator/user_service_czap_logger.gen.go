@@ -86,3 +86,29 @@ func (d *LoggingUserServiceDecorator) GetByID(ctx context.Context, userID *entit
 	}()
 	return d.base.GetByID(ctx, userID)
 }
+
+// GetUsersByPrefix implements apientity.UserService
+func (d *LoggingUserServiceDecorator) GetUsersByPrefix(ctx context.Context, selfID *entity.UserID, prefix string, limit uint64) (usersData []*entity.UserWithID, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingUserServiceDecorator: calling GetUsersByPrefix")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingUserServiceDecorator: GetUsersByPrefix finished")
+	}()
+	return d.base.GetUsersByPrefix(ctx, selfID, prefix, limit)
+}
+
+// UpdateUserData implements apientity.UserService
+func (d *LoggingUserServiceDecorator) UpdateUserData(ctx context.Context, userID *entity.UserID, request *entity.UpdateUserRequest) (err error) {
+
+	d.logger.InfoContext(ctx, "LoggingUserServiceDecorator: calling UpdateUserData")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingUserServiceDecorator: UpdateUserData finished")
+	}()
+	return d.base.UpdateUserData(ctx, userID, request)
+}

@@ -19,4 +19,10 @@ type UserRepository interface {
 	GetAccountByEmail(ctx context.Context, email string) (
 		account *entity.Account, err error,
 	)
+	UpdateUserData(ctx context.Context, userID *entity.UserID, request *entity.UpdateUserRequest) (
+		err error,
+	)
+	GetUsersByPrefix(ctx context.Context, selfID *entity.UserID, prefix string, limit uint64) (
+		resp []*entity.UserWithID, err error,
+	)
 }

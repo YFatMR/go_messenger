@@ -8,4 +8,8 @@ type Account struct {
 	Nickname       string
 	Name           string
 	Surname        string
+	Github         string
+	Linkedin       string
+	PublicEmail    string
+	Status         string
 }

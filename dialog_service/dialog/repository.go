@@ -76,10 +76,13 @@ func (r *dialogRepository) CreateDialog(ctx context.Context, userID1 *entity.Use
 	err = tx.QueryRow(
 		ctx, `
 		INSERT INTO
-			dialogs
-		DEFAULT VALUES
+			dialogs (user_id_1, user_id_2)
+		VALUES
+			($1, $2)
 		RETURNING
 			id;`,
+		userID1.ID,
+		userID2.ID,
 	).Scan(&dialogID.ID)
 	if err != nil {
 		r.logger.ErrorContext(ctx, "Can not create dialog", zap.Error(err))
@@ -219,7 +222,7 @@ func (r *dialogRepository) GetDialogs(ctx context.Context, userID *entity.UserID
 		zap.Uint64("offset", offset),
 	)
 
-	raws, err := r.connPool.Query(
+	rows, err := r.connPool.Query(
 		ctx, `
 		SELECT
 			dm.dialog_id,
@@ -269,14 +272,14 @@ func (r *dialogRepository) GetDialogs(ctx context.Context, userID *entity.UserID
 		r.logger.ErrorContext(ctx, "Can not get dialogs", zap.Error(err))
 		return nil, err
 	}
-	defer raws.Close()
+	defer rows.Close()
 
 	var dialogs []*entity.Dialog
-	for raws.Next() {
+	for rows.Next() {
 		lastMessage := new(entity.DialogMessage)
 		nullableLastReadMessage := new(nullableDialogMessage)
 		dialog := new(entity.Dialog)
-		err := raws.Scan(
+		err := rows.Scan(
 			&dialog.DialogID.ID, &dialog.Name, &dialog.UnreadMessagesCount,
 			&lastMessage.MessageID.ID, &lastMessage.CreatedAt, &lastMessage.SenderID.ID,
 			&lastMessage.Text, &lastMessage.Type,
@@ -284,7 +287,7 @@ func (r *dialogRepository) GetDialogs(ctx context.Context, userID *entity.UserID
 			&nullableLastReadMessage.Text, &nullableLastReadMessage.Type,
 		)
 		if err != nil {
-			r.logger.ErrorContext(ctx, "Can not scan raws", zap.Error(err))
+			r.logger.ErrorContext(ctx, "Can not scan rows", zap.Error(err))
 			return nil, err
 		}
 
@@ -377,6 +380,7 @@ func (r *dialogRepository) CreateDialogMessageWithCode(ctx context.Context,
 ) (
 	*entity.DialogMessage, error,
 ) {
+	// Ignore urls
 	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
 	defer cancel()
 
@@ -393,26 +397,29 @@ func (r *dialogRepository) CreateDialogMessageWithCode(ctx context.Context,
 		return nil, err
 	}
 
-	_, err = tx.Exec(
-		ctx, `
-		INSERT INTO
-			programs (title, text, creator_id, dialog_id, message_id)
-		VALUES
-			($1, $2, $3, $4, $5);`,
-		request.Title,
-		request.Text,
-		request.SenderID.ID,
-		request.DialogID.ID,
-		message.MessageID.ID,
-	)
-	if err != nil {
-		return nil, err
-	}
-
 	if err = tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 	return message, nil
+}
+
+func (r *dialogRepository) DialogMessagesFromRows(ctx context.Context, rows pgx.Rows) (
+	[]*entity.DialogMessage, error,
+) {
+	result := make([]*entity.DialogMessage, 0, 8)
+	for rows.Next() {
+		message := new(entity.DialogMessage)
+		err := rows.Scan(
+			&message.MessageID.ID, &message.CreatedAt, &message.SenderID.ID,
+			&message.Text, &message.Viewed, &message.Type,
+		)
+		if err != nil {
+			r.logger.ErrorContext(ctx, "Can not get messages by ID. Scan failed.", zap.Error(err))
+			return nil, err
+		}
+		result = append(result, message)
+	}
+	return result, nil
 }
 
 func (r *dialogRepository) GetDialogMessageByID(ctx context.Context, dialogID *entity.DialogID,
@@ -461,7 +468,7 @@ func (r *dialogRepository) GetDialogMessagesByID(ctx context.Context, dialogID *
 		return result
 	}
 
-	raws, err := r.connPool.Query(
+	rows, err := r.connPool.Query(
 		ctx, `
 		SELECT
 			id, created_at, sender_id, text, viewed, type
@@ -476,22 +483,8 @@ func (r *dialogRepository) GetDialogMessagesByID(ctx context.Context, dialogID *
 		r.logger.ErrorContext(ctx, "Can not get messages by ID", zap.Error(err))
 		return nil, err
 	}
-	defer raws.Close()
-
-	result := make([]*entity.DialogMessage, 0, len(messagesID))
-	for raws.Next() {
-		message := new(entity.DialogMessage)
-		err := raws.Scan(
-			&message.MessageID.ID, &message.CreatedAt, &message.SenderID.ID,
-			&message.Text, &message.Viewed, &message.Type,
-		)
-		if err != nil {
-			r.logger.ErrorContext(ctx, "Can not get messages by ID. Scan failed.", zap.Error(err))
-			return nil, err
-		}
-		result = append(result, message)
-	}
-	return result, nil
+	defer rows.Close()
+	return r.DialogMessagesFromRows(ctx, rows)
 }
 
 func (r *dialogRepository) getDialogMessagesBefore(ctx context.Context, dialogID *entity.DialogID,
@@ -507,7 +500,7 @@ func (r *dialogRepository) getDialogMessagesBefore(ctx context.Context, dialogID
 		sign = "<="
 	}
 
-	raws, err := r.connPool.Query(
+	rows, err := r.connPool.Query(
 		ctx, fmt.Sprintf(`
 		SELECT *
 		FROM (
@@ -529,22 +522,8 @@ func (r *dialogRepository) getDialogMessagesBefore(ctx context.Context, dialogID
 		r.logger.ErrorContext(ctx, "Unable to get messages before", zap.Error(err))
 		return nil, ErrCreateMessage
 	}
-	defer raws.Close()
-
-	var messages []*entity.DialogMessage
-	for raws.Next() {
-		message := new(entity.DialogMessage)
-		err := raws.Scan(
-			&message.MessageID.ID, &message.CreatedAt, &message.SenderID.ID,
-			&message.Text, &message.Viewed, &message.Type,
-		)
-		if err != nil {
-			r.logger.ErrorContext(ctx, "Unable to scan messages", zap.Error(err))
-			return nil, err
-		}
-		messages = append(messages, message)
-	}
-	return messages, nil
+	defer rows.Close()
+	return r.DialogMessagesFromRows(ctx, rows)
 }
 
 func (r *dialogRepository) GetDialogMessagesBefore(ctx context.Context, dialogID *entity.DialogID,
@@ -576,7 +555,7 @@ func (r *dialogRepository) getDialogMessagesAfter(ctx context.Context, dialogID 
 		sign = ">="
 	}
 
-	raws, err := r.connPool.Query(
+	rows, err := r.connPool.Query(
 		ctx, fmt.Sprintf(`
 		SELECT
 			id, created_at, sender_id, text, viewed, type
@@ -595,22 +574,8 @@ func (r *dialogRepository) getDialogMessagesAfter(ctx context.Context, dialogID 
 		r.logger.ErrorContext(ctx, "Unable to get messages after", zap.Error(err))
 		return nil, ErrCreateMessage
 	}
-	defer raws.Close()
-
-	var messages []*entity.DialogMessage
-	for raws.Next() {
-		message := new(entity.DialogMessage)
-		err := raws.Scan(
-			&message.MessageID.ID, &message.CreatedAt, &message.SenderID.ID,
-			&message.Text, &message.Viewed, &message.Type,
-		)
-		if err != nil {
-			r.logger.ErrorContext(ctx, "Unable to scan messages after", zap.Error(err))
-			return nil, err
-		}
-		messages = append(messages, message)
-	}
-	return messages, nil
+	defer rows.Close()
+	return r.DialogMessagesFromRows(ctx, rows)
 }
 
 func (r *dialogRepository) GetDialogMessagesAfter(ctx context.Context, dialogID *entity.DialogID,
@@ -635,7 +600,7 @@ func (r *dialogRepository) GetDialogMembers(ctx context.Context, dialogID *entit
 	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
 	defer cancel()
 
-	raws, err := r.connPool.Query(
+	rows, err := r.connPool.Query(
 		ctx, `
 		SELECT
 			user_id
@@ -649,12 +614,12 @@ func (r *dialogRepository) GetDialogMembers(ctx context.Context, dialogID *entit
 		r.logger.ErrorContext(ctx, "Unable to get dialog members", zap.Error(err))
 		return nil, ErrCreateDialog
 	}
-	defer raws.Close()
+	defer rows.Close()
 
 	userIDs := make([]*entity.UserID, 0, 2)
-	for raws.Next() {
+	for rows.Next() {
 		userID := new(entity.UserID)
-		err := raws.Scan(&userID.ID)
+		err := rows.Scan(&userID.ID)
 		if err != nil {
 			r.logger.ErrorContext(ctx, "Unable to scan dialog members", zap.Error(err))
 			return nil, ErrCreateDialog
@@ -665,7 +630,7 @@ func (r *dialogRepository) GetDialogMembers(ctx context.Context, dialogID *entit
 }
 
 // Include message
-func (r *dialogRepository) ReadAllMessagesBeforeAndIncl(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
+func (r *dialogRepository) ReadMessage(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
 	messageID *entity.MessageID,
 ) error {
 	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
@@ -678,8 +643,8 @@ func (r *dialogRepository) ReadAllMessagesBeforeAndIncl(ctx context.Context, use
 			viewed = TRUE
 		WHERE
 			sender_id != $1 AND
-			dialog_id = $3 AND
-			created_at <= (SELECT tmp_msg1.created_at FROM messages as tmp_msg1 WHERE tmp_msg1.id = $2);`,
+			id = $2 AND
+			dialog_id = $3;`,
 		userID.ID,
 		messageID.ID,
 		dialogID.ID,
@@ -720,13 +685,30 @@ func (r *dialogRepository) CreateInstruction(ctx context.Context, creatorID *ent
 	return instructionID, nil
 }
 
+func (r *dialogRepository) InstructionsFromRows(ctx context.Context, rows pgx.Rows) (
+	[]*entity.Instruction, error,
+) {
+	instructions := make([]*entity.Instruction, 0, 8)
+	for rows.Next() {
+		instruction := new(entity.Instruction)
+		err := rows.Scan(&instruction.InstructionID.ID, &instruction.CreatedAt, &instruction.Title, &instruction.Text)
+		if err != nil {
+			r.logger.ErrorContext(ctx, "Can not scan one of instruction", zap.Error(err))
+			return nil, err
+		}
+
+		instructions = append(instructions, instruction)
+	}
+	return instructions, nil
+}
+
 func (r *dialogRepository) GetInstructions(ctx context.Context, dialogID *entity.DialogID, limit uint64) (
 	[]*entity.Instruction, error,
 ) {
 	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
 	defer cancel()
 
-	raws, err := r.connPool.Query(
+	rows, err := r.connPool.Query(
 		ctx, `
 		SELECT
 			id, created_at, title, text
@@ -747,19 +729,7 @@ func (r *dialogRepository) GetInstructions(ctx context.Context, dialogID *entity
 		r.logger.ErrorContext(ctx, "Unable to get instructions", zap.Error(err))
 		return nil, err
 	}
-
-	instructions := make([]*entity.Instruction, 0, 8)
-	for raws.Next() {
-		instruction := new(entity.Instruction)
-		err = raws.Scan(&instruction.InstructionID.ID, &instruction.CreatedAt, &instruction.Title, &instruction.Text)
-		if err != nil {
-			r.logger.ErrorContext(ctx, "Can not scan one of instruction", zap.Error(err))
-			return nil, err
-		}
-
-		instructions = append(instructions, instruction)
-	}
-	return instructions, nil
+	return r.InstructionsFromRows(ctx, rows)
 }
 
 func (r *dialogRepository) GetInstructionsBefore(ctx context.Context, dialogID *entity.DialogID,
@@ -770,7 +740,7 @@ func (r *dialogRepository) GetInstructionsBefore(ctx context.Context, dialogID *
 	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
 	defer cancel()
 
-	raws, err := r.connPool.Query(
+	rows, err := r.connPool.Query(
 		ctx, `
 		SELECT
 			id, created_at, title, text
@@ -792,17 +762,139 @@ func (r *dialogRepository) GetInstructionsBefore(ctx context.Context, dialogID *
 		r.logger.ErrorContext(ctx, "Unable to get instructions", zap.Error(err))
 		return nil, err
 	}
+	return r.InstructionsFromRows(ctx, rows)
+}
 
-	instructions := make([]*entity.Instruction, 0, 8)
-	for raws.Next() {
-		instruction := new(entity.Instruction)
-		err = raws.Scan(&instruction.InstructionID.ID, &instruction.CreatedAt, &instruction.Title, &instruction.Text)
+func (r *dialogRepository) LinksFrowRows(ctx context.Context, rows pgx.Rows) (
+	[]*entity.Link, error,
+) {
+	links := make([]*entity.Link, 0, 8)
+	for rows.Next() {
+		link := new(entity.Link)
+		err := rows.Scan(&link.LinkID.ID, &link.Link, &link.MessageID.ID, &link.CreatedAt)
 		if err != nil {
 			r.logger.ErrorContext(ctx, "Can not scan one of instruction", zap.Error(err))
 			return nil, err
 		}
-
-		instructions = append(instructions, instruction)
+		links = append(links, link)
 	}
-	return instructions, nil
+	return links, nil
+}
+
+func (r *dialogRepository) GetLinks(ctx context.Context, dialogID *entity.DialogID, limit uint64) (
+	[]*entity.Link, error,
+) {
+	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
+	defer cancel()
+
+	rows, err := r.connPool.Query(
+		ctx, `
+		SELECT
+			id, url, message_id, created_at
+		FROM
+			urls
+		WHERE
+			dialog_id = $1
+		ORDER BY
+			created_at DESC
+		LIMIT
+			$2;`,
+		dialogID.ID,
+		limit,
+	)
+	if err == pgx.ErrNoRows {
+		return make([]*entity.Link, 0), nil
+	} else if err != nil {
+		r.logger.ErrorContext(ctx, "Unable to get links", zap.Error(err))
+		return nil, err
+	}
+	defer rows.Close()
+	return r.LinksFrowRows(ctx, rows)
+}
+
+func (r *dialogRepository) GetLinksBefore(ctx context.Context, dialogID *entity.DialogID,
+	linkID *entity.LinkID, limit uint64,
+) (
+	[]*entity.Link, error,
+) {
+	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
+	defer cancel()
+
+	rows, err := r.connPool.Query(
+		ctx, `
+		SELECT
+			id, url, message_id, created_at
+		FROM
+			urls
+		WHERE
+			dialog_id = $1 AND created_at < (SELECT tmp_url.created_at FROM url tmp_url WHERE tmp_url.id = $2)
+		ORDER BY
+			created_at DESC
+		LIMIT
+			$3;`,
+		dialogID.ID,
+		linkID.ID,
+		limit,
+	)
+	if err == pgx.ErrNoRows {
+		return make([]*entity.Link, 0), nil
+	} else if err != nil {
+		r.logger.ErrorContext(ctx, "Unable to get links", zap.Error(err))
+		return nil, err
+	}
+	defer rows.Close()
+	return r.LinksFrowRows(ctx, rows)
+}
+
+func (r *dialogRepository) GetUnreadDialogMessagesCount(ctx context.Context, selfID *entity.UserID, dialogID *entity.DialogID) (
+	uint64, error,
+) {
+	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
+	defer cancel()
+
+	var unreadMessagesCount uint64
+
+	err := r.connPool.QueryRow(
+		ctx, `
+		SELECT
+			COUNT(*)
+		FROM
+			messages
+		WHERE
+			sender_id != $1 AND
+			dialog_id = $2 AND
+			viewed = FALSE;`,
+		selfID.ID,
+		dialogID.ID,
+	).Scan(&unreadMessagesCount)
+	if err != nil {
+		return 0, err
+	}
+	return unreadMessagesCount, nil
+}
+
+func (r *dialogRepository) GetDialogIdByMembers(ctx context.Context, userID1 *entity.UserID, userID2 *entity.UserID) (
+	*entity.DialogID, error,
+) {
+	ctx, cancel := context.WithTimeout(ctx, r.settings.OperationTimeout)
+	defer cancel()
+
+	var dialogID entity.DialogID
+	err := r.connPool.QueryRow(
+		ctx, `
+		SELECT
+			id
+		FROM
+			dialogs
+		WHERE
+			(user_id_1 = $1 OR user_id_1 = $2) AND (user_id_2 = $1 OR user_id_2 = $2);`,
+		userID1.ID,
+		userID2.ID,
+	).Scan(&dialogID.ID)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+	return &dialogID, nil
 }

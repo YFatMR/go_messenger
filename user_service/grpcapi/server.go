@@ -35,6 +35,18 @@ func (s *Server) GenerateToken(ctx context.Context, request *proto.Credential) (
 	return s.controller.GenerateToken(ctx, request)
 }
 
+func (s *Server) UpdateUserData(ctx context.Context, request *proto.UpdateUserDataRequest) (
+	*proto.Void, error,
+) {
+	return s.controller.UpdateUserData(ctx, request)
+}
+
+func (s *Server) GetUsersByPrefix(ctx context.Context, request *proto.GetUsersByPrefixRequest) (
+	*proto.GetUsersByPrefixResponse, error,
+) {
+	return s.controller.GetUsersByPrefix(ctx, request)
+}
+
 func (s *Server) Ping(ctx context.Context, request *proto.Void) (*proto.Pong, error) {
 	return s.controller.Ping(ctx, request)
 }

@@ -100,6 +100,19 @@ func (d *LoggingDialogModelDecorator) GetDialog(ctx context.Context, userID *ent
 	return d.base.GetDialog(ctx, userID, dialogID)
 }
 
+// GetDialogMembers implements apientity.DialogModel
+func (d *LoggingDialogModelDecorator) GetDialogMembers(ctx context.Context, selfID *entity.UserID, dialogID *entity.DialogID) (_selfID *entity.UserID, _memberID *entity.UserID, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: calling GetDialogMembers")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: GetDialogMembers finished")
+	}()
+	return d.base.GetDialogMembers(ctx, selfID, dialogID)
+}
+
 // GetDialogMessages implements apientity.DialogModel
 func (d *LoggingDialogModelDecorator) GetDialogMessages(ctx context.Context, dialogID *entity.DialogID, messageID *entity.MessageID, limit uint64, offsetType entity.DialogMessagesOffserType) (messages []*entity.DialogMessage, err error) {
 
@@ -152,15 +165,54 @@ func (d *LoggingDialogModelDecorator) GetInstructionsByID(ctx context.Context, u
 	return d.base.GetInstructionsByID(ctx, userID, dialogID, instructionID, offsetType, limit)
 }
 
-// ReadAllMessagesBeforeAndIncl implements apientity.DialogModel
-func (d *LoggingDialogModelDecorator) ReadAllMessagesBeforeAndIncl(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID, messageID *entity.MessageID) (err error) {
+// GetLinks implements apientity.DialogModel
+func (d *LoggingDialogModelDecorator) GetLinks(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID, limit uint64) (links []*entity.Link, err error) {
 
-	d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: calling ReadAllMessagesBeforeAndIncl")
+	d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: calling GetLinks")
 	defer func() {
 		if err != nil {
 			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
 		}
-		d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: ReadAllMessagesBeforeAndIncl finished")
+		d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: GetLinks finished")
 	}()
-	return d.base.ReadAllMessagesBeforeAndIncl(ctx, userID, dialogID, messageID)
+	return d.base.GetLinks(ctx, userID, dialogID, limit)
+}
+
+// GetLinksByID implements apientity.DialogModel
+func (d *LoggingDialogModelDecorator) GetLinksByID(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID, linkID *entity.LinkID, offsetType entity.LinkOffserType, limit uint64) (links []*entity.Link, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: calling GetLinksByID")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: GetLinksByID finished")
+	}()
+	return d.base.GetLinksByID(ctx, userID, dialogID, linkID, offsetType, limit)
+}
+
+// GetUnreadDialogMessagesCount implements apientity.DialogModel
+func (d *LoggingDialogModelDecorator) GetUnreadDialogMessagesCount(ctx context.Context, selfID *entity.UserID, dialogID *entity.DialogID) (count uint64, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: calling GetUnreadDialogMessagesCount")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: GetUnreadDialogMessagesCount finished")
+	}()
+	return d.base.GetUnreadDialogMessagesCount(ctx, selfID, dialogID)
+}
+
+// ReadMessage implements apientity.DialogModel
+func (d *LoggingDialogModelDecorator) ReadMessage(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID, messageID *entity.MessageID) (err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: calling ReadMessage")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogModelDecorator: ReadMessage finished")
+	}()
+	return d.base.ReadMessage(ctx, userID, dialogID, messageID)
 }

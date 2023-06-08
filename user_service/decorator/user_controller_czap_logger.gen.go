@@ -87,6 +87,19 @@ func (d *LoggingUserControllerDecorator) GetByID(ctx context.Context, request *p
 	return d.base.GetByID(ctx, request)
 }
 
+// GetUsersByPrefix implements apientity.UserController
+func (d *LoggingUserControllerDecorator) GetUsersByPrefix(ctx context.Context, request *proto.GetUsersByPrefixRequest) (resp *proto.GetUsersByPrefixResponse, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingUserControllerDecorator: calling GetUsersByPrefix")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingUserControllerDecorator: GetUsersByPrefix finished")
+	}()
+	return d.base.GetUsersByPrefix(ctx, request)
+}
+
 // Ping implements apientity.UserController
 func (d *LoggingUserControllerDecorator) Ping(ctx context.Context, request *proto.Void) (pong *proto.Pong, err error) {
 
@@ -98,4 +111,17 @@ func (d *LoggingUserControllerDecorator) Ping(ctx context.Context, request *prot
 		d.logger.InfoContext(ctx, "LoggingUserControllerDecorator: Ping finished")
 	}()
 	return d.base.Ping(ctx, request)
+}
+
+// UpdateUserData implements apientity.UserController
+func (d *LoggingUserControllerDecorator) UpdateUserData(ctx context.Context, request *proto.UpdateUserDataRequest) (void *proto.Void, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingUserControllerDecorator: calling UpdateUserData")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingUserControllerDecorator: UpdateUserData finished")
+	}()
+	return d.base.UpdateUserData(ctx, request)
 }

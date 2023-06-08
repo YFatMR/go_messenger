@@ -53,10 +53,10 @@ func (s *Server) GetDialogMessages(ctx context.Context, request *proto.GetDialog
 	return s.controller.GetDialogMessages(ctx, request)
 }
 
-func (s *Server) ReadAllMessagesBeforeAndInclude(ctx context.Context, request *proto.ReadAllMessagesBeforeRequest) (
+func (s *Server) ReadMessage(ctx context.Context, request *proto.ReadMessageRequest) (
 	*proto.Void, error,
 ) {
-	return s.controller.ReadAllMessagesBeforeAndInclude(ctx, request)
+	return s.controller.ReadMessage(ctx, request)
 }
 
 func (s *Server) CreateInstruction(ctx context.Context, request *proto.CreateInstructionRequest) (
@@ -75,6 +75,30 @@ func (s *Server) GetInstructionsByID(ctx context.Context, request *proto.GetInst
 	*proto.GetInstructionsResponse, error,
 ) {
 	return s.controller.GetInstructionsByID(ctx, request)
+}
+
+func (s *Server) GetDialogLinks(ctx context.Context, request *proto.GetDialogLinksRequest) (
+	*proto.GetDialogLinksResponse, error,
+) {
+	return s.controller.GetDialogLinks(ctx, request)
+}
+
+func (s *Server) GetDialogLinksByID(ctx context.Context, request *proto.GetDialogLinksByIDRequest) (
+	*proto.GetDialogLinksResponse, error,
+) {
+	return s.controller.GetDialogLinksByID(ctx, request)
+}
+
+func (s *Server) GetDialogMembers(ctx context.Context, request *proto.DialogID) (
+	*proto.GetDialogMembersResponse, error,
+) {
+	return s.controller.GetDialogMembers(ctx, request)
+}
+
+func (s *Server) GetUnreadDialogMessagesCount(ctx context.Context, request *proto.DialogID) (
+	*proto.GetUnreadDialogMessagesCountResponse, error,
+) {
+	return s.controller.GetUnreadDialogMessagesCount(ctx, request)
 }
 
 func (s *Server) Ping(ctx context.Context, request *proto.Void) (

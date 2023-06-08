@@ -81,7 +81,7 @@ func main() {
 		panic(err)
 	}
 	service := UserServiceFromConfig(config, logger, repository, tracer)
-	controller := UserControllerFromService(service, logger)
+	controller := UserControllerFromConfig(config, service, logger)
 
 	server := grpcapi.NewServer(controller)
 	s := grpc.NewServer(

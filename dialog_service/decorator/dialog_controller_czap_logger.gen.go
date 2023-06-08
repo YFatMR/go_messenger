@@ -100,6 +100,45 @@ func (d *LoggingDialogControllerDecorator) GetDialogByID(ctx context.Context, di
 	return d.base.GetDialogByID(ctx, dialogID)
 }
 
+// GetDialogLinks implements apientity.DialogController
+func (d *LoggingDialogControllerDecorator) GetDialogLinks(ctx context.Context, request *proto.GetDialogLinksRequest) (response *proto.GetDialogLinksResponse, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling GetDialogLinks")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: GetDialogLinks finished")
+	}()
+	return d.base.GetDialogLinks(ctx, request)
+}
+
+// GetDialogLinksByID implements apientity.DialogController
+func (d *LoggingDialogControllerDecorator) GetDialogLinksByID(ctx context.Context, request *proto.GetDialogLinksByIDRequest) (response *proto.GetDialogLinksResponse, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling GetDialogLinksByID")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: GetDialogLinksByID finished")
+	}()
+	return d.base.GetDialogLinksByID(ctx, request)
+}
+
+// GetDialogMembers implements apientity.DialogController
+func (d *LoggingDialogControllerDecorator) GetDialogMembers(ctx context.Context, dp1 *proto.DialogID) (response *proto.GetDialogMembersResponse, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling GetDialogMembers")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: GetDialogMembers finished")
+	}()
+	return d.base.GetDialogMembers(ctx, dp1)
+}
+
 // GetDialogMessages implements apientity.DialogController
 func (d *LoggingDialogControllerDecorator) GetDialogMessages(ctx context.Context, request *proto.GetDialogMessagesRequest) (response *proto.GetDialogMessagesResponse, err error) {
 
@@ -152,6 +191,19 @@ func (d *LoggingDialogControllerDecorator) GetInstructionsByID(ctx context.Conte
 	return d.base.GetInstructionsByID(ctx, request)
 }
 
+// GetUnreadDialogMessagesCount implements apientity.DialogController
+func (d *LoggingDialogControllerDecorator) GetUnreadDialogMessagesCount(ctx context.Context, request *proto.DialogID) (response *proto.GetUnreadDialogMessagesCountResponse, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling GetUnreadDialogMessagesCount")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: GetUnreadDialogMessagesCount finished")
+	}()
+	return d.base.GetUnreadDialogMessagesCount(ctx, request)
+}
+
 // Ping implements apientity.DialogController
 func (d *LoggingDialogControllerDecorator) Ping(ctx context.Context, request *proto.Void) (pong *proto.Pong, err error) {
 
@@ -165,15 +217,15 @@ func (d *LoggingDialogControllerDecorator) Ping(ctx context.Context, request *pr
 	return d.base.Ping(ctx, request)
 }
 
-// ReadAllMessagesBeforeAndInclude implements apientity.DialogController
-func (d *LoggingDialogControllerDecorator) ReadAllMessagesBeforeAndInclude(ctx context.Context, request *proto.ReadAllMessagesBeforeRequest) (void *proto.Void, err error) {
+// ReadMessage implements apientity.DialogController
+func (d *LoggingDialogControllerDecorator) ReadMessage(ctx context.Context, request *proto.ReadMessageRequest) (void *proto.Void, err error) {
 
-	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling ReadAllMessagesBeforeAndInclude")
+	d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: calling ReadMessage")
 	defer func() {
 		if err != nil {
 			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
 		}
-		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: ReadAllMessagesBeforeAndInclude finished")
+		d.logger.InfoContext(ctx, "LoggingDialogControllerDecorator: ReadMessage finished")
 	}()
-	return d.base.ReadAllMessagesBeforeAndInclude(ctx, request)
+	return d.base.ReadMessage(ctx, request)
 }

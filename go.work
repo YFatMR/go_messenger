@@ -1,13 +1,12 @@
 go 1.19
 
 use (
+	./bots_service
 	./comet_service
 	./core
 	./dialog_service
 	./front_service
 	./protocol
 	./qa
-	./sandbox_service
-	./sandbox_worker_service
 	./user_service
 )

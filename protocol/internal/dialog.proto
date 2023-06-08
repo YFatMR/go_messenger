@@ -6,11 +6,13 @@ option go_package = "./proto";
 import "common.proto";
 import "google/protobuf/timestamp.proto";
 
-enum DialogMessageType {
-  NIL = 0;
-  NORMAL = 1;
-  CODE = 2;
-}
+message LinkID { uint64 ID = 1; }
+
+// enum DialogMessageType {
+//   NIL = 0;
+//   NORMAL = 1;
+//   CODE = 2;
+// }
 
 message DialogMessage {
   MessageID messageID = 1;
@@ -19,7 +21,7 @@ message DialogMessage {
   google.protobuf.Timestamp createdAt = 4;
   bool selfMessage = 5;
   bool viewed = 6;
-  DialogMessageType type = 7;
+  uint64 type = 7; // DialogMessageType
 }
 
 message Dialog {
@@ -69,7 +71,7 @@ message CreateDialogMessageResponse {
   google.protobuf.Timestamp createdAt = 2;
 }
 
-message ReadAllMessagesBeforeRequest {
+message ReadMessageRequest {
   DialogID dialogID = 1;
   MessageID messageID = 2;
 }
@@ -103,23 +105,63 @@ message GetInstructionsByIDRequest {
 
 message GetInstructionsResponse { repeated Instruction instructions = 1; }
 
+message GetDialogLinksRequest {
+  DialogID dialogID = 1;
+  uint64 limit = 2;
+}
+
+message GetDialogLinksByIDRequest {
+  enum OffsetType { AFTER = 0; }
+
+  DialogID dialogID = 1;
+  LinkID linkID = 2;
+  uint64 limit = 3;
+  OffsetType offsetType = 4;
+}
+
+message Link {
+  LinkID linkID = 1;
+  string link = 2;
+  MessageID messageID = 3;
+  google.protobuf.Timestamp createdAt = 4;
+}
+
+message GetDialogLinksResponse { repeated Link links = 1; }
+
+message GetDialogMembersResponse {
+  UserID selfID = 1;
+  UserID memberID = 2;
+}
+
+message GetUnreadDialogMessagesCountResponse { uint64 count = 1; }
+
 service DialogService {
   rpc CreateDialogWith(UserID) returns (Dialog) {}
   rpc GetDialogByID(DialogID) returns (Dialog) {}
   rpc GetDialogs(GetDialogsRequest) returns (GetDialogsResponse) {}
+
   rpc CreateDialogMessage(CreateDialogMessageRequest)
       returns (CreateDialogMessageResponse) {}
   rpc CreateDialogMessageWithCode(CreateDialogMessageWithCodeRequest)
       returns (CreateDialogMessageResponse) {}
   rpc GetDialogMessages(GetDialogMessagesRequest)
       returns (GetDialogMessagesResponse) {}
-  rpc ReadAllMessagesBeforeAndInclude(ReadAllMessagesBeforeRequest)
-      returns (Void) {}
+  rpc ReadMessage(ReadMessageRequest) returns (Void) {}
+
   rpc CreateInstruction(CreateInstructionRequest) returns (InstructionID) {}
   rpc GetInstructions(GetInstructionsRequest)
       returns (GetInstructionsResponse) {}
   rpc GetInstructionsByID(GetInstructionsByIDRequest)
       returns (GetInstructionsResponse) {}
+
+  rpc GetDialogLinks(GetDialogLinksRequest) returns (GetDialogLinksResponse) {}
+  rpc GetDialogLinksByID(GetDialogLinksByIDRequest)
+      returns (GetDialogLinksResponse) {}
+
+  rpc GetDialogMembers(DialogID) returns (GetDialogMembersResponse) {}
+
+  rpc GetUnreadDialogMessagesCount(DialogID)
+      returns (GetUnreadDialogMessagesCountResponse) {}
 
   rpc Ping(Void) returns (Pong) {}
 }

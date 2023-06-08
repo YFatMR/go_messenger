@@ -25,7 +25,7 @@ type DialogController interface {
 	GetDialogMessages(ctx context.Context, request *proto.GetDialogMessagesRequest) (
 		response *proto.GetDialogMessagesResponse, err error,
 	)
-	ReadAllMessagesBeforeAndInclude(ctx context.Context, request *proto.ReadAllMessagesBeforeRequest) (
+	ReadMessage(ctx context.Context, request *proto.ReadMessageRequest) (
 		void *proto.Void, err error,
 	)
 	CreateInstruction(ctx context.Context, request *proto.CreateInstructionRequest) (
@@ -36,6 +36,18 @@ type DialogController interface {
 	)
 	GetInstructionsByID(ctx context.Context, request *proto.GetInstructionsByIDRequest) (
 		response *proto.GetInstructionsResponse, err error,
+	)
+	GetDialogLinks(ctx context.Context, request *proto.GetDialogLinksRequest) (
+		response *proto.GetDialogLinksResponse, err error,
+	)
+	GetDialogLinksByID(ctx context.Context, request *proto.GetDialogLinksByIDRequest) (
+		response *proto.GetDialogLinksResponse, err error,
+	)
+	GetDialogMembers(context.Context, *proto.DialogID) (
+		response *proto.GetDialogMembersResponse, err error,
+	)
+	GetUnreadDialogMessagesCount(ctx context.Context, request *proto.DialogID) (
+		response *proto.GetUnreadDialogMessagesCountResponse, err error,
 	)
 	Ping(ctx context.Context, request *proto.Void) (
 		pong *proto.Pong, err error,

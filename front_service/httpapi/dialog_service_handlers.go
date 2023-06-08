@@ -52,13 +52,15 @@ func (s *FrontServer) GetDialogByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Json data to protobuf.
-	dualogID, err := strconv.ParseUint(r.URL.Query().Get("ID"), 10, 64)
+
+	vars := mux.Vars(r)
+	dialogID, err := strconv.ParseUint(vars["ID"], 10, 64)
 	if err != nil {
-		http.Error(w, "limit params error:"+err.Error(), http.StatusBadRequest)
+		http.Error(w, "dualogID params error:"+err.Error(), http.StatusBadRequest)
 		return
 	}
 	request := proto.DialogID{
-		ID: dualogID,
+		ID: dialogID,
 	}
 
 	ctx = context.WithValue(ctx, grpcapi.RequireAuthorizationField{}, true)
@@ -268,7 +270,7 @@ func (s *FrontServer) GetDialogMessages(w http.ResponseWriter, r *http.Request) 
 	w.Write(bytes)
 }
 
-func (s *FrontServer) ReadAllMessagesBefore(w http.ResponseWriter, r *http.Request) {
+func (s *FrontServer) ReadMessage(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	ctx := r.Context()
 
@@ -286,7 +288,7 @@ func (s *FrontServer) ReadAllMessagesBefore(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	request := proto.ReadAllMessagesBeforeRequest{
+	request := proto.ReadMessageRequest{
 		DialogID: &proto.DialogID{
 			ID: dialogID,
 		},
@@ -297,7 +299,7 @@ func (s *FrontServer) ReadAllMessagesBefore(w http.ResponseWriter, r *http.Reque
 
 	ctx = context.WithValue(ctx, grpcapi.RequireAuthorizationField{}, true)
 	ctx = context.WithValue(ctx, grpcapi.AuthorizationField{}, r.Header.Get("Authorization"))
-	response, err := s.dialogServiceClient.ReadAllMessagesBeforeAndInclude(ctx, &request)
+	response, err := s.dialogServiceClient.ReadMessage(ctx, &request)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -383,7 +385,10 @@ func (s *FrontServer) GetInstructions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	instructionID := r.URL.Query().Get("instructionID")
-	if instructionID == "" {
+	ctx = context.WithValue(ctx, grpcapi.RequireAuthorizationField{}, true)
+	ctx = context.WithValue(ctx, grpcapi.AuthorizationField{}, r.Header.Get("Authorization"))
+
+	if instructionID != "" {
 		// use offset type by default after, not parse
 		offsetType, err := offsetTypeFromURL(r.URL)
 		if err != nil {
@@ -440,4 +445,158 @@ func (s *FrontServer) GetInstructions(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write(bytes)
 	}
+}
+
+func (s *FrontServer) GetLinks(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	ctx := r.Context()
+
+	offsetTypeFromURL := func(url *url.URL) (proto.GetDialogLinksByIDRequest_OffsetType, error) {
+		switch url.Query().Get("offset_type") {
+		case "after":
+			return proto.GetDialogLinksByIDRequest_AFTER, nil
+		}
+		return proto.GetDialogLinksByIDRequest_AFTER, fmt.Errorf("unexpected offset_type params value")
+	}
+
+	// Json data to protobuf.
+	vars := mux.Vars(r)
+	dialogID, err := strconv.ParseUint(vars["dialogID"], 10, 64)
+	if err != nil {
+		http.Error(w, "dialogID params error:"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	limit, err := strconv.ParseUint(r.URL.Query().Get("limit"), 10, 64)
+	if err != nil || limit == 0 {
+		http.Error(w, "limit params error:"+err.Error(), http.StatusBadRequest)
+		return
+	}
+	ctx = context.WithValue(ctx, grpcapi.RequireAuthorizationField{}, true)
+	ctx = context.WithValue(ctx, grpcapi.AuthorizationField{}, r.Header.Get("Authorization"))
+
+	linkID := r.URL.Query().Get("linkID")
+	if linkID != "" {
+		// use offset type by default after, not parse
+		offsetType, err := offsetTypeFromURL(r.URL)
+		if err != nil {
+			http.Error(w, "offset_type params error:"+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		parsedLinkID, err := strconv.ParseUint(linkID, 10, 64)
+		if err != nil {
+			http.Error(w, "parsedInstructionID params error:"+err.Error(), http.StatusBadRequest)
+			return
+		}
+		request := &proto.GetDialogLinksByIDRequest{
+			DialogID: &proto.DialogID{
+				ID: dialogID,
+			},
+			LinkID: &proto.LinkID{
+				ID: parsedLinkID,
+			},
+			Limit:      limit,
+			OffsetType: offsetType,
+		}
+		response, err := s.dialogServiceClient.GetDialogLinksByID(ctx, request)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		bytes, err := protojson.Marshal(response)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(bytes)
+	} else {
+		request := &proto.GetDialogLinksRequest{
+			DialogID: &proto.DialogID{
+				ID: dialogID,
+			},
+			Limit: limit,
+		}
+		response, err := s.dialogServiceClient.GetDialogLinks(ctx, request)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		bytes, err := protojson.Marshal(response)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(bytes)
+	}
+}
+
+func (s *FrontServer) GetDialogMembers(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	ctx := r.Context()
+
+	vars := mux.Vars(r)
+	dialogID, err := strconv.ParseUint(vars["dialogID"], 10, 64)
+	if err != nil {
+		http.Error(w, "dialogID params error:"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	request := &proto.DialogID{
+		ID: dialogID,
+	}
+	ctx = context.WithValue(ctx, grpcapi.RequireAuthorizationField{}, true)
+	ctx = context.WithValue(ctx, grpcapi.AuthorizationField{}, r.Header.Get("Authorization"))
+	response, err := s.dialogServiceClient.GetDialogMembers(ctx, request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Response protobuf to json.
+	bytes, err := protojson.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(bytes)
+}
+
+func (s *FrontServer) GetUnreadDialogMessagesCount(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	ctx := r.Context()
+
+	vars := mux.Vars(r)
+	dialogID, err := strconv.ParseUint(vars["dialogID"], 10, 64)
+	if err != nil {
+		http.Error(w, "dialogID params error:"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	request := &proto.DialogID{
+		ID: dialogID,
+	}
+	ctx = context.WithValue(ctx, grpcapi.RequireAuthorizationField{}, true)
+	ctx = context.WithValue(ctx, grpcapi.AuthorizationField{}, r.Header.Get("Authorization"))
+	response, err := s.dialogServiceClient.GetUnreadDialogMessagesCount(ctx, request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Response protobuf to json.
+	bytes, err := protojson.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(bytes)
 }

@@ -32,7 +32,12 @@ func DialogRepositoryFromConfig(ctx context.Context, config *cviper.CustomViper,
 	_, err = connPool.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS dialogs (
 			id BIGSERIAL PRIMARY KEY,
-			created_at TIMESTAMP DEFAULT NOW()
+			created_at TIMESTAMP DEFAULT NOW(),
+
+			user_id_1 BIGINT NOT NULL,
+			user_id_2 BIGINT NOT NULL,
+
+			UNIQUE (user_id_1, user_id_2)
 		);`,
 	)
 	if err != nil {
@@ -79,30 +84,6 @@ func DialogRepositoryFromConfig(ctx context.Context, config *cviper.CustomViper,
 	}
 
 	_, err = connPool.Exec(ctx, `
-		CREATE TABLE IF NOT EXISTS programs (
-			id BIGSERIAL PRIMARY KEY,
-			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-			creator_id BIGINT NOT NULL,
-
-			title VARCHAR(256) NOT NULL,
-			text VARCHAR(4096) NOT NULL,
-
-			dialog_id BIGINT NOT NULL,
-			FOREIGN KEY (dialog_id) REFERENCES dialogs (id),
-
-			message_id BIGINT NOT NULL,
-			FOREIGN KEY (message_id) REFERENCES messages (id),
-
-			stdout VARCHAR(4096) NOT NULL DEFAULT '',
-			stderr VARCHAR(4096) NOT NULL DEFAULT ''
-		);`,
-	)
-	if err != nil {
-		logger.Error("Failed to create database programs tables", zap.Error(err))
-		return nil, err
-	}
-
-	_, err = connPool.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS urls (
 			id BIGSERIAL PRIMARY KEY,
 			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -114,7 +95,7 @@ func DialogRepositoryFromConfig(ctx context.Context, config *cviper.CustomViper,
 			message_id BIGINT NOT NULL,
 			FOREIGN KEY (message_id) REFERENCES messages (id),
 
-			url VARCHAR(512) NOT NULL
+			url VARCHAR(1024) NOT NULL
 		);`,
 	)
 	if err != nil {

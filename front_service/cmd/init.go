@@ -117,6 +117,19 @@ func NewGRPCDialogServiceClientFromConfig(ctx context.Context, config *cviper.Cu
 	)
 }
 
+func NewGRPCBotsServiceClientFromConfig(ctx context.Context, config *cviper.CustomViper, logger *czap.Logger) (
+	proto.BotsServiceClient, error,
+) {
+	grpcOpts := DefaultGRPCClientOptsFromConfig(config, logger)
+	dialogServiceAddress := config.GetStringRequired("BOTS_SERVICE_ADDRESS")
+	microservicesConnectionTimeout := config.GetMillisecondsDurationRequired(
+		"MICROSERVICES_GRPC_CONNECTION_TIMEOUT_MILLISECONDS",
+	)
+	return grpcclients.NewGRPCBotsClient(
+		ctx, dialogServiceAddress, microservicesConnectionTimeout, grpcOpts,
+	)
+}
+
 func WebsocketClientFromConfig(config *cviper.CustomViper, logger *czap.Logger) *websocketapi.Client {
 	return websocketapi.NewClient(
 		jwtmanager.FromConfig(config, logger),

@@ -22,6 +22,7 @@ raw_build:
 	go build -o ${BINARY_DIRECTORY}/qa_test ${ROOT_PROJECT_DIRECTORY}/qa/test
 	go build -o ${BINARY_DIRECTORY}/dialog_service ${ROOT_PROJECT_DIRECTORY}/dialog_service/cmd
 	go build -o ${BINARY_DIRECTORY}/comet_service ${ROOT_PROJECT_DIRECTORY}/comet_service/cmd
+	go build -o ${BINARY_DIRECTORY}/bots_service ${ROOT_PROJECT_DIRECTORY}/bots_service/cmd
 
 build: gen
 	make raw_build

@@ -9,6 +9,21 @@ message UserData {
   string nickname = 1;
   string name = 2;
   string surname = 3;
+  string statusText = 4;
+  string github = 5;
+  string linkedin = 6;
+  string publicEmail = 7;
+}
+
+message UserDataWithID {
+  UserID userID = 1;
+  string nickname = 2;
+  string name = 3;
+  string surname = 4;
+  string statusText = 5;
+  string github = 6;
+  string linkedin = 7;
+  string publicEmail = 8;
 }
 
 message Credential {
@@ -29,10 +44,35 @@ message CreateUserRequest {
   UserData userData = 2;
 }
 
+// message GetUsersByLoginRequest {
+//   string prefix = 1;
+//   uint64 limit = 2;
+// }
+
+// message GetUsersByLoginResponse { repeated UserData usersData = 1; }
+
+message UpdateUserDataRequest {
+  string name = 1;
+  string surname = 2;
+  string statusText = 3;
+  string github = 4;
+  string linkedin = 5;
+  string publicEmail = 6;
+}
+
+message GetUsersByPrefixRequest {
+  string prefix = 1;
+  uint64 limit = 2;
+}
+message GetUsersByPrefixResponse { repeated UserDataWithID usersData = 1; }
+
 service User {
   rpc CreateUser(CreateUserRequest) returns (UserID) {}
   rpc GetUserByID(UserID) returns (UserData) {}
   rpc DeleteUserByID(UserID) returns (Void) {}
   rpc GenerateToken(Credential) returns (Token) {}
+  rpc UpdateUserData(UpdateUserDataRequest) returns (Void) {}
+  rpc GetUsersByPrefix(GetUsersByPrefixRequest)
+      returns (GetUsersByPrefixResponse) {}
   rpc Ping(Void) returns (Pong) {}
 }

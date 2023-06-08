@@ -19,4 +19,10 @@ type UserService interface {
 	GenerateToken(ctx context.Context, unsafeCredential *entity.UnsafeCredential) (
 		token *entity.Token, err error,
 	)
+	UpdateUserData(ctx context.Context, userID *entity.UserID, request *entity.UpdateUserRequest) (
+		err error,
+	)
+	GetUsersByPrefix(ctx context.Context, selfID *entity.UserID, prefix string, limit uint64) (
+		usersData []*entity.UserWithID, err error,
+	)
 }

@@ -65,6 +65,12 @@ func (m *dialogModel) CreateDialog(ctx context.Context, userID1 *entity.UserID, 
 		return nil, err
 	}
 
+	dialogID, err := m.repository.GetDialogIdByMembers(ctx, userID1, userID2)
+	if err != nil {
+		return nil, err
+	} else if dialogID != nil {
+		return m.repository.GetDialog(ctx, userID1, dialogID)
+	}
 	return m.repository.CreateDialog(ctx, userID1, userData1, userID2, userData2)
 }
 
@@ -186,10 +192,10 @@ func (m *dialogModel) GetDialogMessages(ctx context.Context, dialogID *entity.Di
 	}
 }
 
-func (m *dialogModel) ReadAllMessagesBeforeAndIncl(ctx context.Context, userID *entity.UserID,
+func (m *dialogModel) ReadMessage(ctx context.Context, userID *entity.UserID,
 	dialogID *entity.DialogID, messageID *entity.MessageID,
 ) error {
-	if err := m.repository.ReadAllMessagesBeforeAndIncl(ctx, userID, dialogID, messageID); err != nil {
+	if err := m.repository.ReadMessage(ctx, userID, dialogID, messageID); err != nil {
 		return err
 	}
 
@@ -197,7 +203,7 @@ func (m *dialogModel) ReadAllMessagesBeforeAndIncl(ctx context.Context, userID *
 	go func() {
 		message, err := m.repository.GetDialogMessageByID(context.TODO(), dialogID, messageID)
 		if err != nil {
-			m.logger.Error("ReadAllMessagesBeforeAndIncl async op failed", zap.Error(err))
+			m.logger.Error("ReadMessage async op failed", zap.Error(err))
 			return
 		}
 
@@ -262,5 +268,61 @@ func (m *dialogModel) GetInstructionsByID(ctx context.Context, userID *entity.Us
 	if !isMember {
 		return nil, ErrFobidden
 	}
+	// at the moment only one option
 	return m.repository.GetInstructionsBefore(ctx, dialogID, instructionID, limit)
+}
+
+func (m *dialogModel) GetLinks(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID, limit uint64) (
+	links []*entity.Link, err error,
+) {
+	isMember, err := m.isUserDialogMember(ctx, dialogID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !isMember {
+		return nil, ErrFobidden
+	}
+	return m.repository.GetLinks(ctx, dialogID, limit)
+}
+
+func (m *dialogModel) GetLinksByID(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
+	linkID *entity.LinkID, offsetType entity.LinkOffserType, limit uint64,
+) (
+	links []*entity.Link, err error,
+) {
+	isMember, err := m.isUserDialogMember(ctx, dialogID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !isMember {
+		return nil, ErrFobidden
+	}
+	// at the moment only one option
+	return m.repository.GetLinksBefore(ctx, dialogID, linkID, limit)
+}
+
+func (m *dialogModel) GetDialogMembers(ctx context.Context, selfID *entity.UserID, dialogID *entity.DialogID) (
+	_selfID *entity.UserID, _memberID *entity.UserID, _ error,
+) {
+	members, err := m.repository.GetDialogMembers(ctx, dialogID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if members[0].ID != selfID.ID && members[1].ID != selfID.ID {
+		return nil, nil, ErrFobidden
+	}
+	memberID := new(entity.UserID)
+	memberID.ID = members[0].ID
+	if members[0].ID == selfID.ID {
+		memberID.ID = members[1].ID
+	}
+	return selfID, memberID, nil
+}
+
+func (m *dialogModel) GetUnreadDialogMessagesCount(ctx context.Context, selfID *entity.UserID,
+	dialogID *entity.DialogID,
+) (
+	uint64, error,
+) {
+	return m.repository.GetUnreadDialogMessagesCount(ctx, selfID, dialogID)
 }

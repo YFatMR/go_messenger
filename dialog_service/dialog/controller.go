@@ -175,7 +175,7 @@ func (c *dialogController) GetDialogMessages(ctx context.Context, request *proto
 	}, nil
 }
 
-func (c *dialogController) ReadAllMessagesBeforeAndInclude(ctx context.Context, request *proto.ReadAllMessagesBeforeRequest) (
+func (c *dialogController) ReadMessage(ctx context.Context, request *proto.ReadMessageRequest) (
 	*proto.Void, error,
 ) {
 	senderID, err := c.contextManager.UserIDFromContext(ctx)
@@ -193,7 +193,7 @@ func (c *dialogController) ReadAllMessagesBeforeAndInclude(ctx context.Context, 
 		return nil, err
 	}
 
-	err = c.model.ReadAllMessagesBeforeAndIncl(ctx, senderID, dialogID, messageID)
+	err = c.model.ReadMessage(ctx, senderID, dialogID, messageID)
 	if err != nil {
 		return nil, err
 	}
@@ -282,6 +282,116 @@ func (c *dialogController) GetInstructionsByID(ctx context.Context, request *pro
 	}
 	return &proto.GetInstructionsResponse{
 		Instructions: entity.InstructionsToProtobuf(instructions),
+	}, nil
+}
+
+func (c *dialogController) GetDialogLinks(ctx context.Context, request *proto.GetDialogLinksRequest) (
+	*proto.GetDialogLinksResponse, error,
+) {
+	userID, err := c.contextManager.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dialogID, err := entity.DialogIDFromProtobuf(request.GetDialogID())
+	if err != nil {
+		return nil, err
+	}
+
+	if request.GetLimit() <= 0 {
+		return nil, fmt.Errorf("incorrect limit params")
+	}
+
+	links, err := c.model.GetLinks(ctx, userID, dialogID, request.Limit)
+	if err != nil {
+		return nil, err
+	}
+	return &proto.GetDialogLinksResponse{
+		Links: entity.LinksToProtobuf(links),
+	}, nil
+}
+
+func (c *dialogController) GetDialogLinksByID(ctx context.Context, request *proto.GetDialogLinksByIDRequest) (
+	*proto.GetDialogLinksResponse, error,
+) {
+	userID, err := c.contextManager.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dialogID, err := entity.DialogIDFromProtobuf(request.GetDialogID())
+	if err != nil {
+		return nil, err
+	}
+
+	linkID, err := entity.LinkIDFromProtobuf(request.GetLinkID())
+	if err != nil {
+		return nil, err
+	}
+
+	offsetType := entity.LinkOffserTypeFromProtobuf(request.OffsetType)
+
+	if request.GetLimit() <= 0 {
+		return nil, fmt.Errorf("incorrect limit params")
+	}
+
+	links, err := c.model.GetLinksByID(ctx, userID, dialogID, linkID, offsetType, request.Limit)
+	if err != nil {
+		return nil, err
+	}
+	return &proto.GetDialogLinksResponse{
+		Links: entity.LinksToProtobuf(links),
+	}, nil
+}
+
+func (c *dialogController) GetDialogMembers(ctx context.Context, request *proto.DialogID) (
+	*proto.GetDialogMembersResponse, error,
+) {
+	userID, err := c.contextManager.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dialogID, err := entity.DialogIDFromProtobuf(request)
+	if err != nil {
+		return nil, err
+	}
+
+	selfID, memberID, err := c.model.GetDialogMembers(ctx, userID, dialogID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &proto.GetDialogMembersResponse{
+		SelfID: &proto.UserID{
+			ID: selfID.ID,
+		},
+		MemberID: &proto.UserID{
+			ID: memberID.ID,
+		},
+	}, nil
+}
+
+func (c *dialogController) GetUnreadDialogMessagesCount(ctx context.Context, request *proto.DialogID) (
+	*proto.GetUnreadDialogMessagesCountResponse, error,
+) {
+	userID, err := c.contextManager.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dialogID, err := entity.DialogIDFromProtobuf(request)
+	if err != nil {
+		return nil, err
+	}
+
+	unreadMessagesCount, err := c.model.GetUnreadDialogMessagesCount(ctx, userID, dialogID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &proto.GetUnreadDialogMessagesCountResponse{
+		Count: unreadMessagesCount,
 	}, nil
 }
 

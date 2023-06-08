@@ -100,6 +100,19 @@ func (d *LoggingDialogRepositoryDecorator) GetDialog(ctx context.Context, userID
 	return d.base.GetDialog(ctx, userID, dialogID)
 }
 
+// GetDialogIdByMembers implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) GetDialogIdByMembers(ctx context.Context, userID1 *entity.UserID, userID2 *entity.UserID) (dialog *entity.DialogID, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling GetDialogIdByMembers")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: GetDialogIdByMembers finished")
+	}()
+	return d.base.GetDialogIdByMembers(ctx, userID1, userID2)
+}
+
 // GetDialogMembers implements apientity.DialogRepository
 func (d *LoggingDialogRepositoryDecorator) GetDialogMembers(ctx context.Context, dialogID *entity.DialogID) (userIDs []*entity.UserID, err error) {
 
@@ -230,15 +243,54 @@ func (d *LoggingDialogRepositoryDecorator) GetInstructionsBefore(ctx context.Con
 	return d.base.GetInstructionsBefore(ctx, dialogID, instructionID, limit)
 }
 
-// ReadAllMessagesBeforeAndIncl implements apientity.DialogRepository
-func (d *LoggingDialogRepositoryDecorator) ReadAllMessagesBeforeAndIncl(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID, messageID *entity.MessageID) (err error) {
+// GetLinks implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) GetLinks(ctx context.Context, dialogID *entity.DialogID, limit uint64) (links []*entity.Link, err error) {
 
-	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling ReadAllMessagesBeforeAndIncl")
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling GetLinks")
 	defer func() {
 		if err != nil {
 			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
 		}
-		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: ReadAllMessagesBeforeAndIncl finished")
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: GetLinks finished")
 	}()
-	return d.base.ReadAllMessagesBeforeAndIncl(ctx, userID, dialogID, messageID)
+	return d.base.GetLinks(ctx, dialogID, limit)
+}
+
+// GetLinksBefore implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) GetLinksBefore(ctx context.Context, dialogID *entity.DialogID, linkID *entity.LinkID, limit uint64) (links []*entity.Link, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling GetLinksBefore")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: GetLinksBefore finished")
+	}()
+	return d.base.GetLinksBefore(ctx, dialogID, linkID, limit)
+}
+
+// GetUnreadDialogMessagesCount implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) GetUnreadDialogMessagesCount(ctx context.Context, selfID *entity.UserID, dialogID *entity.DialogID) (count uint64, err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling GetUnreadDialogMessagesCount")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: GetUnreadDialogMessagesCount finished")
+	}()
+	return d.base.GetUnreadDialogMessagesCount(ctx, selfID, dialogID)
+}
+
+// ReadMessage implements apientity.DialogRepository
+func (d *LoggingDialogRepositoryDecorator) ReadMessage(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID, messageID *entity.MessageID) (err error) {
+
+	d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: calling ReadMessage")
+	defer func() {
+		if err != nil {
+			d.logger.ErrorContext(ctx, "", zap.NamedError("public api error", err))
+		}
+		d.logger.InfoContext(ctx, "LoggingDialogRepositoryDecorator: ReadMessage finished")
+	}()
+	return d.base.ReadMessage(ctx, userID, dialogID, messageID)
 }

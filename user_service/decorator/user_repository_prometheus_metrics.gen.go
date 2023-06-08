@@ -132,3 +132,41 @@ func (d *PrometheusMetricsUserRepositoryDecorator) GetByID(ctx context.Context, 
 	}()
 	return d.base.GetByID(ctx, userID)
 }
+
+// GetUsersByPrefix implements apientity.UserRepository
+func (d *PrometheusMetricsUserRepositoryDecorator) GetUsersByPrefix(ctx context.Context, selfID *entity.UserID, prefix string, limit uint64) (resp []*entity.UserWithID, err error) {
+
+	startTime := time.Now()
+	private_UserRepository_StartProcessTotal.Inc()
+	defer func() {
+		functionDuration := time.Since(startTime).Seconds()
+		statusTag := private_UserRepository_okStatusTag
+
+		if err != nil {
+			statusTag = private_UserRepository_errorStatusTag
+		}
+
+		private_UserRepository_DurationSeconds.WithLabelValues(statusTag, "get_users_by_prefix").Observe(functionDuration)
+		private_UserRepository_ProcessedTotal.WithLabelValues(statusTag, "get_users_by_prefix").Inc()
+	}()
+	return d.base.GetUsersByPrefix(ctx, selfID, prefix, limit)
+}
+
+// UpdateUserData implements apientity.UserRepository
+func (d *PrometheusMetricsUserRepositoryDecorator) UpdateUserData(ctx context.Context, userID *entity.UserID, request *entity.UpdateUserRequest) (err error) {
+
+	startTime := time.Now()
+	private_UserRepository_StartProcessTotal.Inc()
+	defer func() {
+		functionDuration := time.Since(startTime).Seconds()
+		statusTag := private_UserRepository_okStatusTag
+
+		if err != nil {
+			statusTag = private_UserRepository_errorStatusTag
+		}
+
+		private_UserRepository_DurationSeconds.WithLabelValues(statusTag, "update_user_data").Observe(functionDuration)
+		private_UserRepository_ProcessedTotal.WithLabelValues(statusTag, "update_user_data").Inc()
+	}()
+	return d.base.UpdateUserData(ctx, userID, request)
+}

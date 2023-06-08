@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package proto;
+option go_package = "./proto";
+
+import "common.proto";
+
+message BotMessage { string text = 1; }
+
+service BotsService {
+  rpc GetBotMessageCompletion(BotMessage) returns (BotMessage) {}
+  rpc Ping(Void) returns (Pong) {}
+}

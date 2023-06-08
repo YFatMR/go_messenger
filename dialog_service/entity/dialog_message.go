@@ -79,25 +79,25 @@ func DialogMessagesTypeFromUint64(dialogType uint64) DialogMessagesType {
 	}
 }
 
-func DialogMessagesTypeFromProtobuf(dialogType proto.DialogMessageType) DialogMessagesType {
+func DialogMessagesTypeFromProtobuf(dialogType uint64) DialogMessagesType {
 	switch dialogType {
-	case proto.DialogMessageType_NORMAL:
+	case 1:
 		return MESSAGE_TYPE_NORMAL
-	case proto.DialogMessageType_CODE:
+	case 2:
 		return MESSAGE_TYPE_CODE
 	default:
 		return MESSAGE_TYPE_NORMAL
 	}
 }
 
-func DialogMessagesTypeToProtobuf(dialogType DialogMessagesType) proto.DialogMessageType {
+func DialogMessagesTypeToProtobuf(dialogType DialogMessagesType) uint64 {
 	switch dialogType {
 	case MESSAGE_TYPE_NORMAL:
-		return proto.DialogMessageType_NORMAL
+		return 1
 	case MESSAGE_TYPE_CODE:
-		return proto.DialogMessageType_CODE
+		return 2
 	default:
-		return proto.DialogMessageType_NORMAL
+		return 1
 	}
 }
 

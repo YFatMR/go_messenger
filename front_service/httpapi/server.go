@@ -12,17 +12,20 @@ type FrontServer struct {
 	userServiceClient    proto.UserClient
 	sandboxServiceClient proto.SandboxClient
 	dialogServiceClient  proto.DialogServiceClient
+	botsServiceClient    proto.BotsServiceClient
 	websocketClient      *websocketapi.Client
 	logger               *czap.Logger
 }
 
 func NewFrontServer(userServiceClient proto.UserClient, sandboxServiceClient proto.SandboxClient,
-	dialogServiceClient proto.DialogServiceClient, websocketClient *websocketapi.Client, logger *czap.Logger,
+	dialogServiceClient proto.DialogServiceClient, botsServiceClient proto.BotsServiceClient,
+	websocketClient *websocketapi.Client, logger *czap.Logger,
 ) FrontServer {
 	return FrontServer{
 		userServiceClient:    userServiceClient,
 		sandboxServiceClient: sandboxServiceClient,
 		dialogServiceClient:  dialogServiceClient,
+		botsServiceClient:    botsServiceClient,
 		websocketClient:      websocketClient,
 		logger:               logger,
 	}

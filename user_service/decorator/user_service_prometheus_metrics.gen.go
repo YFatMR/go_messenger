@@ -132,3 +132,41 @@ func (d *PrometheusMetricsUserServiceDecorator) GetByID(ctx context.Context, use
 	}()
 	return d.base.GetByID(ctx, userID)
 }
+
+// GetUsersByPrefix implements apientity.UserService
+func (d *PrometheusMetricsUserServiceDecorator) GetUsersByPrefix(ctx context.Context, selfID *entity.UserID, prefix string, limit uint64) (usersData []*entity.UserWithID, err error) {
+
+	startTime := time.Now()
+	private_UserService_StartProcessTotal.Inc()
+	defer func() {
+		functionDuration := time.Since(startTime).Seconds()
+		statusTag := private_UserService_okStatusTag
+
+		if err != nil {
+			statusTag = private_UserService_errorStatusTag
+		}
+
+		private_UserService_DurationSeconds.WithLabelValues(statusTag, "get_users_by_prefix").Observe(functionDuration)
+		private_UserService_ProcessedTotal.WithLabelValues(statusTag, "get_users_by_prefix").Inc()
+	}()
+	return d.base.GetUsersByPrefix(ctx, selfID, prefix, limit)
+}
+
+// UpdateUserData implements apientity.UserService
+func (d *PrometheusMetricsUserServiceDecorator) UpdateUserData(ctx context.Context, userID *entity.UserID, request *entity.UpdateUserRequest) (err error) {
+
+	startTime := time.Now()
+	private_UserService_StartProcessTotal.Inc()
+	defer func() {
+		functionDuration := time.Since(startTime).Seconds()
+		statusTag := private_UserService_okStatusTag
+
+		if err != nil {
+			statusTag = private_UserService_errorStatusTag
+		}
+
+		private_UserService_DurationSeconds.WithLabelValues(statusTag, "update_user_data").Observe(functionDuration)
+		private_UserService_ProcessedTotal.WithLabelValues(statusTag, "update_user_data").Inc()
+	}()
+	return d.base.UpdateUserData(ctx, userID, request)
+}

@@ -13,9 +13,11 @@ class UserData:
 def create_user(i: int) -> int:
     names = [
         "Максим",
-        "Dima",
-        "Denis",
+        "Дима",
+        "Денис",
         "Егор",
+        "Макар",
+        "Макар",
         "Макар",
     ]
 
@@ -24,12 +26,14 @@ def create_user(i: int) -> int:
         "Смирнов",
         "Федоров",
         "Зубков",
-        "Emshanov",
+        "Зяблик",
+        "Нуров",
+        "Уткин",
     ]
 
     data = {
         "userData": {
-            "nickname": f"{i}",
+            "nickname": f"testnick{i}",
             "name": f"{names[random.randrange(len(names))]}",
             "surname": f"{surnames[random.randrange(len(surnames))]}",
         },
@@ -75,22 +79,33 @@ def create_message(user_data: UserData, dialog_id: int, text: str) -> int:
 def create_dialog_with_messages(user_data1: UserData, user_data2: UserData, messages_cnt: int):
     d_id = create_dialog(user_data1, user_data2)
     msg = [
-        u"Hello!",
+        u"Привет!",
         u"Очень рад тебя слышать, потому что мы давно не переписывались. Как сам?",
         u"All good!",
         u"Рад слышать",
-        u"Hi!",
+        u"Дарова!",
         u"Собираюсь завтра к бабушке в деревню, тебе что-нибудт привезти. Возможно салатик, картошку и т д?",
+        u"Посмотри в гугле https://www.google.com/?hl=ru",
+        u"Ютубчик посмотри https://yandex.ru/search/?text=youtube&lr=47&search_source=yaru_desktop_common&search_domain=yandexru&src=suggest_Pers",
     ]
+
+
+    headers = {"Content-Type": "application/json; charset=utf-8", "Authorization": user_data1.token}
+    for _ in range(15):
+        response = requests.post(f'{HOST}/v1/dialogs/{d_id}/instructions', headers=headers, json={
+            'text': "Test instruction",
+            'title': "Random title"
+        })
+        assert(200 == response.status_code)
 
     for i in range(messages_cnt):
         d = user_data1
         if random.randrange(100) % 2 == 0:
             d = user_data2
-        create_message(d, d_id, msg[random.randrange(len(msg))] + f" {i}")
+        create_message(d, d_id, msg[random.randrange(len(msg))] + f" ")
 
 
-lst = [create_user_with_token(i) for i in range(5)]
+lst = [create_user_with_token(i) for i in range(200, 250)]
 
 for i in range(1, len(lst)):
     cnt = 60

@@ -27,7 +27,7 @@ type DialogModel interface {
 	) (
 		messages []*entity.DialogMessage, err error,
 	)
-	ReadAllMessagesBeforeAndIncl(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
+	ReadMessage(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
 		messageID *entity.MessageID,
 	) error
 	CreateInstruction(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID, instructionTitle string,
@@ -42,5 +42,19 @@ type DialogModel interface {
 		instructionID *entity.InstructionID, offsetType entity.InstructionOffserType, limit uint64,
 	) (
 		instructions []*entity.Instruction, err error,
+	)
+	GetLinks(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID, limit uint64) (
+		links []*entity.Link, err error,
+	)
+	GetLinksByID(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
+		linkID *entity.LinkID, offsetType entity.LinkOffserType, limit uint64,
+	) (
+		links []*entity.Link, err error,
+	)
+	GetDialogMembers(ctx context.Context, selfID *entity.UserID, dialogID *entity.DialogID) (
+		_selfID *entity.UserID, _memberID *entity.UserID, err error,
+	)
+	GetUnreadDialogMessagesCount(ctx context.Context, selfID *entity.UserID, dialogID *entity.DialogID) (
+		count uint64, err error,
 	)
 }

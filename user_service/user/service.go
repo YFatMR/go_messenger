@@ -70,3 +70,15 @@ func (s *userService) GenerateToken(ctx context.Context, unsafeCredential *entit
 	}
 	return entity.TokenFromString(accessToken), nil
 }
+
+func (s *userService) UpdateUserData(ctx context.Context, userID *entity.UserID,
+	request *entity.UpdateUserRequest,
+) error {
+	return s.userRepository.UpdateUserData(ctx, userID, request)
+}
+
+func (s *userService) GetUsersByPrefix(ctx context.Context, selfID *entity.UserID, prefix string, limit uint64) (
+	[]*entity.UserWithID, error,
+) {
+	return s.userRepository.GetUsersByPrefix(ctx, selfID, prefix, limit)
+}

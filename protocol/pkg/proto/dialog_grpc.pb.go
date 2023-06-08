@@ -28,10 +28,14 @@ type DialogServiceClient interface {
 	CreateDialogMessage(ctx context.Context, in *CreateDialogMessageRequest, opts ...grpc.CallOption) (*CreateDialogMessageResponse, error)
 	CreateDialogMessageWithCode(ctx context.Context, in *CreateDialogMessageWithCodeRequest, opts ...grpc.CallOption) (*CreateDialogMessageResponse, error)
 	GetDialogMessages(ctx context.Context, in *GetDialogMessagesRequest, opts ...grpc.CallOption) (*GetDialogMessagesResponse, error)
-	ReadAllMessagesBeforeAndInclude(ctx context.Context, in *ReadAllMessagesBeforeRequest, opts ...grpc.CallOption) (*Void, error)
+	ReadMessage(ctx context.Context, in *ReadMessageRequest, opts ...grpc.CallOption) (*Void, error)
 	CreateInstruction(ctx context.Context, in *CreateInstructionRequest, opts ...grpc.CallOption) (*InstructionID, error)
 	GetInstructions(ctx context.Context, in *GetInstructionsRequest, opts ...grpc.CallOption) (*GetInstructionsResponse, error)
 	GetInstructionsByID(ctx context.Context, in *GetInstructionsByIDRequest, opts ...grpc.CallOption) (*GetInstructionsResponse, error)
+	GetDialogLinks(ctx context.Context, in *GetDialogLinksRequest, opts ...grpc.CallOption) (*GetDialogLinksResponse, error)
+	GetDialogLinksByID(ctx context.Context, in *GetDialogLinksByIDRequest, opts ...grpc.CallOption) (*GetDialogLinksResponse, error)
+	GetDialogMembers(ctx context.Context, in *DialogID, opts ...grpc.CallOption) (*GetDialogMembersResponse, error)
+	GetUnreadDialogMessagesCount(ctx context.Context, in *DialogID, opts ...grpc.CallOption) (*GetUnreadDialogMessagesCountResponse, error)
 	Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error)
 }
 
@@ -97,9 +101,9 @@ func (c *dialogServiceClient) GetDialogMessages(ctx context.Context, in *GetDial
 	return out, nil
 }
 
-func (c *dialogServiceClient) ReadAllMessagesBeforeAndInclude(ctx context.Context, in *ReadAllMessagesBeforeRequest, opts ...grpc.CallOption) (*Void, error) {
+func (c *dialogServiceClient) ReadMessage(ctx context.Context, in *ReadMessageRequest, opts ...grpc.CallOption) (*Void, error) {
 	out := new(Void)
-	err := c.cc.Invoke(ctx, "/proto.DialogService/ReadAllMessagesBeforeAndInclude", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.DialogService/ReadMessage", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,6 +137,42 @@ func (c *dialogServiceClient) GetInstructionsByID(ctx context.Context, in *GetIn
 	return out, nil
 }
 
+func (c *dialogServiceClient) GetDialogLinks(ctx context.Context, in *GetDialogLinksRequest, opts ...grpc.CallOption) (*GetDialogLinksResponse, error) {
+	out := new(GetDialogLinksResponse)
+	err := c.cc.Invoke(ctx, "/proto.DialogService/GetDialogLinks", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dialogServiceClient) GetDialogLinksByID(ctx context.Context, in *GetDialogLinksByIDRequest, opts ...grpc.CallOption) (*GetDialogLinksResponse, error) {
+	out := new(GetDialogLinksResponse)
+	err := c.cc.Invoke(ctx, "/proto.DialogService/GetDialogLinksByID", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dialogServiceClient) GetDialogMembers(ctx context.Context, in *DialogID, opts ...grpc.CallOption) (*GetDialogMembersResponse, error) {
+	out := new(GetDialogMembersResponse)
+	err := c.cc.Invoke(ctx, "/proto.DialogService/GetDialogMembers", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dialogServiceClient) GetUnreadDialogMessagesCount(ctx context.Context, in *DialogID, opts ...grpc.CallOption) (*GetUnreadDialogMessagesCountResponse, error) {
+	out := new(GetUnreadDialogMessagesCountResponse)
+	err := c.cc.Invoke(ctx, "/proto.DialogService/GetUnreadDialogMessagesCount", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dialogServiceClient) Ping(ctx context.Context, in *Void, opts ...grpc.CallOption) (*Pong, error) {
 	out := new(Pong)
 	err := c.cc.Invoke(ctx, "/proto.DialogService/Ping", in, out, opts...)
@@ -152,10 +192,14 @@ type DialogServiceServer interface {
 	CreateDialogMessage(context.Context, *CreateDialogMessageRequest) (*CreateDialogMessageResponse, error)
 	CreateDialogMessageWithCode(context.Context, *CreateDialogMessageWithCodeRequest) (*CreateDialogMessageResponse, error)
 	GetDialogMessages(context.Context, *GetDialogMessagesRequest) (*GetDialogMessagesResponse, error)
-	ReadAllMessagesBeforeAndInclude(context.Context, *ReadAllMessagesBeforeRequest) (*Void, error)
+	ReadMessage(context.Context, *ReadMessageRequest) (*Void, error)
 	CreateInstruction(context.Context, *CreateInstructionRequest) (*InstructionID, error)
 	GetInstructions(context.Context, *GetInstructionsRequest) (*GetInstructionsResponse, error)
 	GetInstructionsByID(context.Context, *GetInstructionsByIDRequest) (*GetInstructionsResponse, error)
+	GetDialogLinks(context.Context, *GetDialogLinksRequest) (*GetDialogLinksResponse, error)
+	GetDialogLinksByID(context.Context, *GetDialogLinksByIDRequest) (*GetDialogLinksResponse, error)
+	GetDialogMembers(context.Context, *DialogID) (*GetDialogMembersResponse, error)
+	GetUnreadDialogMessagesCount(context.Context, *DialogID) (*GetUnreadDialogMessagesCountResponse, error)
 	Ping(context.Context, *Void) (*Pong, error)
 	mustEmbedUnimplementedDialogServiceServer()
 }
@@ -182,8 +226,8 @@ func (UnimplementedDialogServiceServer) CreateDialogMessageWithCode(context.Cont
 func (UnimplementedDialogServiceServer) GetDialogMessages(context.Context, *GetDialogMessagesRequest) (*GetDialogMessagesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDialogMessages not implemented")
 }
-func (UnimplementedDialogServiceServer) ReadAllMessagesBeforeAndInclude(context.Context, *ReadAllMessagesBeforeRequest) (*Void, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ReadAllMessagesBeforeAndInclude not implemented")
+func (UnimplementedDialogServiceServer) ReadMessage(context.Context, *ReadMessageRequest) (*Void, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReadMessage not implemented")
 }
 func (UnimplementedDialogServiceServer) CreateInstruction(context.Context, *CreateInstructionRequest) (*InstructionID, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateInstruction not implemented")
@@ -193,6 +237,18 @@ func (UnimplementedDialogServiceServer) GetInstructions(context.Context, *GetIns
 }
 func (UnimplementedDialogServiceServer) GetInstructionsByID(context.Context, *GetInstructionsByIDRequest) (*GetInstructionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetInstructionsByID not implemented")
+}
+func (UnimplementedDialogServiceServer) GetDialogLinks(context.Context, *GetDialogLinksRequest) (*GetDialogLinksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDialogLinks not implemented")
+}
+func (UnimplementedDialogServiceServer) GetDialogLinksByID(context.Context, *GetDialogLinksByIDRequest) (*GetDialogLinksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDialogLinksByID not implemented")
+}
+func (UnimplementedDialogServiceServer) GetDialogMembers(context.Context, *DialogID) (*GetDialogMembersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDialogMembers not implemented")
+}
+func (UnimplementedDialogServiceServer) GetUnreadDialogMessagesCount(context.Context, *DialogID) (*GetUnreadDialogMessagesCountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUnreadDialogMessagesCount not implemented")
 }
 func (UnimplementedDialogServiceServer) Ping(context.Context, *Void) (*Pong, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
@@ -318,20 +374,20 @@ func _DialogService_GetDialogMessages_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DialogService_ReadAllMessagesBeforeAndInclude_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReadAllMessagesBeforeRequest)
+func _DialogService_ReadMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReadMessageRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DialogServiceServer).ReadAllMessagesBeforeAndInclude(ctx, in)
+		return srv.(DialogServiceServer).ReadMessage(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.DialogService/ReadAllMessagesBeforeAndInclude",
+		FullMethod: "/proto.DialogService/ReadMessage",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DialogServiceServer).ReadAllMessagesBeforeAndInclude(ctx, req.(*ReadAllMessagesBeforeRequest))
+		return srv.(DialogServiceServer).ReadMessage(ctx, req.(*ReadMessageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -390,6 +446,78 @@ func _DialogService_GetInstructionsByID_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DialogService_GetDialogLinks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDialogLinksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DialogServiceServer).GetDialogLinks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.DialogService/GetDialogLinks",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DialogServiceServer).GetDialogLinks(ctx, req.(*GetDialogLinksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DialogService_GetDialogLinksByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDialogLinksByIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DialogServiceServer).GetDialogLinksByID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.DialogService/GetDialogLinksByID",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DialogServiceServer).GetDialogLinksByID(ctx, req.(*GetDialogLinksByIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DialogService_GetDialogMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DialogID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DialogServiceServer).GetDialogMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.DialogService/GetDialogMembers",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DialogServiceServer).GetDialogMembers(ctx, req.(*DialogID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DialogService_GetUnreadDialogMessagesCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DialogID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DialogServiceServer).GetUnreadDialogMessagesCount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.DialogService/GetUnreadDialogMessagesCount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DialogServiceServer).GetUnreadDialogMessagesCount(ctx, req.(*DialogID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DialogService_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Void)
 	if err := dec(in); err != nil {
@@ -440,8 +568,8 @@ var DialogService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DialogService_GetDialogMessages_Handler,
 		},
 		{
-			MethodName: "ReadAllMessagesBeforeAndInclude",
-			Handler:    _DialogService_ReadAllMessagesBeforeAndInclude_Handler,
+			MethodName: "ReadMessage",
+			Handler:    _DialogService_ReadMessage_Handler,
 		},
 		{
 			MethodName: "CreateInstruction",
@@ -454,6 +582,22 @@ var DialogService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetInstructionsByID",
 			Handler:    _DialogService_GetInstructionsByID_Handler,
+		},
+		{
+			MethodName: "GetDialogLinks",
+			Handler:    _DialogService_GetDialogLinks_Handler,
+		},
+		{
+			MethodName: "GetDialogLinksByID",
+			Handler:    _DialogService_GetDialogLinksByID_Handler,
+		},
+		{
+			MethodName: "GetDialogMembers",
+			Handler:    _DialogService_GetDialogMembers_Handler,
+		},
+		{
+			MethodName: "GetUnreadDialogMessagesCount",
+			Handler:    _DialogService_GetUnreadDialogMessagesCount_Handler,
 		},
 		{
 			MethodName: "Ping",

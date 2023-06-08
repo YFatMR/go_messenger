@@ -55,7 +55,7 @@ type DialogRepository interface {
 	GetDialogMembers(ctx context.Context, dialogID *entity.DialogID) (
 		userIDs []*entity.UserID, err error,
 	)
-	ReadAllMessagesBeforeAndIncl(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
+	ReadMessage(ctx context.Context, userID *entity.UserID, dialogID *entity.DialogID,
 		messageID *entity.MessageID,
 	) error
 
@@ -71,5 +71,22 @@ type DialogRepository interface {
 		instructionID *entity.InstructionID, limit uint64,
 	) (
 		instructions []*entity.Instruction, err error,
+	)
+
+	GetLinks(ctx context.Context, dialogID *entity.DialogID, limit uint64) (
+		links []*entity.Link, err error,
+	)
+	GetLinksBefore(ctx context.Context, dialogID *entity.DialogID,
+		linkID *entity.LinkID, limit uint64,
+	) (
+		links []*entity.Link, err error,
+	)
+
+	GetUnreadDialogMessagesCount(ctx context.Context, selfID *entity.UserID, dialogID *entity.DialogID) (
+		count uint64, err error,
+	)
+
+	GetDialogIdByMembers(ctx context.Context, userID1 *entity.UserID, userID2 *entity.UserID) (
+		dialog *entity.DialogID, err error,
 	)
 }

@@ -19,6 +19,12 @@ type UserController interface {
 	GenerateToken(ctx context.Context, request *proto.Credential) (
 		void *proto.Token, err error,
 	)
+	UpdateUserData(ctx context.Context, request *proto.UpdateUserDataRequest) (
+		void *proto.Void, err error,
+	)
+	GetUsersByPrefix(ctx context.Context, request *proto.GetUsersByPrefixRequest) (
+		resp *proto.GetUsersByPrefixResponse, err error,
+	)
 	Ping(ctx context.Context, request *proto.Void) (
 		pong *proto.Pong, err error,
 	)

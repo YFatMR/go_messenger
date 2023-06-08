@@ -30,13 +30,14 @@ protoc \
     internal/user.proto \
     internal/common.proto \
     internal/sandbox.proto \
-    internal/dialog.proto
+    internal/dialog.proto \
+    internal/bots.proto
     # internal/auth.proto \
 
 # generate openapiv2 for REST endpoint
-protoc \
-    -I "./internal" \
-    -I"${GOOGLE_API_PATH}" \
-    --openapiv2_out "${OPEN_API_V2_OUT}" \
-    --openapiv2_opt logtostderr=true \
-    internal/front.proto
+# protoc \
+#     -I "./internal" \
+#     -I"${GOOGLE_API_PATH}" \
+#     --openapiv2_out "${OPEN_API_V2_OUT}" \
+#     --openapiv2_opt logtostderr=true \
+#     internal/front.proto

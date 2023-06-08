@@ -91,3 +91,31 @@ func (d *OpentelemetryTracingUserRepositoryDecorator) GetByID(ctx context.Contex
 	}()
 	return d.base.GetByID(ctx, userID)
 }
+
+// GetUsersByPrefix implements apientity.UserRepository
+func (d *OpentelemetryTracingUserRepositoryDecorator) GetUsersByPrefix(ctx context.Context, selfID *entity.UserID, prefix string, limit uint64) (resp []*entity.UserWithID, err error) {
+
+	var span trace.Span
+	ctx, span = d.tracer.Start(ctx, "/GetUsersByPrefix")
+	defer func() {
+		if err != nil && d.recordErrors {
+			span.RecordError(err)
+		}
+		span.End()
+	}()
+	return d.base.GetUsersByPrefix(ctx, selfID, prefix, limit)
+}
+
+// UpdateUserData implements apientity.UserRepository
+func (d *OpentelemetryTracingUserRepositoryDecorator) UpdateUserData(ctx context.Context, userID *entity.UserID, request *entity.UpdateUserRequest) (err error) {
+
+	var span trace.Span
+	ctx, span = d.tracer.Start(ctx, "/UpdateUserData")
+	defer func() {
+		if err != nil && d.recordErrors {
+			span.RecordError(err)
+		}
+		span.End()
+	}()
+	return d.base.UpdateUserData(ctx, userID, request)
+}

@@ -80,33 +80,40 @@ func main() {
 		panic(err)
 	}
 
+	botsServiceClient, err := NewGRPCBotsServiceClientFromConfig(ctx, config, logger)
+	if err != nil {
+		panic(err)
+	}
+
 	websocketClient := WebsocketClientFromConfig(config, logger)
 
 	server := httpapi.NewFrontServer(
-		userServiceClient, sandboxServiceClient, dialogServiceClient, websocketClient, logger,
+		userServiceClient, sandboxServiceClient, dialogServiceClient,
+		botsServiceClient, websocketClient, logger,
 	)
 	router := mux.NewRouter()
 
-	router.HandleFunc("/v1/users/{ID}", server.GetUserByID).Methods(http.MethodGet)
 	router.HandleFunc("/v1/token", server.GenerateToken).Methods(http.MethodPost)
 	router.HandleFunc("/v1/users", server.CreateUser).Methods(http.MethodPost)
-
-	router.HandleFunc("/v1/programs/{ID}", server.GetProgramByID).Methods(http.MethodGet)
-	// router.HandleFunc("/v1/programs", server.CreateProgram).Methods(http.MethodPost)
-	router.HandleFunc("/v1/programs/{ID}/run", server.RunProgram).Methods(http.MethodPatch)
-	router.HandleFunc("/v1/programs/{ID}/lint", server.LintProgram).Methods(http.MethodPatch)
-	router.HandleFunc("/v1/programs/{ID}/source", server.LintProgram).Methods(http.MethodPatch)
+	router.HandleFunc("/v1/users/{ID}", server.GetUserByID).Methods(http.MethodGet)
+	router.HandleFunc("/v1/users/find", server.GetUsersByPrefix).Methods(http.MethodPost)
 
 	router.HandleFunc("/v1/dialogs", server.CreateDialogWith).Methods(http.MethodPost)
-	router.HandleFunc("/v1/dialogs/{ID}", server.GetDialogByID).Methods(http.MethodGet)
+
 	router.HandleFunc("/v1/dialogs", server.GetDialogs).Methods(http.MethodGet)
 	router.HandleFunc("/v1/dialogs/{ID}/messages", server.CreateDialogMessage).Methods(http.MethodPost)
 	router.HandleFunc("/v1/dialogs/{dialogID}/messages/{messageID}", server.GetDialogMessages).Methods(http.MethodGet)
-	router.HandleFunc("/v1/dialogs/{dialogID}/messages/{messageID}", server.ReadAllMessagesBefore).
+	router.HandleFunc("/v1/dialogs/{dialogID}/messages/{messageID}", server.ReadMessage).
 		Methods(http.MethodPut)
-
 	router.HandleFunc("/v1/dialogs/{dialogID}/instructions", server.CreateInstruction).Methods(http.MethodPost)
 	router.HandleFunc("/v1/dialogs/{dialogID}/instructions", server.GetInstructions).Methods(http.MethodGet)
+	router.HandleFunc("/v1/dialogs/{dialogID}/links", server.GetLinks).Methods(http.MethodGet)
+	router.HandleFunc("/v1/dialogs/{dialogID}/members", server.GetDialogMembers).Methods(http.MethodGet)
+	router.HandleFunc("/v1/dialogs/{dialogID}/unread_messages", server.GetUnreadDialogMessagesCount).Methods(http.MethodGet)
+
+	router.HandleFunc("/v1/dialogs/{ID}", server.GetDialogByID).Methods(http.MethodGet)
+
+	router.HandleFunc("/v1/bard", server.GetBotMessageCompletion).Methods(http.MethodPost)
 
 	router.HandleFunc("/v1/ws", server.WebsocketHandler)
 

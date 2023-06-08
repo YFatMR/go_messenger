@@ -9,6 +9,7 @@ import (
 	"github.com/YFatMR/go_messenger/core/pkg/pgxdb"
 	"github.com/YFatMR/go_messenger/user_service/apientity"
 	"github.com/YFatMR/go_messenger/user_service/decorator"
+	"github.com/YFatMR/go_messenger/user_service/grpcapi"
 	"github.com/YFatMR/go_messenger/user_service/user"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -39,7 +40,11 @@ func UserRepositoryFromConfig(ctx context.Context, config *cviper.CustomViper, l
 			role VARCHAR(256) NOT NULL,
 			nickname VARCHAR(128) NOT NULL UNIQUE,
 			name VARCHAR(256) NOT NULL,
-			surname VARCHAR(256) NOT NULL
+			surname VARCHAR(256) NOT NULL,
+			github VARCHAR(256) NOT NULL DEFAULT '',
+			linkedin VARCHAR(256) NOT NULL DEFAULT '',
+			public_email VARCHAR(256) NOT NULL DEFAULT '',
+			status VARCHAR(256) NOT NULL DEFAULT 'developer'
 		);`,
 	)
 	if err != nil {
@@ -84,8 +89,15 @@ func UserServiceFromConfig(config *cviper.CustomViper, logger *czap.Logger, repo
 	return service
 }
 
-func UserControllerFromService(service apientity.UserService, logger *czap.Logger) apientity.UserController {
-	controller := user.NewController(service, logger)
+func HeadersFromConfig(config *cviper.CustomViper) grpcapi.Headers {
+	return grpcapi.Headers{
+		UserID: config.GetStringRequired("GRPC_USER_ID_HEADER"),
+	}
+}
+
+func UserControllerFromConfig(config *cviper.CustomViper, service apientity.UserService, logger *czap.Logger) apientity.UserController {
+	contextManager := grpcapi.NewContextManager(HeadersFromConfig(config))
+	controller := user.NewController(service, contextManager, logger)
 	// TODO: make config options
 	if true {
 		controller = decorator.NewLoggingUserControllerDecorator(controller, logger)

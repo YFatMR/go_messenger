@@ -25,6 +25,7 @@ services:
       - SANDBOX_SERVICE_ADDRESS=sandbox_service:${SANDBOX_SERVICE_PORT}
       - DIALOG_SERVICE_ADDRESS=dialog_service:${DIALOG_SERVICE_PORT}
       - COMET_SERVICE_WS_ADDRESS=ws://comet_service:${COMET_SERVICE_PORT}
+      - BOTS_SERVICE_ADDRESS=bots_service:${BOTS_SERVICE_PORT}
 
       - GRPC_CONNECTION_BACKOFF_DELAY_MILLISECONDS=1000
       - GRPC_CONNECTION_BACKOFF_MULTIPLIER=1.6
@@ -88,6 +89,8 @@ services:
       - METRICS_SERVICE_IDLE_TIMEOUT_SECONDS=15
       - METRICS_SERVICE_READ_HEADER_TIMEOUT_SECONDS=2
 
+      - GRPC_USER_ID_HEADER=${GRPC_USER_ID_HEADER}
+
     volumes:
       - type: bind
         source: ${PROJECT_ROOT_PATH}/_log/user_service.log
@@ -112,84 +115,6 @@ services:
       - "9035:${USER_SERVICE_DATABASE_PORT}"
     networks:
       - default
-
-  # sandbox_service:
-  #   build:
-  #     context: ${PROJECT_ROOT_PATH}
-  #     dockerfile: ${PROJECT_ROOT_PATH}/sandbox_service/Dockerfile
-
-  #   container_name: sandbox_service
-  #   hostname: sandbox_service
-  #   environment:
-  #     - SERVICE_ADDRESS=sandbox_service:${SANDBOX_SERVICE_PORT}
-  #     - SERVICE_NAME=sandbox_service
-
-  #     - GRPC_USER_ID_HEADER=${GRPC_USER_ID_HEADER}
-  #     - GRPC_USER_ROLE_HEADER=${GRPC_USER_ROLE_HEADER}
-
-  #     - LOG_LEVEL=debug
-  #     - LOG_PATH=${SANDBOX_SERVICE_LOG_PATH}
-
-  #     - KAFKA_BROKER_ADDRESS=kafka_broker:${KAFKA_BROKER_PORT}
-  #     - KAFKA_PYTHON_3_9_CODE_RUNNER_TOPIC=${KAFKA_PYTHON_3_9_CODE_RUNNER_TOPIC}
-  #     - KAFKA_NEW_MESSAGES_TOPIC=${KAFKA_NEW_MESSAGES_TOPIC}
-  #     - KAFKA_WRITER_WRITE_TIMEOUT_MILLISECONDS=10000
-  #     - KAFKA_WRITER_READ_TIMEOUT_MILLISECONDS=10000
-
-  #     - DATABASE_URI=mongodb://${SANDBOX_SERVICE_DATABASE_USERNAME}:${SANDBOX_SERVICE_DATABASE_PASSWORD}@sandbox_service_mongodb:${SANDBOX_SERVICE_DATABASE_PORT}
-  #     - DATABASE_NAME=sandbox
-  #     - DATABASE_COLLECTION_NAME=programs
-  #     - DATABASE_OPERATION_TIMEOUT_MILLISECONDS=1000
-  #     - DATABASE_CONNECTION_TIMEOUT_MILLISECONDS=2000
-  #     - DATABASE_STARTUP_RECONNECTION_COUNT=10
-  #     - DATABASE_STURTUP_RECONNECTIONION_INTERVAL_MILLISECONDS=500
-
-  #     - JAEGER_COLLECTOR_ENDPOINT=http://jaeger:${JAEGER_COLLECTOR_PORT}/api/traces
-  #   volumes:
-  #     - type: bind
-  #       source: ${PROJECT_ROOT_PATH}/_log/sandbox_service.log
-  #       target: ${SANDBOX_SERVICE_LOG_PATH}
-  #   ports:
-  #     - "9042:${SANDBOX_SERVICE_PORT}"
-  #   networks:
-  #     - default
-
-  sandbox_worker_service:
-    build:
-      context: ${PROJECT_ROOT_PATH}
-      dockerfile: ${PROJECT_ROOT_PATH}/sandbox_worker_service/docker_images/python/Dockerfile
-    container_name: sandbox_worker_service
-    hostname: sandbox_worker_service
-    environment:
-      - LOG_LEVEL=debug
-      - LOG_PATH=${SANDBOX_WORKER_SERVICE_LOG_PATH}
-
-      - KAFKA_READER_BROKER_ADDRESS=kafka_broker:${KAFKA_BROKER_PORT}
-      - KAFKA_READER_TOPIC=${KAFKA_PYTHON_3_9_CODE_RUNNER_TOPIC}
-      - KAFKA_READER_CONSUMER_GROUP_NAME=sandbox_worker_group
-
-      - KAFKA_WRITER_BROKER_ADDRESS=kafka_broker:${KAFKA_BROKER_PORT}
-      - KAFKA_WRITER_TOPIC=${KAFKA_PYTHON_CODE_RUNNER_RESULT_TOPIC}
-      - KAFKA_WRITER_WRITE_TIMEOUT_MILLISECONDS=10000
-      - KAFKA_WRITER_READ_TIMEOUT_MILLISECONDS=10000
-    volumes:
-      - type: bind
-        source: ${PROJECT_ROOT_PATH}/_log/sandbox_worker_service.log
-        target: ${SANDBOX_WORKER_SERVICE_LOG_PATH}
-    networks:
-      - default
-
-  # sandbox_service_mongodb:
-  #   image: mongo:latest
-  #   container_name: sandbox_service_mongodb
-  #   hostname: sandbox_service_mongodb
-  #   environment:
-  #     - MONGO_INITDB_ROOT_USERNAME=${SANDBOX_SERVICE_DATABASE_USERNAME}
-  #     - MONGO_INITDB_ROOT_PASSWORD=${SANDBOX_SERVICE_DATABASE_PASSWORD}
-  #   ports:
-  #     - "27016:${SANDBOX_SERVICE_DATABASE_PORT}"
-  #   networks:
-  #     - default
 
   dialog_service:
     build:
@@ -286,6 +211,31 @@ services:
         target: ${COMET_SERVICE_LOG_PATH}
     ports:
       - "9072:${COMET_SERVICE_PORT}"
+    networks:
+      - default
+
+  bots_service:
+    build:
+      context: ${PROJECT_ROOT_PATH}
+      dockerfile: ${PROJECT_ROOT_PATH}/bots_service/Dockerfile
+
+    container_name: bots_service
+    hostname: bots_service
+    environment:
+      - SERVICE_NAME=bots_service
+      - SERVICE_ADDRESS=bots_service:${BOTS_SERVICE_PORT}
+
+      - LOG_LEVEL=debug
+      - LOG_PATH=${BOTS_SERVICE_LOG_PATH}
+
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MAX_TOKENS_COUNT=20
+    volumes:
+      - type: bind
+        source: ${PROJECT_ROOT_PATH}/_log/bots_service.log
+        target: ${BOTS_SERVICE_LOG_PATH}
+    ports:
+      - "9073:${BOTS_SERVICE_PORT}"
     networks:
       - default
 

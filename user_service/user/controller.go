@@ -11,14 +11,18 @@ import (
 )
 
 type userController struct {
-	service apientity.UserService
-	logger  *czap.Logger
+	contextManager apientity.ContextManager
+	service        apientity.UserService
+	logger         *czap.Logger
 }
 
-func NewController(service apientity.UserService, logger *czap.Logger) apientity.UserController {
+func NewController(service apientity.UserService, contextManager apientity.ContextManager,
+	logger *czap.Logger,
+) apientity.UserController {
 	return &userController{
-		service: service,
-		logger:  logger,
+		contextManager: contextManager,
+		service:        service,
+		logger:         logger,
 	}
 }
 
@@ -84,6 +88,43 @@ func (c *userController) GenerateToken(ctx context.Context, request *proto.Crede
 		return nil, err
 	}
 	return entity.TokenToProtobuf(token), nil
+}
+
+func (c *userController) UpdateUserData(ctx context.Context, request *proto.UpdateUserDataRequest) (
+	*proto.Void, error,
+) {
+	userID, err := c.contextManager.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	updateUserRequest, err := entity.UpdateUserRequestFromProtobuf(request)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "wrong format for updateUserRquest", zap.Error(err))
+		return nil, ErrWrongRequestFormat
+	}
+	err = c.service.UpdateUserData(ctx, userID, updateUserRequest)
+	if err != nil {
+		return nil, err
+	}
+	return entity.VoidProtobuf(), nil
+}
+
+func (c *userController) GetUsersByPrefix(ctx context.Context, request *proto.GetUsersByPrefixRequest) (
+	*proto.GetUsersByPrefixResponse, error,
+) {
+	userID, err := c.contextManager.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	usersData, err := c.service.GetUsersByPrefix(ctx, userID, request.GetPrefix(), request.GetLimit())
+	if err != nil {
+		return nil, err
+	}
+	return &proto.GetUsersByPrefixResponse{
+		UsersData: entity.UsersWithIDToProtobuf(usersData),
+	}, nil
 }
 
 func (c *userController) Ping(ctx context.Context, request *proto.Void) (
